@@ -1,0 +1,33 @@
+{
+	"name": "audiogame-utils",
+	"version": "0.1.0",
+	"description": "Browser audiogame building blocks: accessible speech output, multi-finger gesture input, spatial sound handles, and multiplayer plumbing.",
+	"type": "module",
+	"license": "MIT",
+	"files": [
+		"src",
+		"README.md",
+		"LICENSE"
+	],
+	"exports": {
+		".": "./src/index.js",
+		"./input": "./src/input/index.js",
+		"./speech": "./src/speech/index.js",
+		"./audio": "./src/audio/index.js",
+		"./net": "./src/net/index.js",
+		"./storage": "./src/storage.js",
+		"./platform": "./src/platform.js",
+		"./events": "./src/events.js"
+	},
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"cacophony": "^0.18.3"
+	},
+	"devDependencies": {
+		"happy-dom": "^13.0.0",
+		"vitest": "^1.0.0"
+	}
+}
