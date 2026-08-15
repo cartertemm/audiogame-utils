@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>Input demo - audiogame-utils</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 1rem;
+			font-family: system-ui, sans-serif;
+			touch-action: none;
+		}
+
+		#log {
+			list-style: none;
+			padding: 0;
+		}
+
+		#log li {
+			padding: 0.25rem 0;
+			border-bottom: 1px solid #ccc;
+		}
+	</style>
+</head>
+<body>
+	<h1>Input demo</h1>
+	<p>Press any key, or swipe and tap anywhere on the page with one to five fingers. Each recognized action is spoken and listed below, newest first.</p>
+	<ul id="log"></ul>
+	<script type="module" src="./input.js"></script>
+</body>
+</html>
