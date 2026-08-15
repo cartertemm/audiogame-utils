@@ -45,13 +45,14 @@ Documentation is organized by public import path:
 
 1. [Audio](docs/audio.md)
 2. [Events](docs/events.md)
-3. [Input](docs/input.md)
-4. [Networking](docs/net.md)
-5. [Platform detection](docs/platform.md)
-6. [Rotation and spatial math](docs/rotation.md)
-7. [Speech](docs/speech.md)
-8. [Storage](docs/storage.md)
-9. [UI](docs/ui.md)
+3. [Focus](docs/focus.md)
+4. [Input](docs/input.md)
+5. [Networking](docs/net.md)
+6. [Platform detection](docs/platform.md)
+7. [Rotation and spatial math](docs/rotation.md)
+8. [Speech](docs/speech.md)
+9. [Storage](docs/storage.md)
+10. [UI](docs/ui.md)
 
 ## Contributing
 

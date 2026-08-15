@@ -1,6 +1,7 @@
 export { createStorage } from './storage.js';
 export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
+export { createFocusTrap } from './focus.js';
 export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from './ui.js';
 export * as rotation from './rotation.js';
 
