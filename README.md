@@ -1,6 +1,6 @@
 # audiogame-utils
 
-Utilities for building audio games that run in a browser. The package provides accessible speech output, keyboard, mouse and multi-finger input, spatial audio, browser platform detection, and multiplayer support.
+Building blocks for audio games that run in a browser. It currently has helpers for accessible speech, keyboard, mouse and multifinger input, spatial audio, menus and forms, maps and spatial queries, storage, platform detection, and multiplayer connections.
 
 The package publishes ECMAScript modules and requires no build step. Its only runtime dependency is [Cacophony](https://www.npmjs.com/package/cacophony) for sound playback.
 
@@ -10,11 +10,51 @@ Local development requires Node.js and npm.
 
 ## Installation
 
-Install the package from GitHub:
+Install the package directly from GitHub:
 
 ```sh
-npm install https://github.com/audiogame-utils
+npm install github:cartertemm/audiogame-utils
 ```
+
+## Usage
+
+Import common tools from the package root or use a public module path for more focused imports:
+
+```js
+import { createStorage, createSpeech } from 'audiogame-utils'
+import { createAudio } from 'audiogame-utils/audio'
+
+const storage = createStorage('my-game')
+const speech = createSpeech({ storage })
+const audio = createAudio()
+
+speech.init()
+const startSound = audio.sfx('/sounds/start.ogg')
+```
+
+See [examples/](examples/) for more of what you can do.
+
+## Modules
+
+| Module | Import path | Purpose |
+| --- | --- | --- |
+| [Package root](src/index.js) | `audiogame-utils` | Common exports from across the package. |
+| [Audio](docs/audio.md) | `audiogame-utils/audio` | Lazy sound loading and playback through Cacophony. |
+| [Audio pool](src/audio/pool.js) | `audiogame-utils/audio/pool` | Reusable spatial sound sources and listener updates. |
+| [Audio coordinates](src/audio/coords.js) | `audiogame-utils/audio/coords` | Game coordinate and listener relative audio positions. |
+| [Audio units](src/audio/units.js) | `audiogame-utils/audio/units` | Volume, pan, pitch, playback rate, and distance conversions. |
+| [Events](docs/events.md) | `audiogame-utils/events` | A small event emitter. |
+| [Focus](docs/focus.md) | `audiogame-utils/focus` | Keyboard trapping for gameplay using a virtual cursor. |
+| [Input](docs/input.md) | `audiogame-utils/input` | Keyboard, mouse, touch gesture, and named action input. |
+| [Maps](src/map/index.js) | `audiogame-utils/map` | Representation of spatial data, map loading, queries, and serialization. Able to load maps with hundreds of thousands of objects in less than a second. |
+| [Math](src/math.js) | `audiogame-utils/math` | Range, angle, interpolation, and randomization helpers. |
+| [Networking](docs/net.md) | `audiogame-utils/net` | WebSocket messaging, reconnection, and player identity. |
+| [Physics](src/physics/index.js) | `audiogame-utils/physics` | Static R tree spatial indexing for now, more to be added soon. |
+| [Platform detection](docs/platform.md) | `audiogame-utils/platform` | iOS and installed web app detection. |
+| [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and spatial math helpers. |
+| [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
+| [Storage](docs/storage.md) | `audiogame-utils/storage` | Namespaced JSON storage. Saves to the browser session by default. |
+| [UI](docs/ui.md) | `audiogame-utils/ui` | Helpers for quickly creating accessible fields, screens, and menus. With the exception of menu (which is my take on the dynamic menu commonly found in audio games), these should not be used with a focus trap but games where you want an interactive visible UI. |
 
 ## Local development
 
@@ -26,34 +66,6 @@ npm test
 ```
 
 The tests use Vitest with happy-dom. Run `npm run test:watch` while developing to rerun tests when files change.
-
-## Example playground
-
-From the repository root, start the example server:
-
-```sh
-npm run examples
-```
-
-Open <http://localhost:3000> in a browser and choose a demo from the index page.
-
-Run the server from the repository root because the examples import modules directly from `src`. Do not open the example HTML files directly. Browsers block their module imports when loaded from `file:` URLs.
-
-## Documentation
-
-Documentation is organized by public import path:
-
-1. [Audio](docs/audio.md)
-2. [Events](docs/events.md)
-3. [Focus](docs/focus.md)
-4. [Input](docs/input.md)
-5. [Maps](docs/map.md)
-6. [Networking](docs/net.md)
-7. [Platform detection](docs/platform.md)
-8. [Rotation and spatial math](docs/rotation.md)
-9. [Speech](docs/speech.md)
-10. [Storage](docs/storage.md)
-11. [UI](docs/ui.md)
 
 ## Contributing
 

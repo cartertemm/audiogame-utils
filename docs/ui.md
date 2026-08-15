@@ -7,10 +7,170 @@ import {
 	el,
 	mount,
 	renderScreen,
+	createFields,
+	confirmButton,
 	renderInstallPwaIos,
 	renderSpeechSettings,
 } from 'audiogame-utils/ui'
 ```
+
+## Form fields
+
+The field helpers build labeled, accessible form controls that can be passed directly to `mount()`. Use `createFields()` for settings that should save to a storage instance as soon as they change. Use the individual builders when another object owns the values.
+
+```js
+import { createStorage } from 'audiogame-utils/storage'
+import { createFields, mount } from 'audiogame-utils/ui'
+
+const storage = createStorage('my-game')
+const fields = createFields({
+	storage,
+	defaults: {
+		name: 'Pilot',
+		volume: 0.8,
+		difficulty: 'normal',
+	},
+	onChange: ({ message }) => announce(message),  // announces a settings change through TTS or the screen reader (if one is running). This exists for demo purposes and may not be what you want in an actual game.
+})
+
+mount(document.getElementById('app'), [
+	fields.text('name', 'Player name', { autoFocus: true }),
+	fields.percentRange('volume', 'Master volume'),
+	fields.select('difficulty', 'Difficulty', {
+		choices: [
+			{ value: 'story', label: 'Story' },
+			{ value: 'normal', label: 'Normal' },
+			{ value: 'veteran', label: 'Veteran' },
+		],
+	}),
+])
+```
+
+### Using individual builders
+
+Every field builder takes a label followed by an options object. The `get` function supplies the initial value. The `set` function receives a new value when the control commits a change.
+
+```js
+import { textField } from 'audiogame-utils/ui'
+
+const nameField = textField('Player name', {
+	get: () => player.name,
+	set: (value) => {
+		player.name = value
+	},
+	hint: 'Other players can hear this name.',
+	maxLength: 24,
+})
+```
+
+These options apply to every field builder:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `get` | none | Required function that returns the current value. |
+| `set` | none | Required function that commits a changed value. Some controls pass a second, human readable value. |
+| `id` | generated | Base ID used to connect the control, label, and hint. Group choice IDs are derived from it. |
+| `hint` | none | Help text connected with `aria-describedby`. |
+| `autoFocus` | `false` | Marks the control for `mount()` to focus. For groups, this marks the first choice. |
+| `disabled` | `false` | Disables the control, or every control in a group. |
+
+The builders return a wrapper element containing the control and its accessible label. Groups return a `fieldset` with a `legend`. `keyField()` returns a wrapper containing a button.
+
+### Field builder reference
+
+| Builder | Value | Additional options and behavior |
+| --- | --- | --- |
+| `textField(label, options)` | string | Creates a text input. `maxLength` sets its length limit. `suggestions` adds a `datalist` from an array of strings. |
+| `passwordField(label, options)` | string | Creates a password input. Accepts `maxLength`. |
+| `textAreaField(label, options)` | string | Creates a text area. `rows` sets its visible height. Its `set` call receives `saved` as the human readable value. |
+| `numberField(label, options)` | number | Creates a number input. Accepts `min`, `max`, and `step`. |
+| `rangeField(label, options)` | number | Creates a range input. Accepts `min`, `max`, `step`, and `format`. |
+| `percentRangeField(label, options)` | number | Creates a formatted range from `0` to `1` in steps of `0.05`. Options can override those defaults. |
+| `selectField(label, options)` | choice value | Creates a select from `choices`. Each choice has `value` and `label` properties. The original value is preserved, including numeric values. |
+| `checkboxField(label, options)` | boolean | Creates one checkbox. Its human readable value is `on` or `off`. |
+| `radioGroup(legend, options)` | choice value | Creates one radio button per entry in `choices`. Its human readable value is the selected choice label. |
+| `checkboxGroup(legend, options)` | array | Creates one checkbox per entry in `choices`. Its human readable value identifies the choice that changed followed by `on` or `off`. |
+| `keyField(label, options)` | string | Creates a button that captures the next key. Escape cancels capture. The captured event does not reach the game. |
+
+The `choices` option used by selects and groups is an array of objects:
+
+```js
+const choices = [
+	{ value: 15, label: '15 degrees' },
+	{ value: 30, label: '30 degrees' },
+]
+```
+
+A range `format(value)` function controls its visible readout, its `aria-valuetext`, and the human readable value passed to `set`. The visible and accessible readouts update during `input` events. The numeric value is committed during the `change` event.
+
+```js
+rangeField('Turn speed', {
+	get: () => settings.turnSpeed,
+	set: (value, display) => saveTurnSpeed(value, display),
+	min: 0,
+	max: 1,
+	step: 0.1,
+	format: value => `${Math.round(value * 100)} percent`,
+})
+```
+
+`keyName(key)` returns a key name suitable for display. It changes the space character to `Space` and returns other key values unchanged. `keyField()` uses it for the current binding and captured key.
+
+### Storage bound fields
+
+`createFields({ storage, defaults, onChange })` returns storage bound versions of every field builder. A storage instance is required. `defaults` supplies values for keys that are not in storage.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `storage` | none | Required storage instance, usually returned by `createStorage()`. |
+| `defaults` | `{}` | Values keyed by field name. A default is read when storage has no value for that key. |
+| `onChange` | none | Called after a changed value has been stored. |
+
+Each bound builder takes a storage key before the label:
+
+```js
+fields.text(key, label, options)
+fields.password(key, label, options)
+fields.textArea(key, label, options)
+fields.number(key, label, options)
+fields.range(key, label, options)
+fields.percentRange(key, label, options)
+fields.select(key, label, options)
+fields.checkbox(key, label, options)
+fields.radioGroup(key, legend, options)
+fields.checkboxGroup(key, legend, options)
+fields.key(key, label, options)
+```
+
+These methods read with `storage.get(key, defaults[key])` and write with `storage.set(key, value)`. They use `field-${key}` as a stable ID unless `options.id` is provided. All type specific options pass through to the underlying builder.
+
+After a value is stored, `onChange` receives one object:
+
+```js
+{
+	key,
+	value,
+	label,
+	display,
+	type,
+	message,
+}
+```
+
+`display` is suitable for speech or status text. For example, it contains a select choice label instead of its stored value. `message` combines the field label and display text. Key fields use messages such as `Fire bound to Space`. Checkbox groups report only the choice that changed. Use `type` when an application needs different phrasing for different controls.
+
+### Confirmation buttons
+
+`confirmButton(label, options)` creates a button that requires two presses. The first press changes its text to `confirmLabel`. The second press calls `onConfirm`, restores the original label, and disarms the button so another action again requires two presses.
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `confirmLabel` | none | Required label shown after the first press. |
+| `onConfirm` | none | Required function called after the second press. |
+| `id` | generated | Button ID. |
+| `class` | none | CSS class placed on the button. |
+| `autoFocus` | `false` | Marks the button for `mount()` to focus. |
+| `disabled` | `false` | Disables the button. |
 
 ## Creating elements
 
