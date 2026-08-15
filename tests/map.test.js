@@ -325,7 +325,7 @@ describe('createMap: serialize', () => {
 // These budgets are deliberately loose. They exist so a future regression is
 // loud, not to pin down a number on any particular machine.
 describe('createMap: performance', () => {
-	test('loads 200k entries and answers 1000 point queries', async () => {
+	test('loads 200k entries, builds the index, and answers 1000 point queries', async () => {
 		const entries = [];
 		for (let i = 0; i < 200000; i++) {
 			const x = (i * 37) % 100000;
@@ -334,24 +334,55 @@ describe('createMap: performance', () => {
 		}
 		const map = createMap();
 
+		// Ingesting entries into the store does not force the R-tree build for types
+		// that allow overlap, so this only times parsing and insertion.
 		const load_start = performance.now();
 		await map.loadMap({ data: { name: 'big', maxx: 100010, maxy: 100010, maxz: 0, entries } });
 		const load_ms = performance.now() - load_start;
 
-		const query_start = performance.now();
-		let hits = 0;
-		for (let i = 0; i < 1000; i++) {
-			hits += map.getDataAt('zone', (i * 97) % 100000, (i * 97) % 100000, (i * 13) % 100000, (i * 13) % 100000, 0, 0).length;
-		}
-		const query_ms = performance.now() - query_start;
+		// The tree builds lazily on first query. Pay for that here, on its own,
+		// so it does not leak into the steady state numbers below.
+		const build_start = performance.now();
+		map.getDataAt('zone', 0, 0, 0, 0, 0, 0);
+		const build_ms = performance.now() - build_start;
 
-		console.log(`load 200k: ${load_ms.toFixed(0)}ms, 1000 queries: ${query_ms.toFixed(1)}ms, hits ${hits}`);
+		// Sparse queries: coordinates picked independently of where entries landed,
+		// so most of these miss. Exercises the empty-result path.
+		const sparse_start = performance.now();
+		let sparse_hits = 0;
+		for (let i = 0; i < 1000; i++) {
+			sparse_hits += map.getDataAt('zone', (i * 97) % 100000, (i * 97) % 100000, (i * 13) % 100000, (i * 13) % 100000, 0, 0).length;
+		}
+		const sparse_ms = performance.now() - sparse_start;
+
+		// Dense queries: coordinates taken from entries we just generated, so every
+		// query hits. Exercises the cost of materializing matches in getDataAt.
+		const dense_start = performance.now();
+		let dense_hits = 0;
+		for (let i = 0; i < 1000; i++) {
+			const x = (i * 37) % 100000;
+			const y = (i * 71) % 100000;
+			dense_hits += map.getDataAt('zone', x, x + 3, y, y + 3, 0, 0).length;
+		}
+		const dense_ms = performance.now() - dense_start;
+
+		console.log(
+			`load 200k: ${load_ms.toFixed(0)}ms, index build: ${build_ms.toFixed(1)}ms, ` +
+			`1000 sparse queries: ${sparse_ms.toFixed(1)}ms (hits ${sparse_hits}), ` +
+			`1000 dense queries: ${dense_ms.toFixed(1)}ms (hits ${dense_hits})`,
+		);
 		expect(load_ms).toBeLessThan(10000);
-		expect(query_ms).toBeLessThan(1000);
+		expect(build_ms).toBeLessThan(5000);
+		expect(sparse_ms).toBeLessThan(1000);
+		expect(dense_ms).toBeLessThan(1000);
+		// The coordinate generator has period 100000 over 200000 entries, so each of
+		// the first 1000 boxes has exactly one duplicate at i + 100000: 2 hits each.
+		expect(dense_hits).toBe(2000);
 		expect(map.memoryBytes()).toBeLessThan(6 * 1024 * 1024);
 	}, 60000);
 
 	test('measures the cost of z filtering on 500 stacked levels', async () => {
+		const QUERY_COUNT = 1000;
 		const entries = [];
 		for (let level = 0; level < 500; level++) {
 			entries.push({
@@ -365,10 +396,10 @@ describe('createMap: performance', () => {
 		await map.loadMap({ data: { name: 'tower', maxx: 100, maxy: 100, maxz: 5000, entries } });
 
 		const start = performance.now();
-		for (let i = 0; i < 1000; i++) map.getOneAt('zone', 10, 10, (i % 500) * 10);
+		for (let i = 0; i < QUERY_COUNT; i++) map.getOneAt('zone', 10, 10, (i % 500) * 10);
 		const total_ms = performance.now() - start;
 
-		console.log(`500 stacked levels: ${(total_ms * 1000 / 1000).toFixed(1)}us per point query`);
+		console.log(`500 stacked levels: ${(total_ms / QUERY_COUNT * 1000).toFixed(1)}us per point query`);
 		expect(total_ms).toBeLessThan(2000);
 	}, 60000);
 });

@@ -136,8 +136,8 @@ The result can be handed straight to `loadMap({ data: saved })` on a fresh `crea
 
 ## How it performs
 
-The spatial index for each type builds lazily, on the first query after a change. Loading a map with `loadMap` pays for one index build per type, not one per entry.
+The spatial index for each type builds lazily, on the first query after a change. `loadMap` only forces that build for types whose overlap policy is `'error'`, since checking for overlap requires a query. Types that allow overlap skip the build during load, so it happens on whichever query touches that type first.
 
 Bounds are inclusive integers: `[0, 10]` and `[10, 20]` overlap at 10.
 
-The x and y bounds are indexed; z is filtered afterward by scanning the x/y matches. Cost grows with how much content stacks on a single x/y footprint, not with the size of the map overall. Measured on a map with 500 entries stacked on one footprint, a point query through that stack takes about 19.4 microseconds. A 200,000 entry map loads in about 127 milliseconds.
+The x and y bounds are indexed; z is filtered afterward by scanning the x/y matches. Cost grows with how much content stacks on a single x/y footprint, not with the size of the map overall. Measured on a 200,000 entry map: parsing and inserting the entries takes about 74 milliseconds, and the first query after that, which forces the index build, takes about 41 milliseconds on its own. After the index is built, steady state point queries are fast: about 0.9 microseconds each for queries that miss, and about 0.8 microseconds each for queries that hit. Measured on a map with 500 entries stacked on one footprint, a point query through that stack takes about 11 microseconds once the index is built.
