@@ -81,6 +81,56 @@ describe('createMap: loading', () => {
 		map.clear();
 		expect(map.getDataAt('tile', 5, 5, 5, 5, 0, 0)).toEqual([]);
 	});
+
+	test('a load rejected by a bad entry leaves the map unchanged', async () => {
+		const map = await loaded();
+		const before = map.serialize();
+		await expect(
+			map.loadMap({
+				data: {
+					name: 'bad', maxx: 100, maxy: 100, maxz: 0,
+					entries: [{ type: 'zone', minx: 60, maxx: 61, miny: 60, maxy: 61, minz: 0, maxz: 0 }],
+				},
+			}),
+		).rejects.toThrow(/"name"/);
+		expect(map.serialize()).toEqual(before);
+		expect(map.header()).toEqual({ name: 'city', maxx: 1000, maxy: 1000, maxz: 10 });
+	});
+
+	test('a load rejected by the overlap pass leaves the map unchanged', async () => {
+		const map = await loaded();
+		const before = map.serialize();
+		await expect(
+			map.loadMap({
+				data: {
+					name: 'bad', maxx: 1000, maxy: 1000, maxz: 10,
+					entries: [
+						{ type: 'tile', minx: 300, maxx: 310, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'road' },
+						{ type: 'tile', minx: 305, maxx: 315, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'path' },
+					],
+				},
+			}),
+		).rejects.toThrow(/does not allow overlap/);
+		expect(map.serialize()).toEqual(before);
+		expect(map.header()).toEqual({ name: 'city', maxx: 1000, maxy: 1000, maxz: 10 });
+	});
+
+	test('a failed first load leaves the header null', async () => {
+		const map = createMap();
+		await expect(
+			map.loadMap({
+				data: {
+					name: 'bad', maxx: 100, maxy: 100, maxz: 0,
+					entries: [
+						{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'grass' },
+						{ type: 'tile', minx: 5, maxx: 15, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'road' },
+					],
+				},
+			}),
+		).rejects.toThrow(/does not allow overlap/);
+		expect(map.header()).toBeNull();
+		expect(map.getDataAt('tile', 0, 10, 0, 10, 0, 0)).toEqual([]);
+	});
 });
 
 describe('createMap: reading', () => {

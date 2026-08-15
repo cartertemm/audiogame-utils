@@ -31,8 +31,13 @@ export function createMap(options = {}) {
 		return response.text();
 	}
 
+	// Validate the whole batch (fields, bounds) before touching the store, then add
+	// entries and run the overlap pass. If the overlap pass throws, the entries just
+	// added are the only ones at risk, so roll those back by id rather than redoing
+	// validation. The header is only committed once every step above has succeeded,
+	// so a failed load leaves both the store and the header exactly as they were.
 	function ingest(parsed) {
-		header = header === null
+		const next_header = header === null
 			? { name: parsed.name, maxx: parsed.maxx, maxy: parsed.maxy, maxz: parsed.maxz }
 			: {
 				name: header.name,
@@ -41,27 +46,38 @@ export function createMap(options = {}) {
 				maxz: Math.max(header.maxz, parsed.maxz),
 			};
 
-		const touched = new Set();
 		parsed.entries.forEach((entry, index) => {
 			types.validate(entry, index);
-			assert_in_bounds(entry, index);
-			store.add(entry);
-			touched.add(entry.type);
+			assert_in_bounds(entry, index, next_header);
 		});
-		for (const type of touched) {
-			if (types.get(type).overlap === 'error') store.assertNoOverlap(type);
+
+		const added = [];
+		try {
+			const touched = new Set();
+			parsed.entries.forEach((entry) => {
+				added.push(store.add(entry));
+				touched.add(entry.type);
+			});
+			for (const type of touched) {
+				if (types.get(type).overlap === 'error') store.assertNoOverlap(type);
+			}
+		} catch (err) {
+			store.remove(added);
+			throw err;
 		}
+
+		header = next_header;
 	}
 
-	function assert_in_bounds(entry, index) {
-		if (header === null) return;
-		const outside = entry.minx < 0 || entry.maxx > header.maxx
-			|| entry.miny < 0 || entry.maxy > header.maxy
-			|| entry.minz < 0 || entry.maxz > header.maxz;
+	function assert_in_bounds(entry, index, ref_header) {
+		if (ref_header === null) return;
+		const outside = entry.minx < 0 || entry.maxx > ref_header.maxx
+			|| entry.miny < 0 || entry.maxy > ref_header.maxy
+			|| entry.minz < 0 || entry.maxz > ref_header.maxz;
 		if (outside) {
 			throw new Error(
 				`map: entry ${index} sits outside the map, which is ` +
-				`${header.maxx} by ${header.maxy} by ${header.maxz}`,
+				`${ref_header.maxx} by ${ref_header.maxy} by ${ref_header.maxz}`,
 			);
 		}
 	}
@@ -79,7 +95,7 @@ export function createMap(options = {}) {
 
 	function setDataAt(entry) {
 		types.validate(entry, store.size());
-		assert_in_bounds(entry, store.size());
+		assert_in_bounds(entry, store.size(), header);
 		if (types.get(entry.type).overlap === 'error') {
 			const clash = store.query(
 				entry.type,
