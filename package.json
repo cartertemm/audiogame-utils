@@ -23,7 +23,8 @@
 		"./events": "./src/events.js",
 		"./ui": "./src/ui.js",
 		"./focus": "./src/focus.js",
-		"./rotation": "./src/rotation.js"
+		"./rotation": "./src/rotation.js",
+		"./math": "./src/math.js"
 	},
 	"scripts": {
 		"examples": "echo Open http://localhost:3000 && npx --yes serve . -l 3000",
