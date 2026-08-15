@@ -1,5 +1,5 @@
 import { createSfx } from './sfx.js';
-import { createCacophonyEngine } from './cacophony.js';
+import { get_shared_engine } from './engine.js';
 
 // Creates audio handles that share one audio engine.
 //
@@ -16,11 +16,7 @@ export function createAudio({ engine = null } = {}) {
 	async function getEngine() {
 		if (checked) return resolved;
 		checked = true;
-		if (typeof AudioContext === 'undefined' && typeof webkitAudioContext === 'undefined') {
-			resolved = null;
-			return null;
-		}
-		resolved = createCacophonyEngine();
+		resolved = get_shared_engine();
 		return resolved;
 	}
 
@@ -47,3 +43,7 @@ export function createAudio({ engine = null } = {}) {
 
 export { createSfx } from './sfx.js';
 export { createCacophonyEngine } from './cacophony.js';
+export { get_shared_engine, audio_available } from './engine.js';
+export { sound_pool, sound_pool_item, create_sound_pool, sound_pool_default_y_elevation, set_sound_pool_default_y_elevation } from './pool.js';
+export * from './coords.js';
+export * from './units.js';
