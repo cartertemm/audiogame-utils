@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Menu example</title>
+	<title>Audio menu example</title>
 	<!--
 		The audio module imports Cacophony by name. Bundlers resolve that from
 		node_modules, but these examples run without a build step, so the browser
@@ -27,8 +27,10 @@
 	</style>
 </head>
 <body>
-	<h1>Menu example</h1>
-	<p>Press start, then use the arrow keys. Up and down move, left and right change a value, enter chooses, escape leaves.</p>
+	<h1>Audio menu example</h1>
+	<p>Press start and music begins. Volume and Pan change it while it plays, so you hear the result as you move the slider. Loop restarts the track, because a sound takes its loop flag when playback begins.</p>
+	<p>Use the arrow keys. Up and down move, left and right change a value, enter chooses, escape leaves. Game options opens a second menu, and Back returns to this one. The music keeps playing through all of it.</p>
+	<p>On a touch screen, swipe left and right to move, up and down to change a value, double tap to choose, and tap with two fingers to leave.</p>
 	<button id="start" type="button">Start</button>
 	<div id="app"></div>
 	<div id="log"></div>
