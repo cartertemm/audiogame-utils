@@ -18,9 +18,13 @@ const STEP_VOLUME = -1;
 const SRC_VOLUME = 0;
 const STEP_COUNT = 5;
 
-const SRC_LABELS = {
-	'./sounds/truck.ogg': 'the truck',
-	'./sounds/menu/music.ogg': 'the stage',
+// The truck has to carry across the whole lot, so it keeps the gentle pool
+// default. The music belongs to the hall, so it rolls off much faster: from the
+// far end of the lot the stage is barely there, and it swells as you walk up to
+// it. Higher numbers fade quicker.
+const SRC_SETTINGS = {
+	'./sounds/truck.ogg': { label: 'the truck' },
+	'./sounds/menu/music.ogg': { label: 'the stage', rolloff: 0.5 },
 };
 
 const storage = createStorage('audiogame-utils-examples');
@@ -75,8 +79,10 @@ function play_sources() {
 		const y = (entry.miny + entry.maxy) / 2;
 		const side = (entry.maxx - entry.minx) / 2;
 		const depth = (entry.maxy - entry.miny) / 2;
-		pool.play_extended_2d(entry.file, player_x, player_y, x, y, facing, side, side, depth, depth, entry.loop, 0, 0.0, SRC_VOLUME, 100.0, true);
-		return { x, y, label: SRC_LABELS[entry.file] ?? entry.file };
+		const settings = SRC_SETTINGS[entry.file] ?? {};
+		const slot = pool.play_extended_2d(entry.file, player_x, player_y, x, y, facing, side, side, depth, depth, entry.loop, 0, 0.0, SRC_VOLUME, 100.0, true);
+		if (settings.rolloff !== undefined) pool.update_sound_positioning_values(slot, -1, settings.rolloff);
+		return { x, y, label: settings.label ?? entry.file };
 	});
 }
 
