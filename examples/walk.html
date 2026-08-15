@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>Truck yard - audiogame-utils</title>
+	<!--
+		The audio module imports Cacophony by name. Bundlers resolve that from
+		node_modules, but these examples run without a build step, so the browser
+		needs an import map. This one uses a CDN, so the demo needs a network
+		connection the first time you run it.
+	-->
+	<script type="importmap">
+		{
+			"imports": {
+				"cacophony": "https://esm.sh/cacophony@0.18.3"
+			}
+		}
+	</script>
+	<style>
+		body {
+			margin: 0;
+			padding: 1rem;
+			font-family: system-ui, sans-serif;
+		}
+	</style>
+</head>
+<body>
+	<h1>Truck yard</h1>
+	<p>A truck idles in the middle of a 20 by 20 yard. You start in the southwest corner facing north. Walk around it and the truck moves through the whole field, including behind you. Headphones make the effect much clearer, because the sound is placed with HRTF.</p>
+	<p>Press start, then use the arrows to walk, q and e to turn, space to hear your position, and escape to stop. The arrows move relative to where you face, so up walks forward and down walks backward. The truck has a range box around it, so it stops moving once you are standing at it.</p>
+	<button type="button" id="start">Start</button>
+	<div id="game"></div>
+	<script type="module" src="./walk.js"></script>
+</body>
+</html>
