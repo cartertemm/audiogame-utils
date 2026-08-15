@@ -271,3 +271,54 @@ describe('createMap: serialize', () => {
 		});
 	});
 });
+
+// These budgets are deliberately loose. They exist so a future regression is
+// loud, not to pin down a number on any particular machine.
+describe('createMap: performance', () => {
+	test('loads 200k entries and answers 1000 point queries', async () => {
+		const entries = [];
+		for (let i = 0; i < 200000; i++) {
+			const x = (i * 37) % 100000;
+			const y = (i * 71) % 100000;
+			entries.push({ type: 'zone', minx: x, maxx: x + 3, miny: y, maxy: y + 3, minz: 0, maxz: 0, name: `z${i % 50}` });
+		}
+		const map = createMap();
+
+		const load_start = performance.now();
+		await map.loadMap({ data: { name: 'big', maxx: 100010, maxy: 100010, maxz: 0, entries } });
+		const load_ms = performance.now() - load_start;
+
+		const query_start = performance.now();
+		let hits = 0;
+		for (let i = 0; i < 1000; i++) {
+			hits += map.getDataAt('zone', (i * 97) % 100000, (i * 97) % 100000, (i * 13) % 100000, (i * 13) % 100000, 0, 0).length;
+		}
+		const query_ms = performance.now() - query_start;
+
+		console.log(`load 200k: ${load_ms.toFixed(0)}ms, 1000 queries: ${query_ms.toFixed(1)}ms, hits ${hits}`);
+		expect(load_ms).toBeLessThan(10000);
+		expect(query_ms).toBeLessThan(1000);
+		expect(map.store.boundsBytes()).toBeLessThan(6 * 1024 * 1024);
+	}, 60000);
+
+	test('measures the cost of z filtering on 500 stacked levels', async () => {
+		const entries = [];
+		for (let level = 0; level < 500; level++) {
+			entries.push({
+				type: 'zone',
+				minx: 0, maxx: 20, miny: 0, maxy: 20,
+				minz: level * 10, maxz: level * 10 + 9,
+				name: `level${level}`,
+			});
+		}
+		const map = createMap();
+		await map.loadMap({ data: { name: 'tower', maxx: 100, maxy: 100, maxz: 5000, entries } });
+
+		const start = performance.now();
+		for (let i = 0; i < 1000; i++) map.getOneAt('zone', 10, 10, (i % 500) * 10);
+		const total_ms = performance.now() - start;
+
+		console.log(`500 stacked levels: ${(total_ms * 1000 / 1000).toFixed(1)}us per point query`);
+		expect(total_ms).toBeLessThan(2000);
+	}, 60000);
+});
