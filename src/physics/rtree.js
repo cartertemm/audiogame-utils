@@ -1,7 +1,3 @@
-// A static R-tree, bulk built once by sort-tile-recursive packing and never
-// mutated. Nodes live in flat Int32Arrays, so a tree over 200k boxes is a
-// couple of allocations rather than 200k objects.
-
 const DEFAULT_NODE_SIZE = 16;
 
 export function createRTree(bounds, count, node_size = DEFAULT_NODE_SIZE) {
