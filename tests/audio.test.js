@@ -2,6 +2,17 @@ import { describe, test, expect, vi } from 'vitest';
 import { createAudio } from '../src/audio/index.js';
 import { createCacophonyEngine } from '../src/audio/cacophony.js';
 
+// Records what the engine passes to `new Cacophony()` so the fallback cache is
+// visible to the tests. The real library needs an audio context to construct.
+const constructorArgs = vi.hoisted(() => []);
+vi.mock('cacophony', () => ({
+	Cacophony: class {
+		constructor(...args) {
+			constructorArgs.push(args);
+		}
+	},
+}));
+
 function makeFakePlayback() {
 	return {
 		playCalls: 0,
@@ -118,6 +129,62 @@ describe('cacophony engine', () => {
 
 	test('play tolerates a null handle', () => {
 		expect(createCacophonyEngine().play(null)).toBe(null);
+	});
+
+	test('ready supplies a fallback cache when the Cache API is missing', async () => {
+		expect(typeof caches).toBe('undefined');
+		constructorArgs.length = 0;
+		await createCacophonyEngine().ready();
+		expect(constructorArgs[0][1]).toBeTruthy();
+	});
+});
+
+describe('memory cache', () => {
+	function makeContext() {
+		return {
+			decodeCalls: 0,
+			decodeAudioData(bytes) {
+				this.decodeCalls++;
+				return Promise.resolve({ bytes });
+			},
+		};
+	}
+
+	async function getCache() {
+		constructorArgs.length = 0;
+		await createCacophonyEngine().ready();
+		return constructorArgs[0][1];
+	}
+
+	test('fetches, decodes, and reuses the buffer per url', async () => {
+		const cache = await getCache();
+		const context = makeContext();
+		globalThis.fetch = vi.fn(async () => ({ ok: true, arrayBuffer: async () => 'raw' }));
+		const first = await cache.getAudioBuffer(context, './a.ogg');
+		const second = await cache.getAudioBuffer(context, './a.ogg');
+		expect(first).toBe(second);
+		expect(context.decodeCalls).toBe(1);
+		expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+	});
+
+	test('reports a failed request and does not cache it', async () => {
+		const cache = await getCache();
+		const context = makeContext();
+		globalThis.fetch = vi.fn(async () => ({ ok: false, status: 404 }));
+		await expect(cache.getAudioBuffer(context, './missing.ogg')).rejects.toThrow('404');
+		globalThis.fetch = vi.fn(async () => ({ ok: true, arrayBuffer: async () => 'raw' }));
+		await cache.getAudioBuffer(context, './missing.ogg');
+		expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+	});
+
+	test('clearMemoryCache drops the buffers', async () => {
+		const cache = await getCache();
+		const context = makeContext();
+		globalThis.fetch = vi.fn(async () => ({ ok: true, arrayBuffer: async () => 'raw' }));
+		await cache.getAudioBuffer(context, './a.ogg');
+		cache.clearMemoryCache();
+		await cache.getAudioBuffer(context, './a.ogg');
+		expect(context.decodeCalls).toBe(2);
 	});
 });
 

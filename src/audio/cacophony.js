@@ -1,3 +1,32 @@
+// Cacophony caches decoded audio in the Cache API, which only exists in a secure
+// context. A page served over plain http from a LAN address is not one, so the
+// default cache throws `caches is not defined` before a single sound decodes.
+// This stands in for it: same two methods, memory only, so the sounds reload on
+// the next visit instead of failing on this one.
+function createMemoryCache() {
+	const buffers = new Map();
+	return {
+		getAudioBuffer(context, url, signal) {
+			if (!buffers.has(url)) {
+				const pending = (async () => {
+					const response = await fetch(url, { signal });
+					if (!response.ok) throw new Error(`could not fetch ${url}, server said ${response.status}`);
+					return context.decodeAudioData(await response.arrayBuffer());
+				})();
+				buffers.set(url, pending.catch(err => {
+					buffers.delete(url);
+					throw err;
+				}));
+			}
+			return buffers.get(url);
+		},
+
+		clearMemoryCache() {
+			buffers.clear();
+		},
+	};
+}
+
 export function createCacophonyEngine() {
 	let cacophony = null;
 	let initPromise = null;
@@ -7,7 +36,9 @@ export function createCacophonyEngine() {
 		if (!initPromise) {
 			initPromise = (async () => {
 				const { Cacophony } = await import('cacophony');
-				cacophony = new Cacophony();
+				cacophony = typeof caches === 'undefined'
+					? new Cacophony(undefined, createMemoryCache())
+					: new Cacophony();
 				return cacophony;
 			})();
 		}
