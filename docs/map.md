@@ -95,7 +95,7 @@ map.setDataAt({
 })
 ```
 
-It throws if the entry is missing a required field, has a bound outside the map, or (for a type with overlap rejected) collides with an existing entry.
+It throws if the entry is missing a required field, or (for a type with overlap rejected) collides with an existing entry. It also throws if a bound falls outside the map, but only once a header exists (that is, after the first `loadMap`). Building a map entirely through `setDataAt`, before any `loadMap`, is legitimate, and in that case bounds are not checked because there is no map size yet to check them against.
 
 `removeDataAt(type, minx, maxx, miny, maxy, minz, maxz)` removes every entry of `type` that overlaps the given box:
 
@@ -130,7 +130,7 @@ const saved = map.serialize()
 
 The result can be handed straight to `loadMap({ data: saved })` on a fresh `createMap()` instance. `serialize` throws if no map has been loaded yet, because there is no header to write.
 
-`clear()` empties the map and drops the header, returning it to the state right after `createMap()`.
+`clear()` empties the map and drops the header. Types registered with `registerType`, including the three built-ins, stay registered across `clear()`. This is not the exact state right after `createMap()`, but it is the more useful behavior: it lets an application clear a map for a level change without having to re-register its custom types.
 
 `header()` returns `{ name, maxx, maxy, maxz }`, or `null` if no map has been loaded.
 
@@ -141,3 +141,9 @@ The spatial index for each type builds lazily, on the first query after a change
 Bounds are inclusive integers: `[0, 10]` and `[10, 20]` overlap at 10.
 
 The x and y bounds are indexed; z is filtered afterward by scanning the x/y matches. Cost grows with how much content stacks on a single x/y footprint, not with the size of the map overall. Measured on a 200,000 entry map: parsing and inserting the entries takes about 74 milliseconds, and the first query after that, which forces the index build, takes about 41 milliseconds on its own. After the index is built, steady state point queries are fast: about 0.9 microseconds each for queries that miss, and about 0.8 microseconds each for queries that hit. Measured on a map with 500 entries stacked on one footprint, a point query through that stack takes about 11 microseconds once the index is built.
+
+Loading a second batch into an already-loaded map only checks the newly added entries for overlap against the existing map; it does not re-check entries proven non-overlapping by an earlier load. This keeps loading a map in pieces close to linear in the size of each piece, rather than quadratic in the total.
+
+`removeDataAt` marks rows removed but does not reclaim their storage: the underlying arrays and each type's id list keep growing with every entry ever added, live or not, until the map is cleared. An editing loop that removes and re-adds entries repeatedly will grow memory over time rather than holding steady. The design expects edits after a load to be occasional, not a steady-state workload, so this is a known tradeoff rather than a bug.
+
+`memoryBytes()` reports an approximation of the map's memory use, not a precise figure. It counts only the fixed-size bounds storage (the six inclusive integers per entry ever added, live or removed), at 4 bytes each. It does not count each type's payload arrays, the shared value table, the R-tree structures built for indexed types, or the extra capacity left over when an underlying array doubles in size and is not yet full. Treat it as a lower bound, useful for spotting growth trends, not as an exact byte count.
