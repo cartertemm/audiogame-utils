@@ -63,8 +63,6 @@ const TYPES = {
 			return clamp(Number(next), item.min, item.max);
 		},
 
-		// The DOM already holds the new value when a drag causes the change, so
-		// this is a no-op in that case and a real write in every other.
 		sync(item) {
 			item._control.value = String(item._value);
 			if (!item.format) return;
@@ -116,8 +114,12 @@ const TYPES = {
 			return item._value ? 'checked' : 'unchecked';
 		},
 
-		adjust(item) {
+		toggle(item) {
 			return item._set(!item._value);
+		},
+
+		adjust(item) {
+			return TYPES.checkbox.toggle(item);
 		},
 	},
 };
@@ -188,7 +190,7 @@ export class MenuItem {
 	}
 
 	toggle() {
-		return this.type === 'checkbox' ? this._set(!this._value) : false;
+		return this._spec.toggle ? this._spec.toggle(this) : false;
 	}
 
 	adjust(direction) {
