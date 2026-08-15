@@ -19,6 +19,7 @@
 		"./platform": "./src/platform.js",
 		"./events": "./src/events.js",
 		"./ui": "./src/ui.js",
+		"./focus": "./src/focus.js",
 		"./rotation": "./src/rotation.js"
 	},
 	"scripts": {
