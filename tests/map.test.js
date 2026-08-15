@@ -1,0 +1,273 @@
+import { describe, test, expect, vi, afterEach } from 'vitest';
+import { createMap } from '../src/map/index.js';
+
+const city = {
+	name: 'city',
+	maxx: 1000,
+	maxy: 1000,
+	maxz: 10,
+	entries: [
+		{ type: 'tile', minx: 0, maxx: 99, miny: 0, maxy: 99, minz: 0, maxz: 0, tile: 'grass' },
+		{ type: 'zone', minx: 0, maxx: 50, miny: 0, maxy: 50, minz: 0, maxz: 0, name: 'west' },
+		{ type: 'zone', minx: 10, maxx: 20, miny: 10, maxy: 20, minz: 0, maxz: 0, name: 'shop' },
+		{ type: 'src', minx: 5, maxx: 5, miny: 5, maxy: 5, minz: 0, maxz: 0, file: 'truck.ogg', loop: true },
+	],
+};
+
+async function loaded() {
+	const map = createMap();
+	await map.loadMap({ data: city });
+	return map;
+}
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
+describe('createMap: loading', () => {
+	test('loads from an object', async () => {
+		const map = await loaded();
+		expect(map.getDataAt('tile', 5, 5, 5, 5, 0, 0)).toHaveLength(1);
+	});
+
+	test('loads from a JSON string', async () => {
+		const map = createMap();
+		await map.loadMap({ data: JSON.stringify(city) });
+		expect(map.getOneAt('tile', 5, 5, 0).tile).toBe('grass');
+	});
+
+	test('loads from a function', async () => {
+		const map = createMap();
+		await map.loadMap({ from: () => city });
+		expect(map.getOneAt('tile', 5, 5, 0).tile).toBe('grass');
+	});
+
+	test('loads from a url', async () => {
+		vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => JSON.stringify(city) })));
+		const map = createMap();
+		await map.loadMap({ url: 'city.json' });
+		expect(map.getOneAt('tile', 5, 5, 0).tile).toBe('grass');
+	});
+
+	test('a failed fetch rejects with the url', async () => {
+		vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404 })));
+		const map = createMap();
+		await expect(map.loadMap({ url: 'missing.json' })).rejects.toThrow(/missing\.json/);
+	});
+
+	test('rejects zero or several sources', async () => {
+		const map = createMap();
+		await expect(map.loadMap({})).rejects.toThrow(/exactly one/);
+		await expect(map.loadMap({ data: city, from: () => city })).rejects.toThrow(/exactly one/);
+	});
+
+	test('a second load merges and widens the header', async () => {
+		const map = await loaded();
+		await map.loadMap({
+			data: {
+				name: 'suburb',
+				maxx: 5000,
+				maxy: 1000,
+				maxz: 10,
+				entries: [{ type: 'zone', minx: 200, maxx: 210, miny: 0, maxy: 10, minz: 0, maxz: 0, name: 'park' }],
+			},
+		});
+		expect(map.getOneAt('zone', 205, 5, 0).name).toBe('park');
+		expect(map.header()).toEqual({ name: 'city', maxx: 5000, maxy: 1000, maxz: 10 });
+	});
+
+	test('clear empties the map', async () => {
+		const map = await loaded();
+		map.clear();
+		expect(map.getDataAt('tile', 5, 5, 5, 5, 0, 0)).toEqual([]);
+	});
+});
+
+describe('createMap: reading', () => {
+	test('getDataAt returns overlapping entries in insertion order', async () => {
+		const map = await loaded();
+		const names = map.getDataAt('zone', 15, 15, 15, 15, 0, 0).map((e) => e.name);
+		expect(names).toEqual(['west', 'shop']);
+	});
+
+	test('getOneAt returns the last match', async () => {
+		const map = await loaded();
+		expect(map.getOneAt('zone', 15, 15, 0).name).toBe('shop');
+	});
+
+	test('getOneAt returns undefined when nothing is there', async () => {
+		const map = await loaded();
+		expect(map.getOneAt('zone', 900, 900, 0)).toBeUndefined();
+	});
+
+	test('an empty region returns an empty array', async () => {
+		const map = await loaded();
+		expect(map.getDataAt('tile', 900, 910, 900, 910, 0, 0)).toEqual([]);
+	});
+
+	test('a range query returns everything it touches', async () => {
+		const map = await loaded();
+		expect(map.getDataAt('zone', 0, 100, 0, 100, 0, 0)).toHaveLength(2);
+	});
+
+	test('getDataAt on an unknown type throws', async () => {
+		const map = await loaded();
+		expect(() => map.getDataAt('nope', 0, 0, 0, 0, 0, 0)).toThrow(/unknown type/);
+	});
+});
+
+describe('createMap: writing', () => {
+	test('setDataAt adds an entry that queries find', async () => {
+		const map = await loaded();
+		map.setDataAt({ type: 'zone', minx: 300, maxx: 310, miny: 0, maxy: 10, minz: 0, maxz: 0, name: 'dock' });
+		expect(map.getOneAt('zone', 305, 5, 0).name).toBe('dock');
+	});
+
+	test('setDataAt on an allow type stacks and sorts last', async () => {
+		const map = await loaded();
+		map.setDataAt({ type: 'zone', minx: 0, maxx: 50, miny: 0, maxy: 50, minz: 0, maxz: 0, name: 'later' });
+		expect(map.getOneAt('zone', 5, 5, 0).name).toBe('later');
+	});
+
+	test('setDataAt on an error type rejects an overlap', async () => {
+		const map = await loaded();
+		expect(() =>
+			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' }),
+		).toThrow(/does not allow overlap/);
+	});
+
+	test('setDataAt on an error type accepts a free cell', async () => {
+		const map = await loaded();
+		map.setDataAt({ type: 'tile', minx: 200, maxx: 209, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' });
+		expect(map.getOneAt('tile', 205, 5, 0).tile).toBe('road');
+	});
+
+	test('removeDataAt drops every overlapping entry of that type', async () => {
+		const map = await loaded();
+		map.removeDataAt('zone', 0, 100, 0, 100, 0, 0);
+		expect(map.getDataAt('zone', 0, 100, 0, 100, 0, 0)).toEqual([]);
+		expect(map.getDataAt('tile', 5, 5, 5, 5, 0, 0)).toHaveLength(1);
+	});
+
+	test('removeDataAt frees a cell on an error type', async () => {
+		const map = await loaded();
+		map.removeDataAt('tile', 0, 99, 0, 99, 0, 0);
+		expect(() =>
+			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' }),
+		).not.toThrow();
+	});
+});
+
+describe('createMap: types and validation', () => {
+	test('a custom type loads and queries like a built-in', async () => {
+		const map = createMap();
+		map.registerType('spawn', { fields: ['item', 'count'] });
+		await map.loadMap({
+			data: {
+				name: 'a', maxx: 100, maxy: 100, maxz: 0,
+				entries: [{ type: 'spawn', minx: 1, maxx: 1, miny: 1, maxy: 1, minz: 0, maxz: 0, item: 'ammo', count: 5 }],
+			},
+		});
+		expect(map.getOneAt('spawn', 1, 1, 0)).toMatchObject({ item: 'ammo', count: 5 });
+	});
+
+	test('registering an existing type throws', () => {
+		const map = createMap();
+		expect(() => map.registerType('tile', { fields: [] })).toThrow(/already registered/);
+	});
+
+	test('an unregistered type in a file throws', async () => {
+		const map = createMap();
+		await expect(
+			map.loadMap({
+				data: { name: 'a', maxx: 10, maxy: 10, maxz: 0, entries: [{ type: 'ghost', minx: 0, maxx: 0, miny: 0, maxy: 0, minz: 0, maxz: 0 }] },
+			}),
+		).rejects.toThrow(/unknown type "ghost"/);
+	});
+
+	test('a missing field throws, naming field and entry index', async () => {
+		const map = createMap();
+		await expect(
+			map.loadMap({
+				data: { name: 'a', maxx: 10, maxy: 10, maxz: 0, entries: [{ type: 'zone', minx: 0, maxx: 0, miny: 0, maxy: 0, minz: 0, maxz: 0 }] },
+			}),
+		).rejects.toThrow(/"name".*entry 0/);
+	});
+
+	test('min above max throws', async () => {
+		const map = createMap();
+		await expect(
+			map.loadMap({
+				data: { name: 'a', maxx: 10, maxy: 10, maxz: 0, entries: [{ type: 'zone', minx: 5, maxx: 1, miny: 0, maxy: 0, minz: 0, maxz: 0, name: 'x' }] },
+			}),
+		).rejects.toThrow(/minx 5 above maxx 1/);
+	});
+
+	test('bounds outside the declared map size throw', async () => {
+		const map = createMap();
+		await expect(
+			map.loadMap({
+				data: { name: 'a', maxx: 10, maxy: 10, maxz: 0, entries: [{ type: 'zone', minx: 0, maxx: 50, miny: 0, maxy: 0, minz: 0, maxz: 0, name: 'x' }] },
+			}),
+		).rejects.toThrow(/outside the map/);
+	});
+
+	test('overlapping tiles in a file throw at load time', async () => {
+		const map = createMap();
+		await expect(
+			map.loadMap({
+				data: {
+					name: 'a', maxx: 100, maxy: 100, maxz: 0,
+					entries: [
+						{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'grass' },
+						{ type: 'tile', minx: 10, maxx: 20, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'road' },
+					],
+				},
+			}),
+		).rejects.toThrow(/does not allow overlap/);
+	});
+
+	test('stacked tiles on different z levels load fine', async () => {
+		const map = createMap();
+		await map.loadMap({
+			data: {
+				name: 'tower', maxx: 100, maxy: 100, maxz: 100,
+				entries: [
+					{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 9, tile: 'floor1' },
+					{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 10, maxz: 19, tile: 'floor2' },
+				],
+			},
+		});
+		expect(map.getOneAt('tile', 5, 5, 15).tile).toBe('floor2');
+	});
+});
+
+describe('createMap: serialize', () => {
+	test('round trips to an equal map', async () => {
+		const map = await loaded();
+		const out = map.serialize();
+		const again = createMap();
+		await again.loadMap({ data: out });
+		expect(again.serialize()).toEqual(out);
+	});
+
+	test('drops removed entries', async () => {
+		const map = await loaded();
+		map.removeDataAt('src', 0, 1000, 0, 1000, 0, 0);
+		expect(map.serialize().entries.some((e) => e.type === 'src')).toBe(false);
+	});
+
+	test('round trips a custom type', async () => {
+		const map = createMap();
+		map.registerType('spawn', { fields: ['item', 'count'] });
+		await map.loadMap({
+			data: {
+				name: 'a', maxx: 100, maxy: 100, maxz: 0,
+				entries: [{ type: 'spawn', minx: 1, maxx: 1, miny: 1, maxy: 1, minz: 0, maxz: 0, item: 'ammo', count: 5 }],
+			},
+		});
+		expect(map.serialize().entries[0]).toEqual({
+			type: 'spawn', minx: 1, maxx: 1, miny: 1, maxy: 1, minz: 0, maxz: 0, item: 'ammo', count: 5,
+		});
+	});
+});
