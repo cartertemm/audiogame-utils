@@ -245,3 +245,176 @@ describe('MenuItem: shared behavior', () => {
 		expect(second.index).toBe(1);
 	});
 });
+
+import { createMenu } from '../src/ui/menu.js';
+
+// Records what the menu spoke, and with what interrupt flag.
+function fakeSpeech() {
+	const spoken = [];
+	return {
+		spoken,
+		speak(text, interrupt = false) {
+			spoken.push({ text, interrupt });
+		},
+		last() {
+			return spoken.length ? spoken[spoken.length - 1].text : null;
+		},
+	};
+}
+
+function root() {
+	const node = document.createElement('div');
+	document.body.appendChild(node);
+	return node;
+}
+
+function setup(options = {}) {
+	const speech = fakeSpeech();
+	const audio = fakeAudio();
+	const menu = createMenu({ root: root(), speech, audio, ...options });
+	return { menu, speech, audio };
+}
+
+describe('createMenu: construction', () => {
+	test('requires a root and a speech instance', () => {
+		expect(() => createMenu({ speech: fakeSpeech() })).toThrow(/root/);
+		expect(() => createMenu({ root: root() })).toThrow(/speech/);
+	});
+
+	test('runs without an audio instance', () => {
+		const menu = createMenu({ root: root(), speech: fakeSpeech() });
+		menu.addTextItem('Start');
+		expect(menu.items.length).toBe(1);
+	});
+});
+
+describe('createMenu: items', () => {
+	test('each builder returns its item and appends by default', () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		const volume = menu.addSlider('Volume', 0, 100, 50);
+		const sound = menu.addCheckbox('Sound', true);
+		expect(menu.items).toEqual([start, volume, sound]);
+		expect(volume.value).toBe(50);
+		expect(sound.value).toBe(true);
+	});
+
+	test('position inserts at that index', () => {
+		const { menu } = setup();
+		menu.addTextItem('One');
+		menu.addTextItem('Three');
+		const two = menu.addTextItem('Two', { position: 1 });
+		expect(menu.items[1]).toBe(two);
+	});
+
+	test('addItem rejects an unknown type and a duplicate id', () => {
+		const { menu } = setup();
+		menu.addTextItem('Start', { id: 'start' });
+		expect(() => menu.addItem('nosuchtype', 'x')).toThrow(/unknown menu item type/);
+		expect(() => menu.addTextItem('Again', { id: 'start' })).toThrow(/duplicate/);
+	});
+
+	test('item and value look up by id', () => {
+		const { menu } = setup();
+		const volume = menu.addSlider('Volume', 0, 100, 50, { id: 'volume' });
+		expect(menu.item('volume')).toBe(volume);
+		expect(menu.item('nope')).toBe(null);
+		expect(menu.value('volume')).toBe(50);
+	});
+
+	test('values reports every identified value item', () => {
+		const { menu } = setup();
+		menu.addTextItem('Start', { id: 'start' });
+		menu.addSlider('Volume', 0, 100, 50, { id: 'volume' });
+		menu.addCheckbox('Sound', true, { id: 'sound' });
+		menu.addCheckbox('Unnamed', false);
+		expect(menu.values).toEqual({ volume: 50, sound: true });
+	});
+
+	test('deleteItem with resetCursor true moves the cursor to the first item', () => {
+		const { menu } = setup();
+		menu.addTextItem('One');
+		menu.addTextItem('Two');
+		menu.addTextItem('Three');
+		menu.focusedIndex = 2;
+		expect(menu.deleteItem(1)).toBe(true);
+		expect(menu.items.length).toBe(2);
+		expect(menu.focusedIndex).toBe(0);
+	});
+
+	test('deleteItem with resetCursor false keeps the cursor on the same item', () => {
+		const { menu } = setup();
+		menu.addTextItem('One');
+		menu.addTextItem('Two');
+		const three = menu.addTextItem('Three');
+		menu.focusedIndex = 2;
+		menu.deleteItem(0, false);
+		expect(menu.focusedItem).toBe(three);
+	});
+
+	test('deleteItem clamps the cursor when the tail goes away', () => {
+		const { menu } = setup();
+		menu.addTextItem('One');
+		menu.addTextItem('Two');
+		menu.focusedIndex = 1;
+		menu.deleteItem(1, false);
+		expect(menu.focusedIndex).toBe(0);
+	});
+
+	test('deleteItem on a missing index returns false', () => {
+		const { menu } = setup();
+		expect(menu.deleteItem(3)).toBe(false);
+	});
+
+	test('deleteAllItems empties the menu and unsets the cursor', () => {
+		const { menu } = setup();
+		menu.addTextItem('One');
+		menu.addTextItem('Two');
+		menu.deleteAllItems();
+		expect(menu.items).toEqual([]);
+		expect(menu.focusedIndex).toBe(-1);
+		expect(menu.focusedItem).toBe(null);
+	});
+});
+
+describe('createMenu: cursor assignment', () => {
+	test('focusedItem accepts an item, an index, and an id', () => {
+		const { menu, speech } = setup();
+		const start = menu.addTextItem('Start');
+		const quit = menu.addTextItem('Quit', { id: 'quit' });
+		menu.focusedItem = start;
+		expect(menu.focusedIndex).toBe(0);
+		menu.focusedItem = 1;
+		expect(menu.focusedItem).toBe(quit);
+		menu.focusedItem = 'quit';
+		expect(menu.focusedItem).toBe(quit);
+		expect(speech.spoken.length).toBeGreaterThan(0);
+		expect(speech.last()).toBe('Quit');
+	});
+
+	test('an unknown target unsets the cursor', () => {
+		const { menu } = setup();
+		menu.addTextItem('Start');
+		menu.focusedItem = 'nope';
+		expect(menu.focusedIndex).toBe(-1);
+	});
+
+	test('the focused item carries the focused class', () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		const quit = menu.addTextItem('Quit');
+		menu.focusedItem = start;
+		expect(start.node.classList.contains('focused')).toBe(true);
+		menu.focusedItem = quit;
+		expect(start.node.classList.contains('focused')).toBe(false);
+		expect(quit.node.classList.contains('focused')).toBe(true);
+	});
+
+	test('a label change keeps the focused class on the new node', () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		menu.focusedItem = start;
+		start.label = 'Resume';
+		expect(start.node.classList.contains('focused')).toBe(true);
+	});
+});
