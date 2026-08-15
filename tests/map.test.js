@@ -490,9 +490,9 @@ describe('createMap: performance', () => {
 		console.log(`loading one more "tile" entry into a 50k tile map: ${total_ms.toFixed(2)}ms`);
 		// Re-checking all 50001 entries against the tree (the pre-fix full-bucket
 		// check) measures at roughly 14ms on this machine; the fixed cost measures
-		// well under 1ms. 5ms sits above the fixed cost with headroom and below the
-		// unfixed one, so it fails loudly on a regression without flaking on a
+		// well under 1ms. 2ms sits above the fixed cost with headroom and well below
+		// the unfixed one, so it fails loudly on a regression without flaking on a
 		// slower machine.
-		expect(total_ms).toBeLessThan(5);
+		expect(total_ms).toBeLessThan(2);
 	}, 30000);
 });
