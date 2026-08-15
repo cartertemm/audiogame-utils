@@ -558,14 +558,21 @@ describe('fields: createFields', () => {
 		expect(storage.get('name')).toBe('Nomad');
 	});
 
-	test('calls onChange with the key, value, label, and display after the write', () => {
+	test('calls onChange with one object describing the change, after the write', () => {
 		const storage = memoryStorage();
-		const onChange = vi.fn((key) => expect(storage.get(key)).toBe(0.4));
+		const onChange = vi.fn(({ key }) => expect(storage.get(key)).toBe(0.4));
 		const f = createFields({ storage, defaults: { masterVolume: 1 }, onChange });
 		const input = f.percentRange('masterVolume', 'Master volume').querySelector('input');
 		input.value = '0.4';
 		input.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenCalledWith('masterVolume', 0.4, 'Master volume', '40 percent', 'Master volume 40 percent');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'masterVolume',
+			value: 0.4,
+			label: 'Master volume',
+			display: '40 percent',
+			type: 'percentRange',
+			message: 'Master volume 40 percent',
+		});
 	});
 
 	test('a checkbox announces on and off', () => {
@@ -574,10 +581,24 @@ describe('fields: createFields', () => {
 		const input = f.checkbox('footsteps', 'Footstep sounds').querySelector('input');
 		input.checked = false;
 		input.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenCalledWith('footsteps', false, 'Footstep sounds', 'off', 'Footstep sounds off');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'footsteps',
+			value: false,
+			label: 'Footstep sounds',
+			display: 'off',
+			type: 'checkbox',
+			message: 'Footstep sounds off',
+		});
 		input.checked = true;
 		input.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenLastCalledWith('footsteps', true, 'Footstep sounds', 'on', 'Footstep sounds on');
+		expect(onChange).toHaveBeenLastCalledWith({
+			key: 'footsteps',
+			value: true,
+			label: 'Footstep sounds',
+			display: 'on',
+			type: 'checkbox',
+			message: 'Footstep sounds on',
+		});
 	});
 
 	test('a select announces the choice label, not its value', () => {
@@ -588,7 +609,14 @@ describe('fields: createFields', () => {
 		}).querySelector('select');
 		select.value = 'eu';
 		select.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenCalledWith('region', 'eu', 'Server region', 'Europe', 'Server region Europe');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'region',
+			value: 'eu',
+			label: 'Server region',
+			display: 'Europe',
+			type: 'select',
+			message: 'Server region Europe',
+		});
 	});
 
 	test('a checkbox group announces only what toggled', () => {
@@ -598,11 +626,25 @@ describe('fields: createFields', () => {
 		const ammo = node.querySelector('input[value="ammo"]');
 		ammo.checked = true;
 		ammo.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenCalledWith('announcements', ['health', 'ammo'], 'Speak these events', 'Ammunition on', 'Ammunition on');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'announcements',
+			value: ['health', 'ammo'],
+			label: 'Speak these events',
+			display: 'Ammunition on',
+			type: 'checkboxGroup',
+			message: 'Ammunition on',
+		});
 		const health = node.querySelector('input[value="health"]');
 		health.checked = false;
 		health.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenLastCalledWith('announcements', ['ammo'], 'Speak these events', 'Health changes off', 'Health changes off');
+		expect(onChange).toHaveBeenLastCalledWith({
+			key: 'announcements',
+			value: ['ammo'],
+			label: 'Speak these events',
+			display: 'Health changes off',
+			type: 'checkboxGroup',
+			message: 'Health changes off',
+		});
 	});
 
 	test('a key field announces the humanized key', () => {
@@ -613,7 +655,14 @@ describe('fields: createFields', () => {
 		node.querySelector('button').dispatchEvent(new Event('click'));
 		document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
 		node.remove();
-		expect(onChange).toHaveBeenCalledWith('fireKey', ' ', 'Fire', 'Space', 'Fire bound to Space');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'fireKey',
+			value: ' ',
+			label: 'Fire',
+			display: 'Space',
+			type: 'key',
+			message: 'Fire bound to Space',
+		});
 	});
 
 	test('a text area announces that it saved', () => {
@@ -622,7 +671,14 @@ describe('fields: createFields', () => {
 		const area = f.textArea('greeting', 'Greeting').querySelector('textarea');
 		area.value = 'Good hunting.';
 		area.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenCalledWith('greeting', 'Good hunting.', 'Greeting', 'saved', 'Greeting saved');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'greeting',
+			value: 'Good hunting.',
+			label: 'Greeting',
+			display: 'saved',
+			type: 'textArea',
+			message: 'Greeting saved',
+		});
 	});
 
 	test('display falls back to the value for a plain text field', () => {
@@ -631,7 +687,38 @@ describe('fields: createFields', () => {
 		const input = f.text('name', 'Player name').querySelector('input');
 		input.value = 'Nomad';
 		input.dispatchEvent(new Event('change'));
-		expect(onChange).toHaveBeenCalledWith('name', 'Nomad', 'Player name', 'Nomad', 'Player name Nomad');
+		expect(onChange).toHaveBeenCalledWith({
+			key: 'name',
+			value: 'Nomad',
+			label: 'Player name',
+			display: 'Nomad',
+			type: 'text',
+			message: 'Player name Nomad',
+		});
+	});
+
+	test('type lets a caller phrase announcements without the built-in message', () => {
+		const spoken = [];
+		const phrase = ({ type, label, display }) => {
+			if (type === 'key') return `Press ${display} for ${label}`;
+			if (type === 'checkboxGroup') return `${label}: ${display}`;
+			return `${label} ${display}`;
+		};
+		const f = createFields({
+			storage: memoryStorage(),
+			defaults: { fireKey: 'f', announcements: ['health'] },
+			onChange: (change) => spoken.push(phrase(change)),
+		});
+		const key = f.key('fireKey', 'Fire');
+		document.body.appendChild(key);
+		key.querySelector('button').dispatchEvent(new Event('click'));
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+		key.remove();
+		const group = f.checkboxGroup('announcements', 'Speak these events', { choices: ANNOUNCEMENTS });
+		const ammo = group.querySelector('input[value="ammo"]');
+		ammo.checked = true;
+		ammo.dispatchEvent(new Event('change'));
+		expect(spoken).toEqual(['Press Space for Fire', 'Speak these events: Ammunition on']);
 	});
 
 	test('derives a stable id from the key', () => {

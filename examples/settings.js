@@ -62,12 +62,15 @@ const REGIONS = [
 	{ value: 'ap', label: 'Asia Pacific' },
 ];
 
-// The library never speaks. Speaking every save is this screen's choice, so it
-// hangs off the one hook the factory provides.
+const SILENT = new Set(['range', 'percentRange', 'select']);
+
 const f = createFields({
 	storage,
 	defaults: DEFAULTS,
-	onChange: (key, value, label, display, message) => speech.speak(message, true),
+	onChange: ({ type, message }) => {
+		if (SILENT.has(type)) return;
+		speech.speak(message, true);
+	},
 });
 
 function section(title, ...contents) {
@@ -78,7 +81,6 @@ function settingsScreen(root) {
 	mount(root, [
 		el('h1', { text: 'Game settings' }),
 		el('p', { text: 'Every change saves immediately and is spoken back to you.' }),
-
 		section('Player profile',
 			f.text('name', 'Player name', { maxLength: 24, autoFocus: true }),
 			f.text('callsign', 'Callsign', { suggestions: CALLSIGNS }),
@@ -89,7 +91,6 @@ function settingsScreen(root) {
 				onClick: () => speech.speak(storage.get('greeting', DEFAULTS.greeting), true),
 			}),
 		),
-
 		section('Audio',
 			f.percentRange('masterVolume', 'Master volume'),
 			f.percentRange('musicVolume', 'Music volume'),
@@ -99,7 +100,6 @@ function settingsScreen(root) {
 				hint: 'Pushes distant sounds further left and right. Turn it off with mono headphones.',
 			}),
 		),
-
 		section('Gameplay',
 			f.select('difficulty', 'Difficulty', { choices: DIFFICULTIES }),
 			f.checkbox('permadeath', 'Permadeath', {
@@ -107,23 +107,19 @@ function settingsScreen(root) {
 			}),
 			f.checkbox('tutorialHints', 'Tutorial hints'),
 		),
-
 		section('Controls',
 			f.radioGroup('movement', 'Movement scheme', { choices: MOVEMENT_SCHEMES }),
 			f.number('turnStep', 'Turn step', { min: 5, max: 90, step: 5 }),
 			f.key('fireKey', 'Fire'),
 			f.key('menuKey', 'Menu'),
 		),
-
 		section('Announcements',
 			f.checkboxGroup('announcements', 'Speak these events', { choices: ANNOUNCEMENTS }),
 		),
-
 		section('Speech',
 			el('p', { text: 'Output mode, voice, rate, and pitch live on their own screen.' }),
 			el('button', { type: 'button', text: 'Open speech settings', onClick: showSpeechSettings }),
 		),
-
 		section('Advanced',
 			el('details', {},
 				el('summary', { text: 'Network and diagnostics' }),
@@ -132,7 +128,6 @@ function settingsScreen(root) {
 				f.checkbox('verboseLogging', 'Verbose logging'),
 			),
 		),
-
 		section('Data',
 			confirmButton('Reset everything to defaults', {
 				class: 'danger',

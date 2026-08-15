@@ -301,18 +301,34 @@ const plainMessage = (label, display) => `${label} ${display}`;
 const keyMessage = (label, display) => `${label} bound to ${display}`;
 const displayOnly = (label, display) => display;
 
+// The method name is also the `type` a change reports, so each builder is
+// listed once and the name is never written twice.
+const BUILDERS = {
+	text: [textField],
+	password: [passwordField],
+	textArea: [textAreaField],
+	number: [numberField],
+	range: [rangeField],
+	percentRange: [percentRangeField],
+	select: [selectField],
+	checkbox: [checkboxField],
+	radioGroup: [radioGroup],
+	checkboxGroup: [checkboxGroup, displayOnly],
+	key: [keyField, keyMessage],
+};
+
 // Sugar for the common case, where every field is one key in a storage
 // instance. `onChange` is the single seam for side effects, so the library
-// itself never needs to know about speech or anything else. It receives a
-// ready-to-announce `message` as well as the raw parts, so a caller that just
-// speaks every change needs no per-field phrasing of its own.
+// itself never needs to know about speech or anything else. It receives one
+// object: `type` and `display` are enough to phrase an announcement however the
+// caller likes, and `message` is a default for callers that do not care to.
 export function createFields({ storage, defaults = {}, onChange = null } = {}) {
 	if (!storage) throw new Error('createFields requires a storage instance');
-	const bind = (builder, message = plainMessage) => (key, label, options = {}) => {
+	const bind = (type, builder, message) => (key, label, options = {}) => {
 		const set = (value, display) => {
 			storage.set(key, value);
 			const text = display ?? String(value);
-			onChange?.(key, value, label, text, message(label, text));
+			onChange?.({ key, value, label, display: text, type, message: message(label, text) });
 		};
 		return builder(label, {
 			...options,
@@ -321,17 +337,7 @@ export function createFields({ storage, defaults = {}, onChange = null } = {}) {
 			set,
 		});
 	};
-	return {
-		text: bind(textField),
-		password: bind(passwordField),
-		textArea: bind(textAreaField),
-		number: bind(numberField),
-		range: bind(rangeField),
-		percentRange: bind(percentRangeField),
-		select: bind(selectField),
-		checkbox: bind(checkboxField),
-		radioGroup: bind(radioGroup),
-		checkboxGroup: bind(checkboxGroup, displayOnly),
-		key: bind(keyField, keyMessage),
-	};
+	return Object.fromEntries(Object.entries(BUILDERS).map(
+		([type, [builder, message = plainMessage]]) => [type, bind(type, builder, message)],
+	));
 }
