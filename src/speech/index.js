@@ -16,7 +16,7 @@ const VALID_MODES = new Set([MODE_ARIA, MODE_TTS, MODE_BOTH]);
 
 // Clear the live region after each announcement so repeating the same message
 // triggers another content change.
-const CLEAR_DELAY_MS = 100;
+const CLEAR_DELAY_MS = 10;
 
 const DEFAULT_PITCH = 1;
 const DEFAULT_RATE = 1;
