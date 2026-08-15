@@ -93,6 +93,7 @@ export function createMenu(options = {}) {
 		const id = itemOptions.id ?? null;
 		if (id !== null && itemById(id)) throw new Error(`duplicate menu item id: ${id}`);
 		const item = new MenuItem(api, type, label, itemOptions);
+		bindPointer(item);
 		const requested = itemOptions.position ?? -1;
 		const index = requested < 0 || requested > items.length ? items.length : requested;
 		items.splice(index, 0, item);
@@ -128,6 +129,28 @@ export function createMenu(options = {}) {
 			if (!item.disabled) usable.push(index);
 		});
 		return usable;
+	}
+
+	// Native listeners on the node rather than `createMouse`, because the node
+	// is already in the document and reports its own hits. `aria-hidden` blocks
+	// the screen reader, not the pointer, so these still fire.
+	function bindPointer(item) {
+		item.node.addEventListener('mouseenter', () => {
+			if (!running || item.disabled) return;
+			const index = items.indexOf(item);
+			if (index < 0 || index === focusedIndex) return;
+			sounds.play('click');
+			setFocus(index);
+		});
+		item.node.addEventListener('click', () => {
+			if (!running || item.disabled) return;
+			const index = items.indexOf(item);
+			if (index < 0) return;
+			// A checkbox already toggled through the field's own change handler,
+			// so activating it here would undo that.
+			if (index !== focusedIndex) setFocus(index);
+			if (item.type === 'text') activateFocused();
+		});
 	}
 
 	// A browser cannot block, so a wrap drops movement input for the delay
@@ -393,6 +416,7 @@ export function createMenu(options = {}) {
 		_rebuild(item) {
 			const wasFocused = focusedNode === item.node;
 			item.rebuild();
+			bindPointer(item);
 			if (!wasFocused) return;
 			focusedNode = item.node;
 			focusedNode.classList.add('focused');

@@ -866,3 +866,83 @@ describe('createMenu: keyboard', () => {
 		expect(context.menu.focusedIndex).toBe(-1);
 	});
 });
+
+describe('createMenu: pointer', () => {
+	function hover(node) {
+		node.dispatchEvent(new Event('mouseenter', { bubbles: true }));
+	}
+
+	test('hovering moves the cursor and plays the click sound', async () => {
+		const { menu, audio, speech } = setup({ clickSound: 'click', soundsSuffix: '.ogg' });
+		menu.addTextItem('Start');
+		const quit = menu.addTextItem('Quit');
+		const pending = menu.run();
+		hover(quit.node);
+		expect(menu.focusedItem).toBe(quit);
+		expect(speech.last()).toBe('Quit');
+		expect(audio.played).toContain('click.ogg');
+		menu.close();
+		await pending;
+	});
+
+	test('hovering the focused item does not re-announce', async () => {
+		const { menu, speech } = setup();
+		const start = menu.addTextItem('Start');
+		const pending = menu.run();
+		menu.focusedItem = start;
+		const before = speech.spoken.length;
+		hover(start.node);
+		expect(speech.spoken.length).toBe(before);
+		menu.close();
+		await pending;
+	});
+
+	test('clicking a text item resolves with it', async () => {
+		const { menu } = setup();
+		menu.addTextItem('Start');
+		const quit = menu.addTextItem('Quit');
+		const pending = menu.run();
+		quit.node.click();
+		expect(await pending).toBe(quit);
+		menu.close();
+	});
+
+	test('clicking a checkbox toggles once, not twice', async () => {
+		const { menu } = setup();
+		const sound = menu.addCheckbox('Sound', true);
+		const pending = menu.run();
+		sound.node.querySelector('input').click();
+		expect(sound.value).toBe(false);
+		menu.close();
+		await pending;
+	});
+
+	test('a hidden item ignores the pointer', async () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start', { disabled: true });
+		const pending = menu.run();
+		hover(start.node);
+		start.node.click();
+		expect(menu.focusedIndex).toBe(-1);
+		menu.close();
+		await pending;
+	});
+
+	test('the pointer does nothing before run', () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		hover(start.node);
+		expect(menu.focusedIndex).toBe(-1);
+	});
+
+	test('a rebuilt node keeps its pointer handlers', async () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		const pending = menu.run();
+		start.label = 'Resume';
+		hover(start.node);
+		expect(menu.focusedItem).toBe(start);
+		menu.close();
+		await pending;
+	});
+});
