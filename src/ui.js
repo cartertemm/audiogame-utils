@@ -195,16 +195,11 @@ export function renderSpeechSettings(root, options = {}) {
 }
 
 function slider(id, value, range, autoFocus, onCommit) {
-	const format = (n) => Number(n).toFixed(1);
 	return el('input', {
 		id, type: 'range',
 		min: range.min, max: range.max, step: range.step,
 		value: String(value),
-		'aria-valuetext': format(value),
 		autoFocus,
-		onInput: (event) => {
-			event.target.setAttribute('aria-valuetext', format(event.target.value));
-		},
 		onChange: (event) => onCommit(parseFloat(event.target.value)),
 	});
 }

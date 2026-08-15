@@ -173,15 +173,6 @@ describe('ui: renderSpeechSettings', () => {
 		expect(speech.speak).toHaveBeenCalledWith('This is a test of the selected voice.', true);
 	});
 
-	test('keeps aria-valuetext in step with the slider while dragging', () => {
-		const node = root();
-		renderSpeechSettings(node, { speech: fakeSpeech() });
-		const rate = node.querySelector('#speech-rate');
-		rate.value = '1.2';
-		rate.dispatchEvent(new Event('input'));
-		expect(rate.getAttribute('aria-valuetext')).toBe('1.2');
-	});
-
 	test('hides the voice controls in aria mode and shows them again in tts', () => {
 		const node = root();
 		const speech = fakeSpeech({ mode: MODE_ARIA });

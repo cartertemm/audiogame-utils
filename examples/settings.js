@@ -70,7 +70,7 @@ function get(key) {
 
 function save(key, value, announcement) {
 	storage.set(key, value);
-	speech.speak(announcement, true);
+	if (announcement) speech.speak(announcement, true);
 }
 
 // Space and Escape read better than their raw key values.
@@ -126,21 +126,19 @@ function numberField(key, label, { min, max, step = 1, format = String }) {
 	);
 }
 
-// The output element mirrors the slider for sighted players, and aria-valuetext
-// gives screen readers the same wording while dragging.
+// The readout mirrors the slider for sighted players. Screen readers get
+// nothing extra here, since they already announce the value on their own.
 function rangeField(key, label, { min, max, step, format }) {
 	const id = `field-${key}`;
-	const readout = el('output', { for: id, text: format(get(key)) });
+	const readout = el('span', { 'aria-hidden': 'true', text: format(get(key)) });
 	return field(id, label,
 		el('input', {
 			id, type: 'range', min, max, step,
 			value: String(get(key)),
-			'aria-valuetext': format(get(key)),
 			onInput: (event) => {
 				readout.textContent = format(event.target.value);
-				event.target.setAttribute('aria-valuetext', format(event.target.value));
 			},
-			onChange: (event) => save(key, Number(event.target.value), `${label} ${format(event.target.value)}`),
+			onChange: (event) => save(key, Number(event.target.value)),
 		}),
 		readout,
 	);
