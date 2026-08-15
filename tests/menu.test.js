@@ -577,3 +577,165 @@ describe('createMenu: movement', () => {
 		expect(speech.spoken.length).toBe(before);
 	});
 });
+
+describe('createMenu: run and close', () => {
+	test('run mounts a container, plays the open sound, and speaks the intro', async () => {
+		const rootNode = root();
+		const speech = fakeSpeech();
+		const audio = fakeAudio();
+		const menu = createMenu({
+			root: rootNode, speech, audio,
+			introText: 'Main menu', openSound: 'open', soundsSuffix: '.ogg',
+		});
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		expect(rootNode.querySelector('.menu')).not.toBe(null);
+		expect(rootNode.querySelector('.menu-items').getAttribute('aria-hidden')).toBe('true');
+		expect(audio.played).toEqual(['open.ogg']);
+		expect(speech.spoken[0].text).toBe('Main menu');
+		menu.close();
+		expect(await pending).toBe(null);
+	});
+
+	test('focusFirstItem speaks the intro and the first item as one utterance', async () => {
+		const { menu, speech } = setup({ introText: 'Main menu', focusFirstItem: true });
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		expect(speech.spoken[0].text).toBe('Main menu. Start');
+		expect(menu.focusedIndex).toBe(0);
+		menu.close();
+		await pending;
+	});
+
+	test('without focusFirstItem the cursor stays unset', async () => {
+		const { menu } = setup({ introText: 'Main menu' });
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		expect(menu.focusedIndex).toBe(-1);
+		menu.close();
+		await pending;
+	});
+
+	test('the container gets role application and an aria-label', async () => {
+		const rootNode = root();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech(), label: 'Main menu' });
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		const container = rootNode.querySelector('.menu');
+		expect(container.getAttribute('role')).toBe('application');
+		expect(container.getAttribute('aria-label')).toBe('Main menu');
+		menu.close();
+		await pending;
+	});
+
+	test('an existing application ancestor is reused and left alone', async () => {
+		const rootNode = root();
+		rootNode.setAttribute('role', 'application');
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		const container = rootNode.querySelector('.menu');
+		expect(container.getAttribute('role')).toBe(null);
+		menu.close();
+		await pending;
+		expect(rootNode.getAttribute('role')).toBe('application');
+	});
+
+	test('activating a text item resolves with that item and leaves the menu mounted', async () => {
+		const rootNode = root();
+		const audio = fakeAudio();
+		const menu = createMenu({
+			root: rootNode, speech: fakeSpeech(), audio,
+			selectSound: 'select', soundsSuffix: '.ogg',
+		});
+		const start = menu.addTextItem('Start');
+		const pending = menu.run();
+		menu.focusedItem = start;
+		menu._activateFocused();
+		expect(await pending).toBe(start);
+		expect(rootNode.querySelector('.menu')).not.toBe(null);
+		expect(audio.played).toContain('select.ogg');
+		menu.close();
+	});
+
+	test('a second run resumes without a second intro', async () => {
+		const { menu, speech } = setup({ introText: 'Main menu' });
+		const start = menu.addTextItem('Start');
+		const first = menu.run();
+		menu.focusedItem = start;
+		menu._activateFocused();
+		await first;
+		const introCount = speech.spoken.filter(entry => entry.text === 'Main menu').length;
+		const second = menu.run();
+		expect(speech.spoken.filter(entry => entry.text === 'Main menu').length).toBe(introCount);
+		menu.close();
+		await second;
+	});
+
+	test('close plays the close sound, removes the container, and resolves null', async () => {
+		const rootNode = root();
+		const audio = fakeAudio();
+		const menu = createMenu({
+			root: rootNode, speech: fakeSpeech(), audio,
+			closeSound: 'close', soundsSuffix: '.ogg',
+		});
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		menu.close();
+		expect(await pending).toBe(null);
+		expect(rootNode.querySelector('.menu')).toBe(null);
+		expect(audio.played).toEqual(['close.ogg']);
+	});
+
+	test('close leaves the rest of the root alone', async () => {
+		const rootNode = root();
+		rootNode.appendChild(document.createElement('h1'));
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		menu.close();
+		await pending;
+		expect(rootNode.querySelector('h1')).not.toBe(null);
+	});
+
+	test('close is idempotent', async () => {
+		const { menu } = setup();
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		menu.close();
+		await pending;
+		expect(() => menu.close()).not.toThrow();
+	});
+
+	test('reopening keeps the items and their values', async () => {
+		const { menu } = setup();
+		const volume = menu.addSlider('Volume', 0, 100, 50);
+		const first = menu.run();
+		volume.value = 80;
+		menu.close();
+		await first;
+		const second = menu.run();
+		expect(menu.items).toEqual([volume]);
+		expect(volume.value).toBe(80);
+		expect(volume.node.isConnected).toBe(true);
+		menu.close();
+		await second;
+	});
+
+	test('a concurrent run throws', async () => {
+		const { menu } = setup();
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		expect(() => menu.run()).toThrow(/already pending/);
+		menu.close();
+		await pending;
+	});
+
+	test('an empty menu still opens and closes', async () => {
+		const { menu } = setup({ introText: 'Empty' });
+		const pending = menu.run();
+		menu._move(1);
+		menu.close();
+		expect(await pending).toBe(null);
+	});
+});

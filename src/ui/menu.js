@@ -6,6 +6,7 @@
 // The menu speaks each row itself, which is what lets a slider read "55 percent"
 // while moving and "Volume, 55 percent" on arrival.
 
+import { createFocusTrap } from '../focus.js';
 import { el } from './dom.js';
 import { MenuItem } from './menuItem.js';
 import { createMenuSounds } from './menuSounds.js';
@@ -55,6 +56,9 @@ export function createMenu(options = {}) {
 	let focusedNode = null;
 	let wrapBlocked = false;
 	let wrapTimer = 0;
+	let container = null;
+	let trap = null;
+	let running = false;
 
 	function announce(text) {
 		if (text) speech.speak(text, true);
@@ -202,6 +206,7 @@ export function createMenu(options = {}) {
 	let pending = null;
 
 	function settle(value) {
+		running = false;
 		const resolve = pending?.resolve;
 		pending = null;
 		resolve?.(value);
@@ -227,6 +232,55 @@ export function createMenu(options = {}) {
 			return;
 		}
 		activateFocused();
+	}
+
+	function open() {
+		container = el('div', { class: 'menu' });
+		list = el('div', { class: 'menu-items', 'aria-hidden': 'true' });
+		container.appendChild(list);
+		for (const item of items) list.appendChild(item.node);
+		config.root.appendChild(container);
+		// An application ancestor means the game already runs its own trap, so
+		// making a second one would fight it and steal focus on release.
+		if (config.root.closest('[role="application"]')) {
+			container.setAttribute('tabindex', '-1');
+			container.focus();
+		} else {
+			trap = createFocusTrap(container, { label: config.label });
+		}
+		sounds.play('open');
+		let text = config.introText;
+		if (config.focusFirstItem) {
+			const usable = enabledIndexes();
+			if (usable.length > 0) {
+				setFocus(usable[0], { silent: true });
+				const first = items[usable[0]].speak();
+				text = text ? `${text}. ${first}` : first;
+			}
+		}
+		announce(text);
+	}
+
+	function run() {
+		if (running) throw new Error('menu.run() is already pending');
+		running = true;
+		if (!container) open();
+		return new Promise((resolve) => { pending = { resolve }; });
+	}
+
+	function close() {
+		if (container) {
+			clearTimeout(wrapTimer);
+			wrapBlocked = false;
+			sounds.play('close');
+			trap?.release();
+			trap = null;
+			setFocus(-1, { silent: true });
+			container.remove();
+			container = null;
+			list = null;
+		}
+		settle(null);
 	}
 
 	const api = {
@@ -282,6 +336,9 @@ export function createMenu(options = {}) {
 
 		deleteItem,
 		deleteAllItems,
+
+		run,
+		close,
 
 		_move: move,
 		_jumpToEnd: jumpToEnd,
