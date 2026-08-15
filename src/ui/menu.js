@@ -329,8 +329,10 @@ export function createMenu(options = {}) {
 			close();
 			return;
 		}
+		// Our own trap already swallows Tab. This only matters when we attached to
+		// someone else's `role="application"` ancestor, which may not trap at all.
 		if (key === 'Tab') {
-			event.preventDefault();
+			if (!trap) event.preventDefault();
 			return;
 		}
 		if (!config.firstLetterNavigation || key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;

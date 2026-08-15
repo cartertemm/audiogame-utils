@@ -990,6 +990,19 @@ describe('createMenu: keyboard', () => {
 		await context.pending;
 	});
 
+	// The trap swallows Tab on its own, so the menu only handles it when it
+	// attached to an application ancestor it does not own.
+	test('Tab is prevented when the menu did not create the trap', async () => {
+		const rootNode = root();
+		rootNode.setAttribute('role', 'application');
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
+		menu.addTextItem('Start');
+		const pending = menu.run();
+		expect(press(rootNode, 'Tab').defaultPrevented).toBe(true);
+		menu.close();
+		await pending;
+	});
+
 	test('handled keys are prevented', async () => {
 		const context = await keyboardMenu();
 		expect(press(context.rootNode, 'ArrowDown').defaultPrevented).toBe(true);
