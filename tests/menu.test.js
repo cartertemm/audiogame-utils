@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { createMenuSounds } from '../src/ui/menuSounds.js';
+import * as pkg from '../src/index.js';
+import * as ui from '../src/ui/index.js';
 
 // Records what the menu asked the audio instance to build and play.
 function fakeAudio() {
@@ -1060,9 +1062,6 @@ describe('createMenu: touch', () => {
 		expect(context.menu.focusedIndex).toBe(-1);
 	});
 });
-
-import * as pkg from '../src/index.js';
-import * as ui from '../src/ui/index.js';
 
 describe('menu exports', () => {
 	test('createMenu and MenuItem are exported from the package root', () => {

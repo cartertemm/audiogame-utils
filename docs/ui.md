@@ -221,7 +221,7 @@ inside an `aria-hidden` list so the screen reader never announces them twice.
 The menu speaks each row itself.
 
 ```js
-import { createMenu, createSpeech, createAudio, createStorage } from 'audiogame-utils';
+import { createMenu, createSpeech, createAudio, createStorage } from 'audiogame-utils'
 
 const menu = createMenu({
 	root: document.getElementById('app'),
@@ -233,15 +233,15 @@ const menu = createMenu({
 	selectSound: 'select',
 	soundsPrefix: 'sounds/',
 	soundsSuffix: '.ogg',
-});
+})
 
-const start = menu.addTextItem('Start game');
-const volume = menu.addSlider('Volume', 0, 100, 50, { format: v => `${v} percent` });
-const sound = menu.addCheckbox('Sound', true);
-const quit = menu.addTextItem('Quit');
+const start = menu.addTextItem('Start game')
+const volume = menu.addSlider('Volume', 0, 100, 50, { format: v => `${v} percent` })
+const sound = menu.addCheckbox('Sound', true)
+const quit = menu.addTextItem('Quit')
 
-const chosen = await menu.run();
-if (chosen === start) startGame({ volume: volume.value, sound: sound.value });
+const chosen = await menu.run()
+if (chosen === start) startGame({ volume: volume.value, sound: sound.value })
 ```
 
 `run()` waits. It resolves with the item when a text item is activated, and with
@@ -250,17 +250,17 @@ resolve, so they are state you read afterwards. The menu stays mounted when it
 resolves on an item, which makes a settings screen a plain loop:
 
 ```js
-let chosen;
+let chosen
 while ((chosen = await menu.run()) !== null) {
-	if (chosen === back) break;
+	if (chosen === back) break
 }
-menu.close();
+menu.close()
 ```
 
-### Options
+### Menu options
 
-| Option | Default | Meaning |
-|---|---|---|
+| Option | Default | Description |
+| --- | --- | --- |
 | `root` | required | Element the menu mounts into. |
 | `speech` | required | Instance from `createSpeech`. |
 | `audio` | `null` | Instance from `createAudio`. Omit for a silent menu. |
@@ -311,7 +311,7 @@ press.
 ### Keys and gestures
 
 | Key | Action |
-|---|---|
+| --- | --- |
 | Up, Down | Previous, next item. |
 | Left, Right | Change the focused value. |
 | Home, End | First, last item. |
@@ -321,7 +321,7 @@ press.
 | A letter | Jump to the next label starting with it. |
 
 | Gesture | Action |
-|---|---|
+| --- | --- |
 | Swipe left, right | Previous, next item. |
 | Swipe up, down | Change the focused value. |
 | Double tap | Activate. |
