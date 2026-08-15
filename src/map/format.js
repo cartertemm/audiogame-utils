@@ -24,21 +24,12 @@ export function parseJSON(input) {
 			throw new Error(`map: header field "${key}" must be a non-negative integer, got ${JSON.stringify(value)}`);
 		}
 	}
-	const entries = data.entries ?? [];
-	if (!Array.isArray(entries)) {
-		throw new Error(`map: file's "entries" must be an array, got ${JSON.stringify(entries)}`);
-	}
-	entries.forEach((entry, index) => {
-		if (entry === null || typeof entry !== 'object') {
-			throw new Error(`map: entry ${index} must be an object, got ${JSON.stringify(entry)}`);
-		}
-	});
 	return {
 		name: data.name,
 		maxx: data.maxx,
 		maxy: data.maxy,
 		maxz: data.maxz,
-		entries,
+		entries: data.entries ?? [],
 	};
 }
 

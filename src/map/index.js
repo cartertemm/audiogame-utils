@@ -37,6 +37,8 @@ export function createMap(options = {}) {
 	// validation. The header is only committed once every step above has succeeded,
 	// so a failed load leaves both the store and the header exactly as they were.
 	function ingest(parsed) {
+		assert_entries_shape(parsed.entries);
+
 		const next_header = header === null
 			? { name: parsed.name, maxx: parsed.maxx, maxy: parsed.maxy, maxz: parsed.maxz }
 			: {
@@ -73,6 +75,20 @@ export function createMap(options = {}) {
 		}
 
 		header = next_header;
+	}
+
+	// Runs against whatever the parser (default or a caller-supplied
+	// options.parser) returned, so a custom parser cannot bypass the shape
+	// checks by skipping format.js.
+	function assert_entries_shape(entries) {
+		if (!Array.isArray(entries)) {
+			throw new Error(`map: file's "entries" must be an array, got ${JSON.stringify(entries)}`);
+		}
+		entries.forEach((entry, index) => {
+			if (entry === null || typeof entry !== 'object') {
+				throw new Error(`map: entry ${index} must be an object, got ${JSON.stringify(entry)}`);
+			}
+		});
 	}
 
 	function assert_in_bounds(entry, index, ref_header) {
