@@ -7,6 +7,7 @@
 // while moving and "Volume, 55 percent" on arrival.
 
 import { createFocusTrap } from '../focus.js';
+import { createTouch } from '../input/touch.js';
 import { el } from './dom.js';
 import { MenuItem } from './menuItem.js';
 import { createMenuSounds } from './menuSounds.js';
@@ -27,10 +28,13 @@ const DEFAULTS = {
 	focusFirstItem: false,
 	firstLetterNavigation: true,
 	label: '',
+	multiTapWindow: 250,
 };
 
 const MOVE_KEYS = { ArrowUp: -1, ArrowDown: 1 };
 const ADJUST_KEYS = { ArrowLeft: -1, ArrowRight: 1 };
+const SWIPE_MOVE = { left: -1, right: 1 };
+const SWIPE_ADJUST = { up: -1, down: 1 };
 
 export function createMenu(options = {}) {
 	if (!options.root) throw new Error('createMenu requires a root element');
@@ -61,6 +65,7 @@ export function createMenu(options = {}) {
 	let wrapTimer = 0;
 	let container = null;
 	let trap = null;
+	let touch = null;
 	let running = false;
 
 	function announce(text) {
@@ -298,6 +303,29 @@ export function createMenu(options = {}) {
 		jumpToLetter(key);
 	}
 
+	// Left and right walk the list, up and down change the focused value. This
+	// keeps the two axes independent, which matters on a phone where a slider
+	// and the list would otherwise share a direction.
+	function onSwipe({ direction, fingerCount }) {
+		if (!running || fingerCount !== 1) return;
+		if (direction in SWIPE_MOVE) {
+			move(SWIPE_MOVE[direction]);
+			return;
+		}
+		adjustFocused(SWIPE_ADJUST[direction]);
+	}
+
+	// A single tap only focuses, matching VoiceOver, so a stray touch cannot
+	// start a game.
+	function onTap({ fingerCount, tapCount }) {
+		if (!running) return;
+		if (fingerCount >= 2 && tapCount === 1) {
+			close();
+			return;
+		}
+		if (fingerCount === 1 && tapCount === 2) activateFocused();
+	}
+
 	function open() {
 		container = el('div', { class: 'menu' });
 		list = el('div', { class: 'menu-items', 'aria-hidden': 'true' });
@@ -313,6 +341,9 @@ export function createMenu(options = {}) {
 			trap = createFocusTrap(container, { label: config.label });
 		}
 		container.addEventListener('keydown', onKeyDown);
+		touch = createTouch({ target: container, multiTapWindow: config.multiTapWindow });
+		touch.on('swipe', onSwipe);
+		touch.on('tap', onTap);
 		sounds.play('open');
 		let text = config.introText;
 		if (config.focusFirstItem) {
@@ -338,6 +369,8 @@ export function createMenu(options = {}) {
 			clearTimeout(wrapTimer);
 			wrapBlocked = false;
 			container.removeEventListener('keydown', onKeyDown);
+			touch?.dispose();
+			touch = null;
 			sounds.play('close');
 			trap?.release();
 			trap = null;

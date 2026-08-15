@@ -946,3 +946,117 @@ describe('createMenu: pointer', () => {
 		await pending;
 	});
 });
+
+describe('createMenu: touch', () => {
+	// Drives the real createTouch through synthetic events, matching
+	// tests/touch.test.js.
+	function makeTouch(id, x, y) {
+		return { identifier: id, clientX: x, clientY: y };
+	}
+
+	function dispatchTouch(node, type, touches, changedTouches) {
+		const event = new Event(type, { bubbles: true, cancelable: true });
+		event.touches = touches;
+		event.changedTouches = changedTouches ?? touches;
+		event.preventDefault = () => {};
+		node.dispatchEvent(event);
+	}
+
+	function swipe(node, direction) {
+		const moves = {
+			left: [200, 100, 100, 100],
+			right: [100, 100, 200, 100],
+			up: [100, 200, 100, 100],
+			down: [100, 100, 100, 200],
+		};
+		const [x1, y1, x2, y2] = moves[direction];
+		dispatchTouch(node, 'touchstart', [makeTouch(1, x1, y1)]);
+		dispatchTouch(node, 'touchmove', [makeTouch(1, x2, y2)]);
+		dispatchTouch(node, 'touchend', [], [makeTouch(1, x2, y2)]);
+	}
+
+	function tap(node, fingers, times) {
+		const points = Array.from({ length: fingers }, (_, i) => makeTouch(i + 1, 100 + i * 50, 100));
+		for (let n = 0; n < times; n += 1) {
+			dispatchTouch(node, 'touchstart', points);
+			dispatchTouch(node, 'touchend', [], points);
+		}
+	}
+
+	async function touchMenu(options = {}) {
+		const rootNode = root();
+		const speech = fakeSpeech();
+		const menu = createMenu({ root: rootNode, speech, multiTapWindow: 20, ...options });
+		const start = menu.addTextItem('Start');
+		const volume = menu.addSlider('Volume', 0, 100, 50, { step: 5 });
+		const pending = menu.run();
+		const container = rootNode.querySelector('.menu');
+		return { rootNode, container, menu, speech, start, volume, pending };
+	}
+
+	test('swipe right and left move the cursor', async () => {
+		const context = await touchMenu();
+		swipe(context.container, 'right');
+		expect(context.menu.focusedItem).toBe(context.start);
+		swipe(context.container, 'right');
+		expect(context.menu.focusedItem).toBe(context.volume);
+		swipe(context.container, 'left');
+		expect(context.menu.focusedItem).toBe(context.start);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('swipe down and up change a value', async () => {
+		const context = await touchMenu();
+		context.menu.focusedItem = context.volume;
+		swipe(context.container, 'down');
+		expect(context.volume.value).toBe(55);
+		expect(context.speech.last()).toBe('55');
+		swipe(context.container, 'up');
+		expect(context.volume.value).toBe(50);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('a double tap activates the focused item', async () => {
+		vi.useFakeTimers();
+		const context = await touchMenu();
+		context.menu.focusedItem = context.start;
+		tap(context.container, 1, 2);
+		vi.advanceTimersByTime(300);
+		vi.useRealTimers();
+		expect(await context.pending).toBe(context.start);
+		context.menu.close();
+	});
+
+	test('a single tap does nothing', async () => {
+		vi.useFakeTimers();
+		const context = await touchMenu();
+		context.menu.focusedItem = context.start;
+		tap(context.container, 1, 1);
+		vi.advanceTimersByTime(300);
+		vi.useRealTimers();
+		expect(context.menu.focusedItem).toBe(context.start);
+		context.menu.close();
+		expect(await context.pending).toBe(null);
+	});
+
+	test('a two finger tap closes the menu', async () => {
+		vi.useFakeTimers();
+		const context = await touchMenu();
+		tap(context.container, 2, 1);
+		vi.advanceTimersByTime(300);
+		vi.useRealTimers();
+		expect(await context.pending).toBe(null);
+		expect(context.rootNode.querySelector('.menu')).toBe(null);
+	});
+
+	test('gestures stop after close', async () => {
+		const context = await touchMenu();
+		const container = context.container;
+		context.menu.close();
+		await context.pending;
+		expect(() => swipe(container, 'right')).not.toThrow();
+		expect(context.menu.focusedIndex).toBe(-1);
+	});
+});
