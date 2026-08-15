@@ -74,3 +74,70 @@ describe('createStore', () => {
 		expect(store.query('zone', 5, 5, 5, 5, 0, 0)).toEqual([]);
 	});
 });
+
+describe('createStore: edits after the index is built', () => {
+	test('an entry added after a query still gets found', () => {
+		const { store } = fresh();
+		store.add(zone('first', 0, 10, 0, 10));
+		store.query('zone', 5, 5, 5, 5, 0, 0);
+		const id = store.add(zone('second', 20, 30, 20, 30));
+		expect(store.query('zone', 25, 25, 25, 25, 0, 0)).toEqual([id]);
+	});
+
+	test('overlay entries keep insertion order with indexed ones', () => {
+		const { store } = fresh();
+		store.add(zone('outer', 0, 100, 0, 100));
+		store.query('zone', 7, 7, 7, 7, 0, 0);
+		store.add(zone('inner', 5, 10, 5, 10));
+		const names = store.query('zone', 7, 7, 7, 7, 0, 0).map((id) => store.read(id).name);
+		expect(names).toEqual(['outer', 'inner']);
+	});
+
+	test('a long overlay triggers a rebuild and results stay correct', () => {
+		const { store } = fresh();
+		store.add(zone('base', 0, 1000, 0, 1000));
+		store.query('zone', 5, 5, 5, 5, 0, 0);
+		for (let i = 0; i < 500; i++) store.add(zone(`z${i}`, i, i, 0, 0));
+		expect(store.query('zone', 0, 1000, 0, 1000, 0, 0)).toHaveLength(501);
+		expect(store.query('zone', 250, 250, 0, 0, 0, 0)).toHaveLength(2);
+	});
+
+	test('removed entries disappear from queries', () => {
+		const { store } = fresh();
+		const id = store.add(zone('lobby', 0, 10, 0, 10));
+		store.query('zone', 5, 5, 5, 5, 0, 0);
+		store.remove([id]);
+		expect(store.query('zone', 5, 5, 5, 5, 0, 0)).toEqual([]);
+	});
+
+	test('removed entries stay gone after a rebuild', () => {
+		const { store } = fresh();
+		const id = store.add(zone('lobby', 0, 10, 0, 10));
+		store.query('zone', 5, 5, 5, 5, 0, 0);
+		store.remove([id]);
+		for (let i = 0; i < 200; i++) store.add(zone(`z${i}`, 100 + i, 100 + i, 0, 0));
+		expect(store.query('zone', 5, 5, 5, 5, 0, 0)).toEqual([]);
+		expect(store.liveIds()).toHaveLength(200);
+	});
+
+	test('assertNoOverlap passes when boxes only sit next to each other', () => {
+		const { store } = fresh();
+		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'grass' });
+		store.add({ type: 'tile', minx: 10, maxx: 19, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' });
+		expect(() => store.assertNoOverlap('tile')).not.toThrow();
+	});
+
+	test('assertNoOverlap throws when boxes touch, and says bounds are inclusive', () => {
+		const { store } = fresh();
+		store.add({ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'grass' });
+		store.add({ type: 'tile', minx: 10, maxx: 19, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' });
+		expect(() => store.assertNoOverlap('tile')).toThrow(/inclusive/);
+	});
+
+	test('assertNoOverlap ignores boxes separated by z', () => {
+		const { store } = fresh();
+		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'grass' });
+		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 1, maxz: 1, tile: 'road' });
+		expect(() => store.assertNoOverlap('tile')).not.toThrow();
+	});
+});
