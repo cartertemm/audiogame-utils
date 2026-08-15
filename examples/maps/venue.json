@@ -1,0 +1,14 @@
+{
+	"name": "Riverside venue",
+	"maxx": 20,
+	"maxy": 40,
+	"maxz": 0,
+	"entries": [
+		{ "type": "zone", "name": "parking lot", "minx": 0, "maxx": 20, "miny": 0, "maxy": 20, "minz": 0, "maxz": 0 },
+		{ "type": "zone", "name": "concert hall", "minx": 0, "maxx": 20, "miny": 21, "maxy": 40, "minz": 0, "maxz": 0 },
+		{ "type": "tile", "file": "concrete", "minx": 0, "maxx": 20, "miny": 0, "maxy": 20, "minz": 0, "maxz": 0 },
+		{ "type": "tile", "file": "wood", "minx": 0, "maxx": 20, "miny": 21, "maxy": 40, "minz": 0, "maxz": 0 },
+		{ "type": "src", "file": "./sounds/truck.ogg", "loop": true, "minx": 10, "maxx": 10, "miny": 9, "maxy": 11, "minz": 0, "maxz": 0 },
+		{ "type": "src", "file": "./sounds/menu/music.ogg", "loop": true, "minx": 6, "maxx": 14, "miny": 39, "maxy": 40, "minz": 0, "maxz": 0 }
+	]
+}

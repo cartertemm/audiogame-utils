@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>Riverside venue - audiogame-utils</title>
+	<!--
+		The audio module imports Cacophony by name. Bundlers resolve that from
+		node_modules, but these examples run without a build step, so the browser
+		needs an import map. This one uses a CDN, so the demo needs a network
+		connection the first time you run it.
+	-->
+	<script type="importmap">
+		{
+			"imports": {
+				"cacophony": "https://esm.sh/cacophony@0.18.3"
+			}
+		}
+	</script>
+	<style>
+		body {
+			margin: 0;
+			padding: 1rem;
+			font-family: system-ui, sans-serif;
+		}
+	</style>
+</head>
+<body>
+	<h1>Riverside venue</h1>
+	<p>The truck yard walk again, except the world comes out of a file. <a href="./maps/venue.json">maps/venue.json</a> is 20 wide and 40 deep, split into a parking lot at the south end and a concert hall at the north end. A truck idles in the middle of the lot and the stage sits along the far wall of the hall.</p>
+	<p>Nothing about that layout is in the code. The map module answers three questions as you walk: which tile you stand on, so concrete footsteps turn to wood when you enter the hall; which zone you are in, which is spoken when you cross; and where the looping sounds are, which the sound pool places with HRTF. Headphones make it much clearer.</p>
+	<p>Press start, then use the arrows to walk, q and e to turn, space to hear your position, and escape to stop. The arrows move relative to where you face, so up walks forward and down walks backward.</p>
+	<button type="button" id="start">Start</button>
+	<div id="game"></div>
+	<script type="module" src="./venue.js"></script>
+</body>
+</html>
