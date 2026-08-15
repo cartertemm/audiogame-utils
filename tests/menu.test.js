@@ -431,7 +431,14 @@ describe('createMenu: cursor assignment', () => {
 	});
 });
 
-import { vi } from 'vitest';
+import { vi, afterEach } from 'vitest';
+
+// Several tests below install fake timers. Restoring them here rather than at
+// the end of each test means a failed assertion cannot leak them into the rest
+// of the file.
+afterEach(() => {
+	vi.useRealTimers();
+});
 
 describe('createMenu: movement', () => {
 	function threeItems(options = {}) {
@@ -493,7 +500,6 @@ describe('createMenu: movement', () => {
 		vi.advanceTimersByTime(50);
 		menu._move(-1);
 		expect(menu.focusedItem.label).toBe('Two');
-		vi.useRealTimers();
 	});
 
 	test('disabled items are skipped and still rendered', () => {
