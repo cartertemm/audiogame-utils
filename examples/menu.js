@@ -21,7 +21,9 @@ const menu = createMenu({
 	clickSound: 'beep',
 	selectSound: 'beep',
 	edgeSound: 'beep',
-	soundsPrefix: 'examples/sounds/',
+	// A bare relative path resolves against the document directory, so this
+	// must not repeat 'examples/'.
+	soundsPrefix: './sounds/',
 	soundsSuffix: '.wav',
 	focusFirstItem: true,
 	wrap: true,
