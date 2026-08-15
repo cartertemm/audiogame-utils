@@ -352,6 +352,18 @@ describe('createMenu: items', () => {
 		expect(menu.focusedItem).toBe(three);
 	});
 
+	test('deleteItem at the cursor keeps the index and the node in agreement', () => {
+		const { menu } = setup();
+		menu.addTextItem('One');
+		const two = menu.addTextItem('Two');
+		const three = menu.addTextItem('Three');
+		menu.focusedIndex = 1;
+		menu.deleteItem(1, false);
+		expect(menu.focusedItem).toBe(three);
+		expect(three.node.classList.contains('focused')).toBe(true);
+		expect(two.node.classList.contains('focused')).toBe(false);
+	});
+
 	test('deleteItem clamps the cursor when the tail goes away', () => {
 		const { menu } = setup();
 		menu.addTextItem('One');

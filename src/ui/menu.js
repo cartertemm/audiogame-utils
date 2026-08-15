@@ -99,7 +99,11 @@ export function createMenu(options = {}) {
 		item.node.remove();
 		if (resetCursor) setFocus(items.length ? 0 : -1, { silent: true });
 		else if (focusedIndex > index) setFocus(focusedIndex - 1, { silent: true });
-		else if (focusedIndex >= items.length) setFocus(items.length - 1, { silent: true });
+		// Deleting the focused item leaves the cursor on whatever slid into the
+		// slot, or on the new last item when the tail went away. Without this the
+		// index and the node reference disagree and the focused class strands on
+		// the removed node.
+		else if (focusedIndex === index) setFocus(Math.min(index, items.length - 1), { silent: true });
 		return true;
 	}
 
