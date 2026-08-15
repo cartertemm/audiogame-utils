@@ -141,6 +141,6 @@ export function createMap(options = {}) {
 		serialize,
 		clear,
 		header: () => (header === null ? null : { ...header }),
-		store,
+		memoryBytes: () => store.boundsBytes(),
 	};
 }

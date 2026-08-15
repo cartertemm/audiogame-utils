@@ -348,7 +348,7 @@ describe('createMap: performance', () => {
 		console.log(`load 200k: ${load_ms.toFixed(0)}ms, 1000 queries: ${query_ms.toFixed(1)}ms, hits ${hits}`);
 		expect(load_ms).toBeLessThan(10000);
 		expect(query_ms).toBeLessThan(1000);
-		expect(map.store.boundsBytes()).toBeLessThan(6 * 1024 * 1024);
+		expect(map.memoryBytes()).toBeLessThan(6 * 1024 * 1024);
 	}, 60000);
 
 	test('measures the cost of z filtering on 500 stacked levels', async () => {
