@@ -271,10 +271,29 @@ function root() {
 }
 
 function setup(options = {}) {
+	const rootNode = root();
 	const speech = fakeSpeech();
 	const audio = fakeAudio();
-	const menu = createMenu({ root: root(), speech, audio, ...options });
-	return { menu, speech, audio };
+	const menu = createMenu({ root: rootNode, speech, audio, ...options });
+	return { menu, speech, audio, rootNode };
+}
+
+// Drives the menu the way a real keydown would, so movement and keyboard
+// tests both exercise onKeyDown's key mapping and the `running` guard rather
+// than calling the internal move functions directly.
+function press(rootNode, key) {
+	const container = rootNode.querySelector('.menu');
+	const event = new Event('keydown', { bubbles: true, cancelable: true });
+	event.key = key;
+	container.dispatchEvent(event);
+	return event;
+}
+
+function pressWithModifier(rootNode, key, modifiers) {
+	const container = rootNode.querySelector('.menu');
+	const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key, ...modifiers });
+	container.dispatchEvent(event);
+	return event;
 }
 
 describe('createMenu: construction', () => {
@@ -413,6 +432,14 @@ describe('createMenu: cursor assignment', () => {
 		expect(menu.focusedIndex).toBe(-1);
 	});
 
+	test('focusedIndex rejects a non-number', () => {
+		const { menu } = setup();
+		menu.addTextItem('Start');
+		menu.addTextItem('Quit', { id: 'quit' });
+		expect(() => { menu.focusedIndex = 'quit'; }).toThrow(TypeError);
+		expect(menu.focusedIndex).toBe(-1);
+	});
+
 	test('the focused item carries the focused class', () => {
 		const { menu } = setup();
 		const start = menu.addTextItem('Start');
@@ -422,6 +449,26 @@ describe('createMenu: cursor assignment', () => {
 		menu.focusedItem = quit;
 		expect(start.node.classList.contains('focused')).toBe(false);
 		expect(quit.node.classList.contains('focused')).toBe(true);
+	});
+
+	test('moving the cursor scrolls the focused node into view', () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		const quit = menu.addTextItem('Quit');
+		const calls = [];
+		start.node.scrollIntoView = (opts) => calls.push(opts);
+		quit.node.scrollIntoView = (opts) => calls.push(opts);
+		menu.focusedItem = start;
+		expect(calls).toEqual([{ block: 'nearest' }]);
+		menu.focusedItem = quit;
+		expect(calls).toEqual([{ block: 'nearest' }, { block: 'nearest' }]);
+	});
+
+	test('setFocus does not throw when scrollIntoView is missing', () => {
+		const { menu } = setup();
+		const start = menu.addTextItem('Start');
+		start.node.scrollIntoView = undefined;
+		expect(() => { menu.focusedItem = start; }).not.toThrow();
 	});
 
 	test('a label change keeps the focused class on the new node', () => {
@@ -443,140 +490,214 @@ afterEach(() => {
 });
 
 describe('createMenu: movement', () => {
-	function threeItems(options = {}) {
-		const context = setup(options);
-		context.one = context.menu.addTextItem('One');
-		context.two = context.menu.addTextItem('Two');
-		context.three = context.menu.addTextItem('Three');
-		return context;
+	// Movement has no dedicated API of its own now: it is driven the same way a
+	// player drives it, through dispatched key events on a running menu. That
+	// exercises onKeyDown's key mapping and the `running` guard, not just the
+	// move logic underneath.
+	async function threeItems(options = {}) {
+		const rootNode = root();
+		const speech = fakeSpeech();
+		const audio = fakeAudio();
+		const menu = createMenu({ root: rootNode, speech, audio, ...options });
+		const one = menu.addTextItem('One');
+		const two = menu.addTextItem('Two');
+		const three = menu.addTextItem('Three');
+		const pending = menu.run();
+		return { rootNode, menu, speech, audio, one, two, three, pending };
 	}
 
-	test('an unset cursor lands on the first item when moving down', () => {
-		const { menu, one, speech } = threeItems({ clickSound: 'click' });
-		expect(menu.focusedIndex).toBe(-1);
-		menu._move(1);
-		expect(menu.focusedItem).toBe(one);
-		expect(speech.last()).toBe('One');
+	async function finish(context) {
+		context.menu.close();
+		await context.pending;
+	}
+
+	test('an unset cursor lands on the first item when moving down', async () => {
+		const context = await threeItems({ clickSound: 'click' });
+		expect(context.menu.focusedIndex).toBe(-1);
+		press(context.rootNode, 'ArrowDown');
+		expect(context.menu.focusedItem).toBe(context.one);
+		expect(context.speech.last()).toBe('One');
+		await finish(context);
 	});
 
-	test('an unset cursor lands on the last item when moving up', () => {
-		const { menu, three } = threeItems();
-		menu._move(-1);
-		expect(menu.focusedItem).toBe(three);
+	test('an unset cursor lands on the last item when moving up', async () => {
+		const context = await threeItems();
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem).toBe(context.three);
+		await finish(context);
 	});
 
-	test('moving plays the click sound', () => {
-		const { menu, audio } = threeItems({ clickSound: 'click', soundsSuffix: '.ogg' });
-		menu._move(1);
-		menu._move(1);
-		expect(audio.played).toEqual(['click.ogg', 'click.ogg']);
+	test('moving plays the click sound', async () => {
+		const context = await threeItems({ clickSound: 'click', soundsSuffix: '.ogg' });
+		press(context.rootNode, 'ArrowDown');
+		press(context.rootNode, 'ArrowDown');
+		expect(context.audio.played).toEqual(['click.ogg', 'click.ogg']);
+		await finish(context);
 	});
 
-	test('an edge without wrap plays the edge sound and repeats the item', () => {
-		const { menu, one, speech, audio } = threeItems({ edgeSound: 'edge', soundsSuffix: '.ogg' });
-		menu.focusedItem = one;
-		menu._move(-1);
-		expect(menu.focusedItem).toBe(one);
-		expect(audio.played).toEqual(['edge.ogg']);
-		expect(speech.last()).toBe('One');
+	test('an edge without wrap plays the edge sound and repeats the item', async () => {
+		const context = await threeItems({ edgeSound: 'edge', soundsSuffix: '.ogg' });
+		context.menu.focusedItem = context.one;
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem).toBe(context.one);
+		expect(context.audio.played).toEqual(['edge.ogg']);
+		expect(context.speech.last()).toBe('One');
+		await finish(context);
 	});
 
-	test('an edge with wrap jumps to the other end and plays the wrap sound', () => {
-		const { menu, one, three, audio } = threeItems({
+	test('an edge with wrap jumps to the other end and plays the wrap sound', async () => {
+		const context = await threeItems({
 			wrap: true, wrapSound: 'wrap', soundsSuffix: '.ogg', wrapDelay: 0,
 		});
-		menu.focusedItem = one;
-		menu._move(-1);
-		expect(menu.focusedItem).toBe(three);
-		expect(audio.played).toEqual(['wrap.ogg']);
+		context.menu.focusedItem = context.one;
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem).toBe(context.three);
+		expect(context.audio.played).toEqual(['wrap.ogg']);
+		await finish(context);
 	});
 
-	test('movement inside wrapDelay is ignored', () => {
+	test('movement inside wrapDelay is ignored', async () => {
 		vi.useFakeTimers();
-		const { menu, one, three } = threeItems({ wrap: true, wrapDelay: 50 });
-		menu.focusedItem = one;
-		menu._move(-1);
-		expect(menu.focusedItem).toBe(three);
-		menu._move(-1);
-		expect(menu.focusedItem).toBe(three);
+		const context = await threeItems({ wrap: true, wrapDelay: 50 });
+		context.menu.focusedItem = context.one;
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem).toBe(context.three);
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem).toBe(context.three);
 		vi.advanceTimersByTime(50);
-		menu._move(-1);
-		expect(menu.focusedItem.label).toBe('Two');
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem.label).toBe('Two');
+		await finish(context);
 	});
 
-	test('disabled items are skipped and still rendered', () => {
-		const { menu } = setup();
+	test('disabled items are skipped and still rendered', async () => {
+		const rootNode = root();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
 		const one = menu.addTextItem('One');
 		const two = menu.addTextItem('Two', { disabled: true });
 		const three = menu.addTextItem('Three');
+		const pending = menu.run();
 		menu.focusedItem = one;
-		menu._move(1);
+		press(rootNode, 'ArrowDown');
 		expect(menu.focusedItem).toBe(three);
 		expect(two.node.textContent).toBe('Two');
 		expect(two.node.hasAttribute('disabled')).toBe(true);
+		menu.close();
+		await pending;
 	});
 
-	test('moving in an empty menu plays the edge sound', () => {
-		const { menu, audio } = setup({ edgeSound: 'edge', soundsSuffix: '.ogg' });
-		menu._move(1);
+	test('a cursor on a disabled item moves to the adjacent enabled item, moving down', async () => {
+		const rootNode = root();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
+		menu.addTextItem('One');
+		const two = menu.addTextItem('Two', { disabled: true });
+		const three = menu.addTextItem('Three');
+		const pending = menu.run();
+		menu.focusedIndex = 1;
+		expect(menu.focusedItem).toBe(two);
+		press(rootNode, 'ArrowDown');
+		expect(menu.focusedItem).toBe(three);
+		menu.close();
+		await pending;
+	});
+
+	test('a cursor on a disabled item moves to the adjacent enabled item, moving up', async () => {
+		const rootNode = root();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
+		const one = menu.addTextItem('One');
+		const two = menu.addTextItem('Two', { disabled: true });
+		menu.addTextItem('Three');
+		const pending = menu.run();
+		menu.focusedIndex = 1;
+		expect(menu.focusedItem).toBe(two);
+		press(rootNode, 'ArrowUp');
+		expect(menu.focusedItem).toBe(one);
+		menu.close();
+		await pending;
+	});
+
+	test('moving in an empty menu plays the edge sound', async () => {
+		const rootNode = root();
+		const audio = fakeAudio();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech(), audio, edgeSound: 'edge', soundsSuffix: '.ogg' });
+		const pending = menu.run();
+		press(rootNode, 'ArrowDown');
 		expect(menu.focusedIndex).toBe(-1);
 		expect(audio.played).toEqual(['edge.ogg']);
+		menu.close();
+		await pending;
 	});
 
-	test('Home and End jump to the ends', () => {
-		const { menu, one, three } = threeItems();
-		menu._jumpToEnd(-1);
-		expect(menu.focusedItem).toBe(three);
-		menu._jumpToEnd(1);
-		expect(menu.focusedItem).toBe(one);
+	test('Home and End jump to the ends', async () => {
+		const context = await threeItems();
+		press(context.rootNode, 'End');
+		expect(context.menu.focusedItem).toBe(context.three);
+		press(context.rootNode, 'Home');
+		expect(context.menu.focusedItem).toBe(context.one);
+		await finish(context);
 	});
 
-	test('first letter navigation finds the next match and wraps', () => {
-		const { menu } = setup();
+	test('first letter navigation finds the next match and wraps', async () => {
+		const rootNode = root();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech() });
 		menu.addTextItem('Start');
 		menu.addTextItem('Settings');
 		menu.addTextItem('Quit');
-		menu._jumpToLetter('s');
+		const pending = menu.run();
+		press(rootNode, 's');
 		expect(menu.focusedItem.label).toBe('Start');
-		menu._jumpToLetter('s');
+		press(rootNode, 's');
 		expect(menu.focusedItem.label).toBe('Settings');
-		menu._jumpToLetter('s');
+		press(rootNode, 's');
 		expect(menu.focusedItem.label).toBe('Start');
+		menu.close();
+		await pending;
 	});
 
-	test('first letter navigation ignores a letter with no match', () => {
-		const { menu, one } = threeItems();
-		menu.focusedItem = one;
-		menu._jumpToLetter('z');
-		expect(menu.focusedItem).toBe(one);
+	test('first letter navigation ignores a letter with no match', async () => {
+		const context = await threeItems();
+		context.menu.focusedItem = context.one;
+		press(context.rootNode, 'z');
+		expect(context.menu.focusedItem).toBe(context.one);
+		await finish(context);
 	});
 
-	test('adjusting speaks the value alone', () => {
-		const { menu, speech } = setup();
+	test('adjusting speaks the value alone', async () => {
+		const rootNode = root();
+		const speech = fakeSpeech();
+		const menu = createMenu({ root: rootNode, speech });
 		const volume = menu.addSlider('Volume', 0, 100, 50, { step: 5 });
+		const pending = menu.run();
 		menu.focusedItem = volume;
 		expect(speech.last()).toBe('Volume, 50');
-		menu._adjustFocused(1);
+		press(rootNode, 'ArrowRight');
 		expect(volume.value).toBe(55);
 		expect(speech.last()).toBe('55');
+		menu.close();
+		await pending;
 	});
 
-	test('adjusting past a boundary plays the edge sound', () => {
-		const { menu, audio } = setup({ edgeSound: 'edge', soundsSuffix: '.ogg' });
+	test('adjusting past a boundary plays the edge sound', async () => {
+		const rootNode = root();
+		const audio = fakeAudio();
+		const menu = createMenu({ root: rootNode, speech: fakeSpeech(), audio, edgeSound: 'edge', soundsSuffix: '.ogg' });
 		const volume = menu.addSlider('Volume', 0, 100, 100, { step: 5 });
+		const pending = menu.run();
 		menu.focusedItem = volume;
-		menu._adjustFocused(1);
+		press(rootNode, 'ArrowRight');
 		expect(audio.played).toEqual(['edge.ogg']);
+		menu.close();
+		await pending;
 	});
 
-	test('a value change on an unfocused item stays silent', () => {
-		const { menu, speech } = setup();
-		const volume = menu.addSlider('Volume', 0, 100, 50);
-		const other = menu.addTextItem('Other');
-		menu.focusedItem = other;
-		const before = speech.spoken.length;
+	test('a value change on an unfocused item stays silent', async () => {
+		const context = await threeItems();
+		const volume = context.menu.addSlider('Volume', 0, 100, 50);
+		context.menu.focusedItem = context.one;
+		const before = context.speech.spoken.length;
 		volume.value = 70;
-		expect(speech.spoken.length).toBe(before);
+		expect(context.speech.spoken.length).toBe(before);
+		await finish(context);
 	});
 });
 
@@ -653,7 +774,7 @@ describe('createMenu: run and close', () => {
 		const start = menu.addTextItem('Start');
 		const pending = menu.run();
 		menu.focusedItem = start;
-		menu._activateFocused();
+		press(rootNode, 'Enter');
 		expect(await pending).toBe(start);
 		expect(rootNode.querySelector('.menu')).not.toBe(null);
 		expect(audio.played).toContain('select.ogg');
@@ -661,11 +782,11 @@ describe('createMenu: run and close', () => {
 	});
 
 	test('a second run resumes without a second intro', async () => {
-		const { menu, speech } = setup({ introText: 'Main menu' });
+		const { menu, speech, rootNode } = setup({ introText: 'Main menu' });
 		const start = menu.addTextItem('Start');
 		const first = menu.run();
 		menu.focusedItem = start;
-		menu._activateFocused();
+		press(rootNode, 'Enter');
 		await first;
 		const introCount = speech.spoken.filter(entry => entry.text === 'Main menu').length;
 		const second = menu.run();
@@ -734,23 +855,15 @@ describe('createMenu: run and close', () => {
 	});
 
 	test('an empty menu still opens and closes', async () => {
-		const { menu } = setup({ introText: 'Empty' });
+		const { menu, rootNode } = setup({ introText: 'Empty' });
 		const pending = menu.run();
-		menu._move(1);
+		press(rootNode, 'ArrowDown');
 		menu.close();
 		expect(await pending).toBe(null);
 	});
 });
 
 describe('createMenu: keyboard', () => {
-	function press(rootNode, key) {
-		const container = rootNode.querySelector('.menu');
-		const event = new Event('keydown', { bubbles: true, cancelable: true });
-		event.key = key;
-		container.dispatchEvent(event);
-		return event;
-	}
-
 	async function keyboardMenu(options = {}) {
 		const rootNode = root();
 		const speech = fakeSpeech();
@@ -807,6 +920,15 @@ describe('createMenu: keyboard', () => {
 		expect(await context.pending).toBe(null);
 	});
 
+	test('Enter on a slider plays the edge sound and does not resolve', async () => {
+		const context = await keyboardMenu({ edgeSound: 'edge', soundsSuffix: '.ogg' });
+		context.menu.focusedItem = context.volume;
+		press(context.rootNode, 'Enter');
+		expect(context.audio.played).toContain('edge.ogg');
+		context.menu.close();
+		expect(await context.pending).toBe(null);
+	});
+
 	test('Enter on a text item resolves with that item', async () => {
 		const context = await keyboardMenu();
 		context.menu.focusedItem = context.quit;
@@ -841,10 +963,29 @@ describe('createMenu: keyboard', () => {
 		await context.pending;
 	});
 
+	test('a letter with a modifier key does not jump', async () => {
+		const context = await keyboardMenu();
+		const event = pressWithModifier(context.rootNode, 'r', { ctrlKey: true });
+		expect(context.menu.focusedIndex).toBe(-1);
+		expect(event.defaultPrevented).toBe(false);
+		context.menu.close();
+		await context.pending;
+	});
+
 	test('firstLetterNavigation false ignores letters', async () => {
 		const context = await keyboardMenu({ firstLetterNavigation: false });
 		press(context.rootNode, 'q');
 		expect(context.menu.focusedIndex).toBe(-1);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('Tab is prevented and does not move focus out of the container', async () => {
+		const context = await keyboardMenu();
+		const container = context.rootNode.querySelector('.menu');
+		const event = press(context.rootNode, 'Tab');
+		expect(event.defaultPrevented).toBe(true);
+		expect(container.contains(document.activeElement)).toBe(true);
 		context.menu.close();
 		await context.pending;
 	});
@@ -919,7 +1060,26 @@ describe('createMenu: pointer', () => {
 		await pending;
 	});
 
-	test('a hidden item ignores the pointer', async () => {
+	test('clicking an unfocused checkbox speaks only the new value, not the stale one', async () => {
+		const { menu, speech } = setup();
+		menu.addTextItem('Start');
+		const sound = menu.addCheckbox('Sound', true);
+		const pending = menu.run();
+		const input = sound.node.querySelector('input');
+		// happy-dom's native .click() fires change before the click event finishes
+		// bubbling, the opposite of a real browser. Dispatch by hand so the order
+		// matches what actually happens in a browser: checkedness flips, click
+		// bubbles, and only then does change fire.
+		input.checked = false;
+		input.dispatchEvent(new Event('click', { bubbles: true, cancelable: true }));
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(speech.spoken.map(entry => entry.text)).not.toContain('Sound, checked');
+		expect(speech.last()).toBe('unchecked');
+		menu.close();
+		await pending;
+	});
+
+	test('a disabled item ignores the pointer', async () => {
 		const { menu } = setup();
 		const start = menu.addTextItem('Start', { disabled: true });
 		const pending = menu.run();

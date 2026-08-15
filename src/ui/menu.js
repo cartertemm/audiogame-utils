@@ -77,6 +77,7 @@ export function createMenu(options = {}) {
 		focusedIndex = index >= 0 && index < items.length ? index : -1;
 		focusedNode = focusedIndex >= 0 ? items[focusedIndex].node : null;
 		focusedNode?.classList.add('focused');
+		focusedNode?.scrollIntoView?.({ block: 'nearest' });
 		if (!silent && focusedIndex >= 0) announce(items[focusedIndex].speak());
 	}
 
@@ -152,8 +153,13 @@ export function createMenu(options = {}) {
 			const index = items.indexOf(item);
 			if (index < 0) return;
 			// A checkbox already toggled through the field's own change handler,
-			// so activating it here would undo that.
-			if (index !== focusedIndex) setFocus(index);
+			// so activating it here would undo that. The checked state has not
+			// flipped yet at click time, so announce silently and let the change
+			// handler's _valueChanged speak the new value.
+			if (index !== focusedIndex) {
+				if (item.type === 'checkbox') setFocus(index, { silent: true });
+				else setFocus(index);
+			}
 			if (item.type === 'text') activateFocused();
 		});
 	}
@@ -176,8 +182,30 @@ export function createMenu(options = {}) {
 			return;
 		}
 		const position = usable.indexOf(focusedIndex);
-		if (position === -1) {
+		if (position === -1 && focusedIndex === -1) {
 			sounds.play('click');
+			setFocus(direction > 0 ? usable[0] : usable[usable.length - 1]);
+			return;
+		}
+		if (position === -1) {
+			// The cursor sits on a disabled item. Land on the nearest enabled item
+			// on the direction side, or fall through to edge and wrap handling
+			// below when there is none.
+			const neighbor = direction > 0
+				? usable.find(index => index > focusedIndex)
+				: usable.filter(index => index < focusedIndex).pop();
+			if (neighbor !== undefined) {
+				sounds.play('click');
+				setFocus(neighbor);
+				return;
+			}
+			if (!config.wrap) {
+				sounds.play('edge');
+				announce(items[focusedIndex].speak());
+				return;
+			}
+			sounds.play('wrap');
+			blockWrap();
 			setFocus(direction > 0 ? usable[0] : usable[usable.length - 1]);
 			return;
 		}
@@ -250,7 +278,10 @@ export function createMenu(options = {}) {
 			item.toggle();
 			return;
 		}
-		if (item.type !== 'text') return;
+		if (item.type !== 'text') {
+			sounds.play('edge');
+			return;
+		}
 		sounds.play('select');
 		settle(item);
 	}
@@ -298,7 +329,11 @@ export function createMenu(options = {}) {
 			close();
 			return;
 		}
-		if (!config.firstLetterNavigation || key.length !== 1) return;
+		if (key === 'Tab') {
+			event.preventDefault();
+			return;
+		}
+		if (!config.firstLetterNavigation || key.length !== 1 || event.ctrlKey || event.metaKey || event.altKey) return;
 		event.preventDefault();
 		jumpToLetter(key);
 	}
@@ -400,7 +435,8 @@ export function createMenu(options = {}) {
 		},
 
 		set focusedIndex(index) {
-			setFocus(resolveIndex(index));
+			if (typeof index !== 'number') throw new TypeError('focusedIndex must be a number');
+			setFocus(index);
 		},
 
 		get values() {
@@ -438,13 +474,6 @@ export function createMenu(options = {}) {
 
 		run,
 		close,
-
-		_move: move,
-		_jumpToEnd: jumpToEnd,
-		_jumpToLetter: jumpToLetter,
-		_adjustFocused: adjustFocused,
-		_activateFocused: activateFocused,
-		_spaceFocused: spaceFocused,
 
 		_rebuild(item) {
 			const wasFocused = focusedNode === item.node;

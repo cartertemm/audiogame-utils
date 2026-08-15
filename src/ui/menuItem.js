@@ -23,6 +23,7 @@ const TYPES = {
 				class: 'field',
 				type: 'button',
 				text: item._label,
+				tabindex: '-1',
 				disabled: item._disabled ? 'disabled' : undefined,
 			});
 		},
@@ -55,6 +56,7 @@ const TYPES = {
 				disabled: item._disabled,
 			});
 			item._control = node.querySelector('input');
+			item._control.setAttribute('tabindex', '-1');
 			item._readout = node.querySelector('span');
 			return node;
 		},
@@ -95,6 +97,7 @@ const TYPES = {
 				disabled: item._disabled,
 			});
 			item._control = node.querySelector('input');
+			item._control.setAttribute('tabindex', '-1');
 			return node;
 		},
 
