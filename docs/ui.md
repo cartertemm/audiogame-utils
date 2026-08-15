@@ -244,10 +244,19 @@ const chosen = await menu.run()
 if (chosen === start) startGame({ volume: volume.value, sound: sound.value })
 ```
 
+If an ancestor of `root` already carries `role="application"`, the menu assumes
+that ancestor is managed by the game's own focus trap. It attaches to that
+ancestor instead of building its own trap, and releases nothing on close. Make
+sure your trap keeps focus inside that ancestor, or the menu can lose focus and
+stop receiving keys.
+
 `run()` waits. It resolves with the item when a text item is activated, and with
 `null` when the player escapes. Sliders and checkboxes change in place and never
 resolve, so they are state you read afterwards. The menu stays mounted when it
 resolves on an item, which makes a settings screen a plain loop:
+
+Calling `run()` while a run is already pending throws. Await or close the
+current run before starting another.
 
 ```js
 let chosen
@@ -303,10 +312,27 @@ An item exposes `type`, `label`, `value`, `id`, `index`, `disabled`, `node`,
 `speak()`, `speakValue()`, `focus()`, and `toggle()` on checkboxes. Sliders add
 `min`, `max`, and `step`.
 
+`value` applies to sliders and checkboxes. Writing it on a text item does
+nothing, because a text item has no value to set.
+
 An item reads differently depending on why it is announced. Arriving on it
 speaks `speak()`, the label with the value. Changing its value speaks
 `speakValue()`, the value alone, so a slider does not repeat its label on every
 press.
+
+### Reading the menu
+
+```js
+menu.items         // array of every item, in order
+menu.values        // { id: value } for every item with an id and a value
+menu.item(id)       // the item with that id, or null
+menu.value(id)      // that item's value, or undefined
+menu.focusedItem    // the item under the cursor, or null
+menu.focusedIndex   // its index, or -1
+```
+
+`menu.focusedItem` also accepts assignment, and takes an item, an index, or an
+id. `menu.focusedIndex` accepts assignment too, but only a number.
 
 ### Keys and gestures
 

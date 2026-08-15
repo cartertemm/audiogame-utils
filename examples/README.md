@@ -19,5 +19,4 @@ the first time you load them.
 
 A runnable menu with sliders, checkboxes, and text items. Navigate with arrow
 keys, adjust values with left and right, confirm with enter, and escape to
-leave. The example demonstrates how to build interactive menus with the
-`createMenu` API.
+leave.
