@@ -3,7 +3,7 @@
 The `audiogame-utils/ui` module builds the screens that surround gameplay: menus, forms, lobbies, and the handoff into the game itself. It is a few dozen lines of DOM helpers, not a framework. There is no virtual DOM, no reactivity, and no template syntax.
 
 ```js
-import { el, mount, renderScreen, renderHandoff } from 'audiogame-utils/ui'
+import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from 'audiogame-utils/ui'
 ```
 
 Screens are plain semantic HTML, which is what screen readers navigate best. Keep gameplay itself out of this module.
@@ -93,40 +93,69 @@ function settings(root, props) {
 
 The module deliberately ships no screen registry. Keep your screens in whatever object or module suits the game and pass the function you want.
 
-## `renderHandoff(root, options)`
+## `renderInstallPwaIos(root, options)`
 
-Renders the last screen before gameplay: a short message and a Continue button.
+Renders a screen that asks an iOS player to add the site to their home screen: what they gain, the steps to do it, and a button to carry on without installing.
 
-The screen exists because of VoiceOver. A running screen reader on iOS intercepts the multi-finger gestures a game needs, so the player has to turn it off. That instruction has to be delivered while the screen reader can still read it, hence a dedicated screen with a button rather than a message spoken as the game starts. Desktop screen readers do not intercept gameplay keys the same way, so the warning is dropped there and pressing Enter also confirms.
+The screen earns its place because a browser tab is a poor host for an audiogame. The address bar takes space, VoiceOver gesture handling differs, and the system can suspend audio when the tab goes to the background. A standalone home screen launch fixes all three.
 
-Returns a cleanup function when it binds an Enter listener, and `undefined` otherwise. The signature matches a screen, so it can be passed straight to `renderScreen`, which handles the cleanup for you:
+Only Safari on iOS offers Add to Home Screen, and a player who already launched from the home screen has nothing to do here, so guard the call:
 
 ```js
-renderScreen(root, renderHandoff, { onConfirm: () => startGame() })
+import { isIOS, isIOSStandalone } from 'audiogame-utils/platform'
+
+if (isIOS() && !isIOSStandalone()) renderScreen(root, renderInstallPwaIos, { onContinue: showMenu })
+else showMenu()
 ```
 
-Confirmation is one-shot: `onConfirm` runs at most once per render, since Enter on the focused button would otherwise fire both a click and a keydown.
+It binds no listeners outside `root` and returns nothing, so it needs no cleanup. Its signature matches a screen, so it works either standalone or through `renderScreen`.
 
 ### Options
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `canConfirm` | `true` | When false, renders the waiting variant: a live region and no button. |
-| `onConfirm` | none | Called once when the player confirms. |
-| `touch` | `isIOS()` | Whether to use the touch wording and skip the Enter binding. |
-| `confirmOnEnter` | `!touch` | Whether Enter anywhere on the page confirms. |
-| `title` | `'Almost ready'` | Heading for the confirm variant. |
-| `message` | varies by `touch` | Body text for the confirm variant. |
-| `confirmLabel` | `'Continue'` | Button label. |
-| `waitingTitle` | `'Waiting'` | Heading for the waiting variant. |
-| `waitingMessage` | varies by `touch` | Body text for the waiting variant. |
+| `onContinue` | none | Called when the player activates the button. |
+| `title` | `'Install for the best experience'` | Heading. |
+| `message` | See source. | First paragraph, on why installing is better. |
+| `instructions` | See source. | Second paragraph, the Safari steps. |
+| `continueLabel` | `'Continue anyway'` | Button label. |
 
-In a multiplayer game, only the player who starts the match gets `canConfirm: true`. Everyone else sees the waiting variant, which still carries the screen reader warning on touch so they can act on it before the game begins.
+## `renderSpeechSettings(root, options)`
+
+Renders the speech half of a settings screen: output mode, voice, rate, pitch, and a test button.
+
+It reads and writes through a speech instance, so there are no value or callback props. Whatever the player picks is saved in the storage that instance was given.
 
 ```js
-renderScreen(root, renderHandoff, {
-	canConfirm: isHost,
-	onConfirm: () => net.send({ type: 'start' }),
-	waitingMessage: 'Waiting for the host to serve.',
-})
+import { createSpeech } from 'audiogame-utils/speech'
+
+const speech = createSpeech({ storage })
+
+renderScreen(root, renderSpeechSettings, { speech, onBack: showMenu })
 ```
+
+The voice, rate, and pitch controls only appear when the current mode uses text to speech, since a screen reader supplies its own. Changing the mode redraws the screen and puts focus back on the radio the player just used.
+
+The mode picker is hidden on iOS by default. VoiceOver has to be off during gameplay, so text to speech is the only output left and there is nothing to choose. Pass `modes` to override this, and `modes: []` to hide the picker anywhere.
+
+`renderSpeechSettings` returns a cleanup function that removes its `voiceschanged` listener, so render it through `renderScreen` and call `dispose` when you leave the screen.
+
+Everything else in a settings screen, such as the display name, belongs to your game. Render it around this one.
+
+### Options
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `speech` | none, required | A `createSpeech` instance. Throws if missing. |
+| `onBack` | none | Adds a Back button. Without it there is no button. |
+| `modes` | `[]` on iOS, `['aria', 'tts']` elsewhere | Modes offered by the picker. An empty array hides it. |
+| `modeLabels` | `{ aria: 'Screen reader', tts: 'Text to speech', both: 'Both' }` | Label per mode. Merged with the defaults. |
+| `title` | `'Speech settings'` | Heading. |
+| `modeLegend` | `'Speech output'` | Fieldset legend. |
+| `voiceLabel` | `'Voice'` | Label for the voice list. |
+| `defaultVoiceLabel` | `'(default voice)'` | Entry shown when no voice is chosen. |
+| `rateLabel` | `'Speech rate'` | Label for the rate slider. |
+| `pitchLabel` | `'Speech pitch'` | Label for the pitch slider. |
+| `testLabel` | `'Test voice'` | Label for the preview button. |
+| `testMessage` | `'This is a test of the selected voice.'` | Text spoken by the preview button. |
+| `backLabel` | `'Back'` | Label for the Back button. |
