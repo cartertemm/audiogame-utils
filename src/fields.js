@@ -51,3 +51,34 @@ export function textField(label, options = {}) {
 		return [input, el('datalist', { id: listId }, ...options.suggestions.map(value => el('option', { value })))];
 	});
 }
+
+export function passwordField(label, options = {}) {
+	return field(label, options, (id, hintId) => el('input', {
+		...common(id, hintId, options),
+		type: 'password',
+		value: options.get(),
+		maxlength: options.maxLength,
+		onChange: (event) => options.set(event.target.value),
+	}));
+}
+
+export function textAreaField(label, options = {}) {
+	return field(label, options, (id, hintId) => el('textarea', {
+		...common(id, hintId, options),
+		rows: options.rows,
+		text: options.get(),
+		onChange: (event) => options.set(event.target.value),
+	}));
+}
+
+export function numberField(label, options = {}) {
+	return field(label, options, (id, hintId) => el('input', {
+		...common(id, hintId, options),
+		type: 'number',
+		min: options.min,
+		max: options.max,
+		step: options.step,
+		value: String(options.get()),
+		onChange: (event) => options.set(Number(event.target.value)),
+	}));
+}

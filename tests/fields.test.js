@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { textField } from '../src/fields.js';
+import { textField, passwordField, textAreaField, numberField } from '../src/fields.js';
 
 describe('fields: textField', () => {
 	test('pairs the label with the input', () => {
@@ -63,5 +63,64 @@ describe('fields: textField', () => {
 		expect(input.getAttribute('maxlength')).toBe('24');
 		expect(input.dataset.autofocus).toBe('true');
 		expect(input.hasAttribute('disabled')).toBe(true);
+	});
+});
+
+describe('fields: passwordField', () => {
+	test('renders a password input paired with its label', () => {
+		const node = passwordField('Server password', { get: () => 'hunter2', set: () => {} });
+		const input = node.querySelector('input');
+		expect(input.getAttribute('type')).toBe('password');
+		expect(input.getAttribute('value')).toBe('hunter2');
+		expect(node.querySelector('label').getAttribute('for')).toBe(input.getAttribute('id'));
+	});
+
+	test('commits the value on change', () => {
+		const set = vi.fn();
+		const node = passwordField('Password', { get: () => '', set });
+		const input = node.querySelector('input');
+		input.value = 'letmein';
+		input.dispatchEvent(new Event('change'));
+		expect(set).toHaveBeenCalledWith('letmein');
+	});
+});
+
+describe('fields: textAreaField', () => {
+	test('seeds the textarea with the current value', () => {
+		const node = textAreaField('Greeting', { get: () => 'Systems online.', set: () => {}, rows: 3 });
+		const area = node.querySelector('textarea');
+		expect(area.textContent).toBe('Systems online.');
+		expect(area.getAttribute('rows')).toBe('3');
+		expect(node.querySelector('label').getAttribute('for')).toBe(area.getAttribute('id'));
+	});
+
+	test('commits the value on change', () => {
+		const set = vi.fn();
+		const node = textAreaField('Greeting', { get: () => '', set });
+		const area = node.querySelector('textarea');
+		area.value = 'Good hunting.';
+		area.dispatchEvent(new Event('change'));
+		expect(set).toHaveBeenCalledWith('Good hunting.');
+	});
+});
+
+describe('fields: numberField', () => {
+	test('applies min, max, and step', () => {
+		const node = numberField('Turn step', { get: () => 15, set: () => {}, min: 5, max: 90, step: 5 });
+		const input = node.querySelector('input');
+		expect(input.getAttribute('type')).toBe('number');
+		expect(input.getAttribute('min')).toBe('5');
+		expect(input.getAttribute('max')).toBe('90');
+		expect(input.getAttribute('step')).toBe('5');
+		expect(input.getAttribute('value')).toBe('15');
+	});
+
+	test('commits a number, not a string', () => {
+		const set = vi.fn();
+		const node = numberField('Turn step', { get: () => 15, set });
+		const input = node.querySelector('input');
+		input.value = '30';
+		input.dispatchEvent(new Event('change'));
+		expect(set).toHaveBeenCalledWith(30);
 	});
 });
