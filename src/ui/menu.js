@@ -53,6 +53,8 @@ export function createMenu(options = {}) {
 	// Held separately so deleting or rebuilding an item cannot leave a stale
 	// class behind on a node the index no longer points at.
 	let focusedNode = null;
+	let wrapBlocked = false;
+	let wrapTimer = 0;
 
 	function announce(text) {
 		if (text) speech.speak(text, true);
@@ -113,6 +115,120 @@ export function createMenu(options = {}) {
 		setFocus(-1, { silent: true });
 	}
 
+	function enabledIndexes() {
+		const usable = [];
+		items.forEach((item, index) => {
+			if (!item.disabled) usable.push(index);
+		});
+		return usable;
+	}
+
+	// A browser cannot block, so a wrap drops movement input for the delay
+	// instead. The player-visible effect is the same: a held arrow key does not
+	// trample the wrap sound.
+	function blockWrap() {
+		if (config.wrapDelay <= 0) return;
+		wrapBlocked = true;
+		clearTimeout(wrapTimer);
+		wrapTimer = setTimeout(() => { wrapBlocked = false; }, config.wrapDelay);
+	}
+
+	function move(direction) {
+		if (wrapBlocked) return;
+		const usable = enabledIndexes();
+		if (usable.length === 0) {
+			sounds.play('edge');
+			return;
+		}
+		const position = usable.indexOf(focusedIndex);
+		if (position === -1) {
+			sounds.play('click');
+			setFocus(direction > 0 ? usable[0] : usable[usable.length - 1]);
+			return;
+		}
+		const next = position + direction;
+		if (next >= 0 && next < usable.length) {
+			sounds.play('click');
+			setFocus(usable[next]);
+			return;
+		}
+		if (!config.wrap) {
+			sounds.play('edge');
+			announce(items[focusedIndex].speak());
+			return;
+		}
+		sounds.play('wrap');
+		blockWrap();
+		setFocus(next < 0 ? usable[usable.length - 1] : usable[0]);
+	}
+
+	function jumpToEnd(direction) {
+		const usable = enabledIndexes();
+		if (usable.length === 0) {
+			sounds.play('edge');
+			return;
+		}
+		const target = direction > 0 ? usable[0] : usable[usable.length - 1];
+		if (target === focusedIndex) {
+			sounds.play('edge');
+			announce(items[target].speak());
+			return;
+		}
+		sounds.play('click');
+		setFocus(target);
+	}
+
+	function jumpToLetter(letter) {
+		const usable = enabledIndexes();
+		if (usable.length === 0) return;
+		const lower = letter.toLowerCase();
+		const start = usable.indexOf(focusedIndex);
+		for (let offset = 1; offset <= usable.length; offset += 1) {
+			const index = usable[(start + offset + usable.length) % usable.length];
+			if (!items[index].label.toLowerCase().startsWith(lower)) continue;
+			sounds.play('click');
+			setFocus(index);
+			return;
+		}
+	}
+
+	function adjustFocused(direction) {
+		const item = items[focusedIndex];
+		if (!item || item.disabled) return;
+		if (!item.adjust(direction)) sounds.play('edge');
+	}
+
+	// Task 5 resolves the pending `run()` promise here.
+	let pending = null;
+
+	function settle(value) {
+		const resolve = pending?.resolve;
+		pending = null;
+		resolve?.(value);
+	}
+
+	function activateFocused() {
+		const item = items[focusedIndex];
+		if (!item || item.disabled) return;
+		if (item.type === 'checkbox') {
+			item.toggle();
+			return;
+		}
+		if (item.type !== 'text') return;
+		sounds.play('select');
+		settle(item);
+	}
+
+	function spaceFocused() {
+		const item = items[focusedIndex];
+		if (!item || item.disabled) return;
+		if (item.type === 'checkbox') {
+			item.toggle();
+			return;
+		}
+		activateFocused();
+	}
+
 	const api = {
 		get items() {
 			return [...items];
@@ -166,6 +282,13 @@ export function createMenu(options = {}) {
 
 		deleteItem,
 		deleteAllItems,
+
+		_move: move,
+		_jumpToEnd: jumpToEnd,
+		_jumpToLetter: jumpToLetter,
+		_adjustFocused: adjustFocused,
+		_activateFocused: activateFocused,
+		_spaceFocused: spaceFocused,
 
 		_rebuild(item) {
 			const wasFocused = focusedNode === item.node;

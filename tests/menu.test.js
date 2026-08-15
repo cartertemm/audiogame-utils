@@ -430,3 +430,144 @@ describe('createMenu: cursor assignment', () => {
 		expect(start.node.classList.contains('focused')).toBe(true);
 	});
 });
+
+import { vi } from 'vitest';
+
+describe('createMenu: movement', () => {
+	function threeItems(options = {}) {
+		const context = setup(options);
+		context.one = context.menu.addTextItem('One');
+		context.two = context.menu.addTextItem('Two');
+		context.three = context.menu.addTextItem('Three');
+		return context;
+	}
+
+	test('an unset cursor lands on the first item when moving down', () => {
+		const { menu, one, speech } = threeItems({ clickSound: 'click' });
+		expect(menu.focusedIndex).toBe(-1);
+		menu._move(1);
+		expect(menu.focusedItem).toBe(one);
+		expect(speech.last()).toBe('One');
+	});
+
+	test('an unset cursor lands on the last item when moving up', () => {
+		const { menu, three } = threeItems();
+		menu._move(-1);
+		expect(menu.focusedItem).toBe(three);
+	});
+
+	test('moving plays the click sound', () => {
+		const { menu, audio } = threeItems({ clickSound: 'click', soundsSuffix: '.ogg' });
+		menu._move(1);
+		menu._move(1);
+		expect(audio.played).toEqual(['click.ogg', 'click.ogg']);
+	});
+
+	test('an edge without wrap plays the edge sound and repeats the item', () => {
+		const { menu, one, speech, audio } = threeItems({ edgeSound: 'edge', soundsSuffix: '.ogg' });
+		menu.focusedItem = one;
+		menu._move(-1);
+		expect(menu.focusedItem).toBe(one);
+		expect(audio.played).toEqual(['edge.ogg']);
+		expect(speech.last()).toBe('One');
+	});
+
+	test('an edge with wrap jumps to the other end and plays the wrap sound', () => {
+		const { menu, one, three, audio } = threeItems({
+			wrap: true, wrapSound: 'wrap', soundsSuffix: '.ogg', wrapDelay: 0,
+		});
+		menu.focusedItem = one;
+		menu._move(-1);
+		expect(menu.focusedItem).toBe(three);
+		expect(audio.played).toEqual(['wrap.ogg']);
+	});
+
+	test('movement inside wrapDelay is ignored', () => {
+		vi.useFakeTimers();
+		const { menu, one, three } = threeItems({ wrap: true, wrapDelay: 50 });
+		menu.focusedItem = one;
+		menu._move(-1);
+		expect(menu.focusedItem).toBe(three);
+		menu._move(-1);
+		expect(menu.focusedItem).toBe(three);
+		vi.advanceTimersByTime(50);
+		menu._move(-1);
+		expect(menu.focusedItem.label).toBe('Two');
+		vi.useRealTimers();
+	});
+
+	test('disabled items are skipped and still rendered', () => {
+		const { menu } = setup();
+		const one = menu.addTextItem('One');
+		const two = menu.addTextItem('Two', { disabled: true });
+		const three = menu.addTextItem('Three');
+		menu.focusedItem = one;
+		menu._move(1);
+		expect(menu.focusedItem).toBe(three);
+		expect(two.node.textContent).toBe('Two');
+		expect(two.node.hasAttribute('disabled')).toBe(true);
+	});
+
+	test('moving in an empty menu plays the edge sound', () => {
+		const { menu, audio } = setup({ edgeSound: 'edge', soundsSuffix: '.ogg' });
+		menu._move(1);
+		expect(menu.focusedIndex).toBe(-1);
+		expect(audio.played).toEqual(['edge.ogg']);
+	});
+
+	test('Home and End jump to the ends', () => {
+		const { menu, one, three } = threeItems();
+		menu._jumpToEnd(-1);
+		expect(menu.focusedItem).toBe(three);
+		menu._jumpToEnd(1);
+		expect(menu.focusedItem).toBe(one);
+	});
+
+	test('first letter navigation finds the next match and wraps', () => {
+		const { menu } = setup();
+		menu.addTextItem('Start');
+		menu.addTextItem('Settings');
+		menu.addTextItem('Quit');
+		menu._jumpToLetter('s');
+		expect(menu.focusedItem.label).toBe('Start');
+		menu._jumpToLetter('s');
+		expect(menu.focusedItem.label).toBe('Settings');
+		menu._jumpToLetter('s');
+		expect(menu.focusedItem.label).toBe('Start');
+	});
+
+	test('first letter navigation ignores a letter with no match', () => {
+		const { menu, one } = threeItems();
+		menu.focusedItem = one;
+		menu._jumpToLetter('z');
+		expect(menu.focusedItem).toBe(one);
+	});
+
+	test('adjusting speaks the value alone', () => {
+		const { menu, speech } = setup();
+		const volume = menu.addSlider('Volume', 0, 100, 50, { step: 5 });
+		menu.focusedItem = volume;
+		expect(speech.last()).toBe('Volume, 50');
+		menu._adjustFocused(1);
+		expect(volume.value).toBe(55);
+		expect(speech.last()).toBe('55');
+	});
+
+	test('adjusting past a boundary plays the edge sound', () => {
+		const { menu, audio } = setup({ edgeSound: 'edge', soundsSuffix: '.ogg' });
+		const volume = menu.addSlider('Volume', 0, 100, 100, { step: 5 });
+		menu.focusedItem = volume;
+		menu._adjustFocused(1);
+		expect(audio.played).toEqual(['edge.ogg']);
+	});
+
+	test('a value change on an unfocused item stays silent', () => {
+		const { menu, speech } = setup();
+		const volume = menu.addSlider('Volume', 0, 100, 50);
+		const other = menu.addTextItem('Other');
+		menu.focusedItem = other;
+		const before = speech.spoken.length;
+		volume.value = 70;
+		expect(speech.spoken.length).toBe(before);
+	});
+});
