@@ -82,6 +82,19 @@ describe('createMap: loading', () => {
 		expect(map.getDataAt('tile', 5, 5, 5, 5, 0, 0)).toEqual([]);
 	});
 
+	test('clear keeps custom registered types usable', async () => {
+		const map = await loaded();
+		map.registerType('spawn', { fields: ['item'] });
+		map.clear();
+		await map.loadMap({
+			data: {
+				name: 'a', maxx: 10, maxy: 10, maxz: 0,
+				entries: [{ type: 'spawn', minx: 1, maxx: 1, miny: 1, maxy: 1, minz: 0, maxz: 0, item: 'ammo' }],
+			},
+		});
+		expect(map.getOneAt('spawn', 1, 1, 0)).toMatchObject({ item: 'ammo' });
+	});
+
 	test('a load rejected by a bad entry leaves the map unchanged', async () => {
 		const map = await loaded();
 		const before = map.serialize();
@@ -205,6 +218,21 @@ describe('createMap: writing', () => {
 		expect(() =>
 			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' }),
 		).not.toThrow();
+	});
+
+	test('setDataAt before any loadMap skips the bounds check', () => {
+		const map = createMap();
+		map.registerType('spawn', { fields: [] });
+		expect(() =>
+			map.setDataAt({ type: 'spawn', minx: -50, maxx: -50, miny: -50, maxy: -50, minz: -50, maxz: -50 }),
+		).not.toThrow();
+	});
+
+	test('setDataAt after loadMap enforces the bounds check', async () => {
+		const map = await loaded();
+		expect(() =>
+			map.setDataAt({ type: 'zone', minx: 5000, maxx: 5000, miny: 0, maxy: 0, minz: 0, maxz: 0, name: 'far' }),
+		).toThrow(/outside the map/);
 	});
 });
 
@@ -402,4 +430,48 @@ describe('createMap: performance', () => {
 		console.log(`500 stacked levels: ${(total_ms / QUERY_COUNT * 1000).toFixed(1)}us per point query`);
 		expect(total_ms).toBeLessThan(2000);
 	}, 60000);
+
+	test('setDataAt stays cheap on a map with a few thousand entries', async () => {
+		const entries = [];
+		for (let i = 0; i < 5000; i++) {
+			entries.push({ type: 'zone', minx: i % 1000, maxx: i % 1000, miny: Math.floor(i / 1000), maxy: Math.floor(i / 1000), minz: 0, maxz: 0, name: `z${i % 50}` });
+		}
+		const map = createMap();
+		await map.loadMap({ data: { name: 'mid', maxx: 1000, maxy: 1000, maxz: 0, entries } });
+
+		const CALLS = 500;
+		const start = performance.now();
+		for (let i = 0; i < CALLS; i++) {
+			map.setDataAt({ type: 'zone', minx: 900 + (i % 100), maxx: 900 + (i % 100), miny: 900, maxy: 900, minz: 0, maxz: 0, name: 'added' });
+		}
+		const total_ms = performance.now() - start;
+
+		console.log(`${CALLS} setDataAt calls on a 5k map: ${total_ms.toFixed(2)}ms total`);
+		// A full scan-and-sort per call on 5000+ entries would cost several seconds
+		// across this many calls; a regression back to that path blows well past this.
+		expect(total_ms).toBeLessThan(200);
+	}, 30000);
+
+	test('loading a second batch into an "error" type only checks the new entries', async () => {
+		const first = [];
+		for (let i = 0; i < 5000; i++) {
+			first.push({ type: 'tile', minx: i % 500, maxx: i % 500, miny: Math.floor(i / 500), maxy: Math.floor(i / 500), minz: 0, maxz: 0, tile: 'grass' });
+		}
+		const map = createMap();
+		await map.loadMap({ data: { name: 'floor', maxx: 500, maxy: 500, maxz: 0, entries: first } });
+
+		const start = performance.now();
+		await map.loadMap({
+			data: {
+				name: 'more', maxx: 500, maxy: 500, maxz: 0,
+				entries: [{ type: 'tile', minx: 499, maxx: 499, miny: 499, maxy: 499, minz: 0, maxz: 0, tile: 'road' }],
+			},
+		});
+		const total_ms = performance.now() - start;
+
+		console.log(`loading one more "tile" entry into a 5k tile map: ${total_ms.toFixed(2)}ms`);
+		// Re-checking all 5001 entries against the tree would be much slower than
+		// checking just the one newly added entry.
+		expect(total_ms).toBeLessThan(50);
+	}, 30000);
 });

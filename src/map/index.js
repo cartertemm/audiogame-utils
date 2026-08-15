@@ -53,13 +53,19 @@ export function createMap(options = {}) {
 
 		const added = [];
 		try {
-			const touched = new Set();
+			const added_by_type = new Map();
 			parsed.entries.forEach((entry) => {
-				added.push(store.add(entry));
-				touched.add(entry.type);
+				const id = store.add(entry);
+				added.push(id);
+				if (!added_by_type.has(entry.type)) added_by_type.set(entry.type, []);
+				added_by_type.get(entry.type).push(id);
 			});
-			for (const type of touched) {
-				if (types.get(type).overlap === 'error') store.assertNoOverlap(type);
+			for (const [type, ids] of added_by_type) {
+				// Only the ids this load just added need checking: earlier loads already
+				// proved their own entries non-overlapping, and query() below still
+				// searches the whole bucket, so each new id is still compared against
+				// every pre-existing entry, not only against this batch.
+				if (types.get(type).overlap === 'error') store.assertNoOverlap(type, ids);
 			}
 		} catch (err) {
 			store.remove(added);
@@ -94,8 +100,13 @@ export function createMap(options = {}) {
 	}
 
 	function setDataAt(entry) {
-		types.validate(entry, store.size());
-		assert_in_bounds(entry, store.size(), header);
+		// The error-message label just needs to identify which entry a message is
+		// about. store.size() computes that by walking and sorting every live id,
+		// which is O(n log n) per call. store.rowCount() is the store's existing
+		// monotonic row counter, so it is O(1) and still names a specific row.
+		const label = store.rowCount();
+		types.validate(entry, label);
+		assert_in_bounds(entry, label, header);
 		if (types.get(entry.type).overlap === 'error') {
 			const clash = store.query(
 				entry.type,

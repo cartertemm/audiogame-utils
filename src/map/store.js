@@ -175,11 +175,14 @@ export function createStore(types) {
 	}
 
 	// Overlap is checked once after a bulk load rather than per insert, because
-	// per insert would force an index build for every entry.
-	function assertNoOverlap(type) {
+	// per insert would force an index build for every entry. When ids is given,
+	// only those rows are walked (entries a previous, already-checked load added
+	// are skipped); each is still searched against the whole bucket, so it is
+	// still compared against every pre-existing entry, just not re-iterated.
+	function assertNoOverlap(type, ids) {
 		const bucket = buckets.get(type);
 		if (!bucket) return;
-		for (const id of bucket.ids) {
+		for (const id of ids ?? bucket.ids) {
 			if (removed_rows[id]) continue;
 			const row = id * STRIDE;
 			const hits = query(
@@ -237,6 +240,7 @@ export function createStore(types) {
 		liveIds,
 		clear,
 		size: () => liveIds().length,
+		rowCount: () => count,
 		valueCount: () => values.length,
 		boundsBytes: () => count * STRIDE * 4,
 	};
