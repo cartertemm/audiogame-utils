@@ -31,14 +31,6 @@ describe('parseJSON', () => {
 		expect(() => parseJSON(broken)).toThrow(new RegExp(key));
 	});
 
-	test('rejects entries that is not an array', () => {
-		expect(() => parseJSON({ ...file, entries: 5 })).toThrow(/^map: /);
-	});
-
-	test('rejects an entries array containing null', () => {
-		expect(() => parseJSON({ ...file, entries: [null] })).toThrow(/^map: /);
-	});
-
 	test('rejects a string that is not valid JSON', () => {
 		expect(() => parseJSON('{not json')).toThrow('map: file is not valid JSON');
 	});

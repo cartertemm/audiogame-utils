@@ -61,6 +61,21 @@ describe('createMap: loading', () => {
 		await expect(map.loadMap({ data: city, from: () => city })).rejects.toThrow(/exactly one/);
 	});
 
+	test('rejects entries that is not an array', async () => {
+		const map = createMap();
+		await expect(map.loadMap({ data: { ...city, entries: 5 } })).rejects.toThrow(/^map: /);
+	});
+
+	test('rejects an entries array containing null', async () => {
+		const map = createMap();
+		await expect(map.loadMap({ data: { ...city, entries: [null] } })).rejects.toThrow(/^map: /);
+	});
+
+	test('a custom parser cannot bypass the entries shape check', async () => {
+		const map = createMap({ parser: () => ({ name: 'a', maxx: 10, maxy: 10, maxz: 0, entries: [null] }) });
+		await expect(map.loadMap({ data: 'anything, the custom parser ignores this' })).rejects.toThrow(/^map: /);
+	});
+
 	test('a second load merges and widens the header', async () => {
 		const map = await loaded();
 		await map.loadMap({
@@ -431,47 +446,53 @@ describe('createMap: performance', () => {
 		expect(total_ms).toBeLessThan(2000);
 	}, 60000);
 
-	test('setDataAt stays cheap on a map with a few thousand entries', async () => {
+	test('setDataAt stays cheap on a map with tens of thousands of entries', async () => {
 		const entries = [];
-		for (let i = 0; i < 5000; i++) {
-			entries.push({ type: 'zone', minx: i % 1000, maxx: i % 1000, miny: Math.floor(i / 1000), maxy: Math.floor(i / 1000), minz: 0, maxz: 0, name: `z${i % 50}` });
+		for (let i = 0; i < 50000; i++) {
+			entries.push({ type: 'zone', minx: i % 5000, maxx: i % 5000, miny: Math.floor(i / 5000), maxy: Math.floor(i / 5000), minz: 0, maxz: 0, name: `z${i % 50}` });
 		}
 		const map = createMap();
-		await map.loadMap({ data: { name: 'mid', maxx: 1000, maxy: 1000, maxz: 0, entries } });
+		await map.loadMap({ data: { name: 'mid', maxx: 5000, maxy: 5000, maxz: 0, entries } });
 
 		const CALLS = 500;
 		const start = performance.now();
 		for (let i = 0; i < CALLS; i++) {
-			map.setDataAt({ type: 'zone', minx: 900 + (i % 100), maxx: 900 + (i % 100), miny: 900, maxy: 900, minz: 0, maxz: 0, name: 'added' });
+			map.setDataAt({ type: 'zone', minx: 4900 + (i % 100), maxx: 4900 + (i % 100), miny: 4900, maxy: 4900, minz: 0, maxz: 0, name: 'added' });
 		}
 		const total_ms = performance.now() - start;
 
-		console.log(`${CALLS} setDataAt calls on a 5k map: ${total_ms.toFixed(2)}ms total`);
-		// A full scan-and-sort per call on 5000+ entries would cost several seconds
-		// across this many calls; a regression back to that path blows well past this.
-		expect(total_ms).toBeLessThan(200);
+		console.log(`${CALLS} setDataAt calls on a 50k map: ${total_ms.toFixed(2)}ms total`);
+		// A per-call scan-and-sort of a 50k-entry store (the pre-fix label cost)
+		// measures at roughly 700ms for this many calls on this machine; the fixed
+		// cost measures well under 1ms. 50ms sits far above the fixed cost and far
+		// below the unfixed one, so it fails loudly on a regression without flaking
+		// on a slower machine.
+		expect(total_ms).toBeLessThan(50);
 	}, 30000);
 
 	test('loading a second batch into an "error" type only checks the new entries', async () => {
 		const first = [];
-		for (let i = 0; i < 5000; i++) {
-			first.push({ type: 'tile', minx: i % 500, maxx: i % 500, miny: Math.floor(i / 500), maxy: Math.floor(i / 500), minz: 0, maxz: 0, tile: 'grass' });
+		for (let i = 0; i < 50000; i++) {
+			first.push({ type: 'tile', minx: i % 5000, maxx: i % 5000, miny: Math.floor(i / 5000), maxy: Math.floor(i / 5000), minz: 0, maxz: 0, tile: 'grass' });
 		}
 		const map = createMap();
-		await map.loadMap({ data: { name: 'floor', maxx: 500, maxy: 500, maxz: 0, entries: first } });
+		await map.loadMap({ data: { name: 'floor', maxx: 5000, maxy: 5000, maxz: 0, entries: first } });
 
 		const start = performance.now();
 		await map.loadMap({
 			data: {
-				name: 'more', maxx: 500, maxy: 500, maxz: 0,
-				entries: [{ type: 'tile', minx: 499, maxx: 499, miny: 499, maxy: 499, minz: 0, maxz: 0, tile: 'road' }],
+				name: 'more', maxx: 5000, maxy: 5000, maxz: 0,
+				entries: [{ type: 'tile', minx: 4999, maxx: 4999, miny: 4999, maxy: 4999, minz: 0, maxz: 0, tile: 'road' }],
 			},
 		});
 		const total_ms = performance.now() - start;
 
-		console.log(`loading one more "tile" entry into a 5k tile map: ${total_ms.toFixed(2)}ms`);
-		// Re-checking all 5001 entries against the tree would be much slower than
-		// checking just the one newly added entry.
-		expect(total_ms).toBeLessThan(50);
+		console.log(`loading one more "tile" entry into a 50k tile map: ${total_ms.toFixed(2)}ms`);
+		// Re-checking all 50001 entries against the tree (the pre-fix full-bucket
+		// check) measures at roughly 14ms on this machine; the fixed cost measures
+		// well under 1ms. 5ms sits above the fixed cost with headroom and below the
+		// unfixed one, so it fails loudly on a regression without flaking on a
+		// slower machine.
+		expect(total_ms).toBeLessThan(5);
 	}, 30000);
 });
