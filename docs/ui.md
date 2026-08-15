@@ -1,36 +1,47 @@
 # UI
 
-The `audiogame-utils/ui` module builds the screens that surround gameplay: menus, forms, lobbies, and the handoff into the game itself. It is a few dozen lines of DOM helpers, not a framework. There is no virtual DOM, no reactivity, and no template syntax.
+The `audiogame-utils/ui` module provides small DOM helpers for accessible screens around gameplay, such as menus, forms, lobbies, installation prompts, and speech settings. It uses plain semantic HTML. There is no virtual DOM, reactive state, or template syntax.
 
 ```js
-import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from 'audiogame-utils/ui'
+import {
+	el,
+	mount,
+	renderScreen,
+	renderInstallPwaIos,
+	renderSpeechSettings,
+} from 'audiogame-utils/ui'
 ```
 
-Screens are plain semantic HTML, which is what screen readers navigate best. Keep gameplay itself out of this module.
+## Creating elements
 
-## `el(tag, attrs, ...children)`
+`el(tag, attrs, ...children)` creates an HTML element.
 
-Creates an element. Attribute keys are handled as follows:
+Attribute keys have these rules:
 
 1. `text` sets `textContent`.
-2. `autoFocus` marks the element for `mount` to focus. It is not the HTML `autofocus` attribute.
-3. Keys starting with `on` whose value is a function are added as event listeners, lowercased: `onClick` becomes a `click` listener.
-4. Everything else is set with `setAttribute`, unless the value is `null` or `undefined`, in which case it is skipped.
+2. `autoFocus` marks the element for `mount()` to focus. It does not set the HTML `autofocus` attribute.
+3. A key beginning with `on`, when paired with a function, adds an event listener. For example, `onClick` adds a `click` listener.
+4. Other values are passed to `setAttribute()`. Values of `null` and `undefined` are skipped.
 
-Children are appended in order. Strings become text nodes, and `null` and `undefined` are skipped, so conditional children need no filtering.
+String children become text nodes. Element children are appended directly. Children that are `null` or `undefined` are skipped, which makes conditional content straightforward.
 
 ```js
-const button = el('button', {
+const joinButton = el('button', {
 	type: 'button',
 	text: 'Join game',
 	onClick: () => joinGame(),
 	autoFocus: true,
 })
 
-const heading = el('h1', {}, 'Welcome, ', el('b', { text: playerName }))
+const heading = el(
+	'h1',
+	{},
+	'Welcome, ',
+	el('strong', { text: playerName }),
+)
 ```
 
-Skipping `null` values makes conditional attributes readable:
+Conditional attributes can use `undefined` when they should be omitted:
 
 ```js
 el('input', {
@@ -40,122 +51,163 @@ el('input', {
 })
 ```
 
-## `mount(root, nodes)`
+## Mounting a screen
 
-Empties `root`, appends each node, then focuses the first element marked with `autoFocus`. Entries that are `null` or `undefined` are skipped.
+`mount(root, nodes)` removes the current contents of `root`, appends each node, then focuses the first descendant marked with `autoFocus`. Entries that are `null` or `undefined` are skipped.
 
-Moving focus on every screen change is what makes a screen reader announce the new screen, so every screen should mark exactly one element with `autoFocus`.
+Mark one interactive element on each screen with `autoFocus` so keyboard and screen reader users begin in a predictable place.
 
 ```js
 function mainMenu(root, props) {
 	mount(root, [
 		el('h1', { text: `Welcome, ${props.name}` }),
-		el('nav', {},
-			el('button', { text: 'Create game', onClick: props.onCreate, autoFocus: true }),
-			el('button', { text: 'Join game', onClick: props.onJoin }),
-			props.connected ? el('button', { text: 'Disconnect', onClick: props.onDisconnect }) : null,
+		el(
+			'nav',
+			{},
+			el('button', {
+				type: 'button',
+				text: 'Create game',
+				onClick: props.onCreate,
+				autoFocus: true,
+			}),
+			el('button', {
+				type: 'button',
+				text: 'Join game',
+				onClick: props.onJoin,
+			}),
+			props.connected
+				? el('button', {
+					type: 'button',
+					text: 'Disconnect',
+					onClick: props.onDisconnect,
+				})
+				: null,
 		),
 	])
 }
 ```
 
-## `renderScreen(root, screen, props)`
+## Managing screen cleanup
 
-Renders a screen and returns `{ dispose }`.
+`renderScreen(root, screen, props)` calls a screen function with `root` and `props`, then returns an object with a `dispose()` method.
 
-A screen is a function taking `(root, props)`. If it returns a function, `dispose` calls that function before emptying `root`. Use the returned function to undo anything that outlives the DOM, such as listeners on `window` or subscriptions. Listeners attached to the screen's own elements need no cleanup, since the elements are discarded.
+If the screen returns a cleanup function, `dispose()` calls it before emptying `root`. Use cleanup for work that survives outside the rendered DOM, such as global event listeners or subscriptions. Event listeners attached to elements inside `root` disappear with those elements.
 
-`dispose` is safe to call more than once. Passing a `screen` that is not a function throws a `TypeError`.
+Calling `dispose()` more than once is safe. Passing anything other than a function as `screen` throws a `TypeError`.
 
 ```js
-let current = null
+let currentScreen = null
 
 function show(screen, props) {
-	current?.dispose()
-	current = renderScreen(document.getElementById('app'), screen, props)
+	currentScreen?.dispose()
+	currentScreen = renderScreen(document.getElementById('app'), screen, props)
 }
 
-show(mainMenu, { name, connected, onCreate, onJoin, onDisconnect })
+show(mainMenu, {
+	name: playerName,
+	connected,
+	onCreate: createGame,
+	onJoin: joinGame,
+	onDisconnect: disconnect,
+})
 ```
 
-A screen that needs cleanup returns it:
+A screen can return its cleanup directly:
 
 ```js
-function settings(root, props) {
-	const select = el('select', { id: 'voice', onChange: (e) => props.onVoiceChange(e.target.value) })
-	populate(select, props.voices)
-	mount(root, [el('label', { for: 'voice', text: 'Voice' }), select])
-	const onVoicesChanged = () => populate(select, speechSynthesis.getVoices())
-	speechSynthesis.addEventListener('voiceschanged', onVoicesChanged)
-	return () => speechSynthesis.removeEventListener('voiceschanged', onVoicesChanged)
+function connectionStatus(root, props) {
+	const updateStatus = () => {
+		root.querySelector('#status').textContent = props.connection.status
+	}
+
+	mount(root, [el('p', { id: 'status', text: props.connection.status })])
+	props.connection.addEventListener('statuschange', updateStatus)
+
+	return () => {
+		props.connection.removeEventListener('statuschange', updateStatus)
+	}
 }
 ```
 
-The module deliberately ships no screen registry. Keep your screens in whatever object or module suits the game and pass the function you want.
+## iOS installation prompt
 
-## `renderInstallPwaIos(root, options)`
+`renderInstallPwaIos(root, options)` renders instructions for adding the game to the iOS home screen, plus a button that lets the player continue without installing it.
 
-Renders a screen that asks an iOS player to add the site to their home screen: what they gain, the steps to do it, and a button to carry on without installing.
-
-The screen earns its place because a browser tab is a poor host for an audiogame. The address bar takes space, VoiceOver gesture handling differs, and the system can suspend audio when the tab goes to the background. A standalone home screen launch fixes all three.
-
-Only Safari on iOS offers Add to Home Screen, and a player who already launched from the home screen has nothing to do here, so guard the call:
+Use the platform helpers to show the prompt only on iOS when the game is running in a browser:
 
 ```js
 import { isIOS, isIOSStandalone } from 'audiogame-utils/platform'
 
-if (isIOS() && !isIOSStandalone()) renderScreen(root, renderInstallPwaIos, { onContinue: showMenu })
-else showMenu()
+if (isIOS() && !isIOSStandalone()) {
+	renderScreen(root, renderInstallPwaIos, { onContinue: showMenu })
+} else {
+	showMenu()
+}
 ```
 
-It binds no listeners outside `root` and returns nothing, so it needs no cleanup. Its signature matches a screen, so it works either standalone or through `renderScreen`.
+The renderer binds no listeners outside `root` and returns no cleanup function. It can be called directly or passed to `renderScreen()`.
 
-### Options
+### Installation prompt options
 
-| Option | Default | Meaning |
+| Option | Default | Description |
 | --- | --- | --- |
-| `onContinue` | none | Called when the player activates the button. |
-| `title` | `'Install for the best experience'` | Heading. |
-| `message` | See source. | First paragraph, on why installing is better. |
-| `instructions` | See source. | Second paragraph, the Safari steps. |
-| `continueLabel` | `'Continue anyway'` | Button label. |
+| `onContinue` | none | Called when the player activates the continue button. |
+| `title` | `Install for the best experience` | Screen heading. |
+| `message` | built in guidance | Explains the benefits of installing the game. |
+| `instructions` | built in guidance | Explains how to add the game to the iOS home screen. |
+| `continueLabel` | `Continue anyway` | Continue button label. |
 
-## `renderSpeechSettings(root, options)`
+## Speech settings
 
-Renders the speech half of a settings screen: output mode, voice, rate, pitch, and a test button.
+`renderSpeechSettings(root, options)` renders controls for speech output mode, voice, rate, pitch, and voice testing.
 
-It reads and writes through a speech instance, so there are no value or callback props. Whatever the player picks is saved in the storage that instance was given.
+The `speech` option is required and should be an instance returned by `createSpeech()`. The renderer reads current values from the instance and writes changes back to it, so preferences use the storage configured for that speech instance.
 
 ```js
 import { createSpeech } from 'audiogame-utils/speech'
 
 const speech = createSpeech({ storage })
 
-renderScreen(root, renderSpeechSettings, { speech, onBack: showMenu })
+const settingsScreen = renderScreen(root, renderSpeechSettings, {
+	speech,
+	onBack: showMenu,
+})
+
+// Call this when leaving the settings screen.
+settingsScreen.dispose()
 ```
 
-The voice, rate, and pitch controls only appear when the current mode uses text to speech, since a screen reader supplies its own. Changing the mode redraws the screen and puts focus back on the radio the player just used.
+Voice, rate, and pitch controls appear only when the selected mode uses text to speech. Changing the mode redraws the controls and restores focus to the selected mode.
 
-The mode picker is hidden on iOS by default. VoiceOver has to be off during gameplay, so text to speech is the only output left and there is nothing to choose. Pass `modes` to override this, and `modes: []` to hide the picker anywhere.
+The mode picker is hidden on iOS by default. Pass `modes` to replace the default list. Pass an empty array to hide the picker on any platform.
 
-`renderSpeechSettings` returns a cleanup function that removes its `voiceschanged` listener, so render it through `renderScreen` and call `dispose` when you leave the screen.
+The browser may load or change its voice list asynchronously. The renderer listens for `voiceschanged` and refreshes the voice selector. Its cleanup function removes that listener, so call the `dispose()` method returned by `renderScreen()` when leaving the settings screen.
 
-Everything else in a settings screen, such as the display name, belongs to your game. Render it around this one.
+### Speech settings options
 
-### Options
-
-| Option | Default | Meaning |
+| Option | Default | Description |
 | --- | --- | --- |
-| `speech` | none, required | A `createSpeech` instance. Throws if missing. |
-| `onBack` | none | Adds a Back button. Without it there is no button. |
-| `modes` | `[]` on iOS, `['aria', 'tts']` elsewhere | Modes offered by the picker. An empty array hides it. |
-| `modeLabels` | `{ aria: 'Screen reader', tts: 'Text to speech', both: 'Both' }` | Label per mode. Merged with the defaults. |
-| `title` | `'Speech settings'` | Heading. |
-| `modeLegend` | `'Speech output'` | Fieldset legend. |
-| `voiceLabel` | `'Voice'` | Label for the voice list. |
-| `defaultVoiceLabel` | `'(default voice)'` | Entry shown when no voice is chosen. |
-| `rateLabel` | `'Speech rate'` | Label for the rate slider. |
-| `pitchLabel` | `'Speech pitch'` | Label for the pitch slider. |
-| `testLabel` | `'Test voice'` | Label for the preview button. |
-| `testMessage` | `'This is a test of the selected voice.'` | Text spoken by the preview button. |
-| `backLabel` | `'Back'` | Label for the Back button. |
+| `speech` | none | Required speech instance. The renderer throws if this is missing. |
+| `onBack` | none | Adds a Back button and handles its activation. |
+| `modes` | `[]` on iOS, `[MODE_ARIA, MODE_TTS]` elsewhere | Modes shown in the output picker. An empty array hides the picker. |
+| `modeLabels` | built in labels | Labels keyed by mode. Custom labels are merged with the defaults. |
+| `title` | `Speech settings` | Screen heading. |
+| `modeLegend` | `Speech output` | Output mode fieldset legend. |
+| `voiceLabel` | `Voice` | Voice selector label. |
+| `defaultVoiceLabel` | `(default voice)` | Option shown when no voice is selected. |
+| `rateLabel` | `Speech rate` | Rate slider label. |
+| `pitchLabel` | `Speech pitch` | Pitch slider label. |
+| `testLabel` | `Test voice` | Voice test button label. |
+| `testMessage` | `This is a test of the selected voice.` | Text spoken by the voice test button. |
+| `backLabel` | `Back` | Back button label. |
+
+To offer all output modes, import and pass the mode constants:
+
+```js
+import { MODE_ARIA, MODE_TTS, MODE_BOTH } from 'audiogame-utils/speech'
+
+renderScreen(root, renderSpeechSettings, {
+	speech,
+	modes: [MODE_ARIA, MODE_TTS, MODE_BOTH],
+})
+```
