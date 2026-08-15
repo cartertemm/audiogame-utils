@@ -7,7 +7,7 @@ const file = {
 	maxy: 1000,
 	maxz: 3,
 	entries: [
-		{ type: 'tile', minx: 0, maxx: 50, miny: 0, maxy: 50, minz: 0, maxz: 0, tile: 'concrete' },
+		{ type: 'tile', minx: 0, maxx: 50, miny: 0, maxy: 50, minz: 0, maxz: 0, file: 'concrete.ogg' },
 	],
 };
 

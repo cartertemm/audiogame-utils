@@ -7,7 +7,7 @@ const city = {
 	maxy: 1000,
 	maxz: 10,
 	entries: [
-		{ type: 'tile', minx: 0, maxx: 99, miny: 0, maxy: 99, minz: 0, maxz: 0, tile: 'grass' },
+		{ type: 'tile', minx: 0, maxx: 99, miny: 0, maxy: 99, minz: 0, maxz: 0, file: 'grass.ogg' },
 		{ type: 'zone', minx: 0, maxx: 50, miny: 0, maxy: 50, minz: 0, maxz: 0, name: 'west' },
 		{ type: 'zone', minx: 10, maxx: 20, miny: 10, maxy: 20, minz: 0, maxz: 0, name: 'shop' },
 		{ type: 'src', minx: 5, maxx: 5, miny: 5, maxy: 5, minz: 0, maxz: 0, file: 'truck.ogg', loop: true },
@@ -33,20 +33,20 @@ describe('createMap: loading', () => {
 	test('loads from a JSON string', async () => {
 		const map = createMap();
 		await map.loadMap({ data: JSON.stringify(city) });
-		expect(map.getOneAt('tile', 5, 5, 0).tile).toBe('grass');
+		expect(map.getOneAt('tile', 5, 5, 0).file).toBe('grass.ogg');
 	});
 
 	test('loads from a function', async () => {
 		const map = createMap();
 		await map.loadMap({ from: () => city });
-		expect(map.getOneAt('tile', 5, 5, 0).tile).toBe('grass');
+		expect(map.getOneAt('tile', 5, 5, 0).file).toBe('grass.ogg');
 	});
 
 	test('loads from a url', async () => {
 		vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => JSON.stringify(city) })));
 		const map = createMap();
 		await map.loadMap({ url: 'city.json' });
-		expect(map.getOneAt('tile', 5, 5, 0).tile).toBe('grass');
+		expect(map.getOneAt('tile', 5, 5, 0).file).toBe('grass.ogg');
 	});
 
 	test('a failed fetch rejects with the url', async () => {
@@ -133,8 +133,8 @@ describe('createMap: loading', () => {
 				data: {
 					name: 'bad', maxx: 1000, maxy: 1000, maxz: 10,
 					entries: [
-						{ type: 'tile', minx: 300, maxx: 310, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'road' },
-						{ type: 'tile', minx: 305, maxx: 315, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'path' },
+						{ type: 'tile', minx: 300, maxx: 310, miny: 0, maxy: 10, minz: 0, maxz: 0, file: 'road.ogg' },
+						{ type: 'tile', minx: 305, maxx: 315, miny: 0, maxy: 10, minz: 0, maxz: 0, file: 'path.ogg' },
 					],
 				},
 			}),
@@ -150,8 +150,8 @@ describe('createMap: loading', () => {
 				data: {
 					name: 'bad', maxx: 100, maxy: 100, maxz: 0,
 					entries: [
-						{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'grass' },
-						{ type: 'tile', minx: 5, maxx: 15, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'road' },
+						{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 0, file: 'grass.ogg' },
+						{ type: 'tile', minx: 5, maxx: 15, miny: 0, maxy: 10, minz: 0, maxz: 0, file: 'road.ogg' },
 					],
 				},
 			}),
@@ -210,14 +210,14 @@ describe('createMap: writing', () => {
 	test('setDataAt on an error type rejects an overlap', async () => {
 		const map = await loaded();
 		expect(() =>
-			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' }),
+			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'road.ogg' }),
 		).toThrow(/does not allow overlap/);
 	});
 
 	test('setDataAt on an error type accepts a free cell', async () => {
 		const map = await loaded();
-		map.setDataAt({ type: 'tile', minx: 200, maxx: 209, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' });
-		expect(map.getOneAt('tile', 205, 5, 0).tile).toBe('road');
+		map.setDataAt({ type: 'tile', minx: 200, maxx: 209, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'road.ogg' });
+		expect(map.getOneAt('tile', 205, 5, 0).file).toBe('road.ogg');
 	});
 
 	test('removeDataAt drops every overlapping entry of that type', async () => {
@@ -231,7 +231,7 @@ describe('createMap: writing', () => {
 		const map = await loaded();
 		map.removeDataAt('tile', 0, 99, 0, 99, 0, 0);
 		expect(() =>
-			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' }),
+			map.setDataAt({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'road.ogg' }),
 		).not.toThrow();
 	});
 
@@ -312,8 +312,8 @@ describe('createMap: types and validation', () => {
 				data: {
 					name: 'a', maxx: 100, maxy: 100, maxz: 0,
 					entries: [
-						{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'grass' },
-						{ type: 'tile', minx: 10, maxx: 20, miny: 0, maxy: 10, minz: 0, maxz: 0, tile: 'road' },
+						{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 0, file: 'grass.ogg' },
+						{ type: 'tile', minx: 10, maxx: 20, miny: 0, maxy: 10, minz: 0, maxz: 0, file: 'road.ogg' },
 					],
 				},
 			}),
@@ -326,12 +326,12 @@ describe('createMap: types and validation', () => {
 			data: {
 				name: 'tower', maxx: 100, maxy: 100, maxz: 100,
 				entries: [
-					{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 9, tile: 'floor1' },
-					{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 10, maxz: 19, tile: 'floor2' },
+					{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 0, maxz: 9, file: 'floor1.ogg' },
+					{ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 10, minz: 10, maxz: 19, file: 'floor2.ogg' },
 				],
 			},
 		});
-		expect(map.getOneAt('tile', 5, 5, 15).tile).toBe('floor2');
+		expect(map.getOneAt('tile', 5, 5, 15).file).toBe('floor2.ogg');
 	});
 });
 
@@ -473,7 +473,7 @@ describe('createMap: performance', () => {
 	test('loading a second batch into an "error" type only checks the new entries', async () => {
 		const first = [];
 		for (let i = 0; i < 50000; i++) {
-			first.push({ type: 'tile', minx: i % 5000, maxx: i % 5000, miny: Math.floor(i / 5000), maxy: Math.floor(i / 5000), minz: 0, maxz: 0, tile: 'grass' });
+			first.push({ type: 'tile', minx: i % 5000, maxx: i % 5000, miny: Math.floor(i / 5000), maxy: Math.floor(i / 5000), minz: 0, maxz: 0, file: 'grass.ogg' });
 		}
 		const map = createMap();
 		await map.loadMap({ data: { name: 'floor', maxx: 5000, maxy: 5000, maxz: 0, entries: first } });
@@ -482,7 +482,7 @@ describe('createMap: performance', () => {
 		await map.loadMap({
 			data: {
 				name: 'more', maxx: 5000, maxy: 5000, maxz: 0,
-				entries: [{ type: 'tile', minx: 4999, maxx: 4999, miny: 4999, maxy: 4999, minz: 0, maxz: 0, tile: 'road' }],
+				entries: [{ type: 'tile', minx: 4999, maxx: 4999, miny: 4999, maxy: 4999, minz: 0, maxz: 0, file: 'road.ogg' }],
 			},
 		});
 		const total_ms = performance.now() - start;

@@ -13,7 +13,7 @@ export function createStore(types) {
 	let count = 0;
 
 	// One shared value table. Payload slots hold indices into it, so 200k
-	// entries carrying tile "concrete" cost one string and 200k ints.
+	// entries carrying tile "concrete.ogg" cost one string and 200k ints.
 	let values = [];
 	let value_ids = new Map();
 	let buckets = new Map();

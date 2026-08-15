@@ -1,12 +1,12 @@
 import { describe, test, expect } from 'vitest';
 import { createTypes } from '../src/map/types.js';
 
-const tile = { type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'concrete' };
+const tile = { type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'concrete.ogg' };
 
 describe('createTypes', () => {
 	test('registers the three built-ins', () => {
 		const types = createTypes();
-		expect(types.get('tile').fields).toEqual(['tile']);
+		expect(types.get('tile').fields).toEqual(['file']);
 		expect(types.get('src').fields).toEqual(['file', 'loop']);
 		expect(types.get('zone').fields).toEqual(['name']);
 	});
@@ -47,7 +47,7 @@ describe('createTypes', () => {
 	test('rejects an entry missing a declared field, naming field and index', () => {
 		const types = createTypes();
 		const broken = { ...tile };
-		delete broken.tile;
+		delete broken.file;
 		expect(() => types.validate(broken, 7)).toThrow(/"tile".*entry 7/);
 	});
 

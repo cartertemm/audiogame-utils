@@ -35,7 +35,7 @@ export function createTypes() {
 		}
 	}
 
-	register('tile', { fields: ['tile'], overlap: 'error' });
+	register('tile', { fields: ['file'], overlap: 'error' });
 	register('src', { fields: ['file', 'loop'], overlap: 'allow' });
 	register('zone', { fields: ['name'], overlap: 'allow' });
 

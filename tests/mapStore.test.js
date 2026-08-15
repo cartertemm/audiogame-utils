@@ -122,22 +122,22 @@ describe('createStore: edits after the index is built', () => {
 
 	test('assertNoOverlap passes when boxes only sit next to each other', () => {
 		const { store } = fresh();
-		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'grass' });
-		store.add({ type: 'tile', minx: 10, maxx: 19, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' });
+		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'grass.ogg' });
+		store.add({ type: 'tile', minx: 10, maxx: 19, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'road.ogg' });
 		expect(() => store.assertNoOverlap('tile')).not.toThrow();
 	});
 
 	test('assertNoOverlap throws when boxes touch, and says bounds are inclusive', () => {
 		const { store } = fresh();
-		store.add({ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'grass' });
-		store.add({ type: 'tile', minx: 10, maxx: 19, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'road' });
+		store.add({ type: 'tile', minx: 0, maxx: 10, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'grass.ogg' });
+		store.add({ type: 'tile', minx: 10, maxx: 19, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'road.ogg' });
 		expect(() => store.assertNoOverlap('tile')).toThrow(/inclusive/);
 	});
 
 	test('assertNoOverlap ignores boxes separated by z', () => {
 		const { store } = fresh();
-		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, tile: 'grass' });
-		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 1, maxz: 1, tile: 'road' });
+		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 0, maxz: 0, file: 'grass.ogg' });
+		store.add({ type: 'tile', minx: 0, maxx: 9, miny: 0, maxy: 9, minz: 1, maxz: 1, file: 'road.ogg' });
 		expect(() => store.assertNoOverlap('tile')).not.toThrow();
 	});
 });
