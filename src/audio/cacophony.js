@@ -1,6 +1,3 @@
-// Adapts Cacophony to the internal audio engine interface. Keeping
-// `AudioContext` access here lets tests inject an engine that does not use it.
-
 export function createCacophonyEngine() {
 	let cacophony = null;
 
