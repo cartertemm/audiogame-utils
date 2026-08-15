@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+	<title>Reaction test - audiogame-utils</title>
+	<!--
+		The audio module imports Cacophony by name. Bundlers resolve that from
+		node_modules, but these examples run without a build step, so the browser
+		needs an import map. This one uses a CDN, so the demo needs a network
+		connection the first time you run it.
+	-->
+	<script type="importmap">
+		{
+			"imports": {
+				"cacophony": "https://esm.sh/cacophony@0.18.3"
+			}
+		}
+	</script>
+	<style>
+		body {
+			margin: 0;
+			padding: 1rem;
+			font-family: system-ui, sans-serif;
+		}
+
+		#results {
+			list-style: none;
+			padding: 0;
+		}
+
+		#results li {
+			padding: 0.25rem 0;
+			border-bottom: 1px solid #ccc;
+		}
+	</style>
+</head>
+<body>
+	<h1>Reaction test</h1>
+	<p>Press start, then wait for the beep. Press space or enter as fast as you can after each beep. The test runs five rounds and reports your average time in milliseconds.</p>
+	<button type="button" id="start">Start</button>
+	<div id="game">
+		<p id="status"></p>
+	</div>
+	<ol id="results"></ol>
+	<script type="module" src="./reaction.js"></script>
+</body>
+</html>
