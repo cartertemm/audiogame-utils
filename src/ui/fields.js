@@ -1,9 +1,4 @@
-// Accessible form field builders. Each one returns a DOM node, so it drops
-// straight into mount() next to anything el() produces.
-//
-// Every builder calls options.set(value, display), where display is a readable
-// rendering of the value the builder already had to compute. A set() that takes
-// only a value keeps working, because the extra argument is ignored.
+// Accessible form field builders. Each one returns a DOM node and can be used with the mount() function
 
 import { el } from './dom.js';
 
@@ -14,8 +9,6 @@ function nextId() {
 	return `field-${counter}`;
 }
 
-// Attributes every control shares. `disabled` is a boolean at the call site but
-// an attribute in the DOM, so it maps to a string or to nothing at all.
 function common(id, hintId, options) {
 	return {
 		id,
@@ -29,9 +22,6 @@ function hintNode(hintId, options) {
 	return options.hint ? el('p', { class: 'hint', id: hintId, text: options.hint }) : null;
 }
 
-// Builds the label, hint, and describedby wiring once, then lets each builder
-// supply only its control. `build` may return extra sibling nodes, such as a
-// datalist, alongside the control itself.
 function field(label, options, build, { labelAfter = false, className = 'field' } = {}) {
 	const id = options.id ?? nextId();
 	const hintId = options.hint ? `${id}-hint` : undefined;
@@ -99,8 +89,6 @@ function percentOf(value) {
 	return `${Math.round(Number(value) * 100)} percent`;
 }
 
-// `input` fires while dragging and only refreshes what the value reads as.
-// `change` fires on release and is the one that commits.
 export function rangeField(label, options = {}) {
 	return field(label, options, (id, hintId) => {
 		const { format } = options;
@@ -166,9 +154,8 @@ export function checkboxField(label, options = {}) {
 	}), { labelAfter: true, className: 'field check' });
 }
 
-// A group is labelled by its legend, so it skips the field() wrapper. The hint
-// sits on the fieldset and on every item, because the fieldset description is
-// not announced when focus lands on one radio or checkbox inside it.
+// The hint goes on the fieldset and on every item. Screen readers skip the
+// fieldset description when focus lands on an item, so both are needed.
 function group(legend, options, buildItems) {
 	const id = options.id ?? nextId();
 	const hintId = options.hint ? `${id}-hint` : undefined;
@@ -230,10 +217,6 @@ export function keyName(key) {
 	return key;
 }
 
-// Rebinding needs keys the page would otherwise act on, so the listener lives on
-// the document, captures, and stops the event before a game listener on window
-// sees it. It removes itself on the first keydown, which leaves nothing for the
-// caller to tear down.
 export function keyField(label, options = {}) {
 	const id = options.id ?? nextId();
 	const hintId = options.hint ? `${id}-hint` : undefined;
@@ -241,9 +224,7 @@ export function keyField(label, options = {}) {
 
 	function onKeyDown(event) {
 		document.removeEventListener('keydown', onKeyDown, { capture: true });
-		// The screen may have torn down while capture was pending, leaving the
-		// button detached. Without this guard the stale closure would swallow
-		// the keystroke and write to a discarded config.
+		// The screen may have torn down while capture was pending, and we don't want to write to a discarded config
 		if (!button.isConnected) return;
 		event.preventDefault();
 		event.stopPropagation();
@@ -271,8 +252,6 @@ export function keyField(label, options = {}) {
 	);
 }
 
-// Two presses instead of a confirm dialog, which screen readers and game
-// controllers both handle badly.
 export function confirmButton(label, options = {}) {
 	const button = el('button', {
 		...common(options.id ?? nextId(), undefined, options),
@@ -293,16 +272,10 @@ export function confirmButton(label, options = {}) {
 	return button;
 }
 
-// `display` names the value only, so most fields need their label in front of
-// it to make sense. Two do not: a key field wants a verb between the two, and a
-// checkbox group's display already names the choice that toggled, which makes
-// the group legend redundant in front of it.
 const plainMessage = (label, display) => `${label} ${display}`;
 const keyMessage = (label, display) => `${label} bound to ${display}`;
 const displayOnly = (label, display) => display;
 
-// The method name is also the `type` a change reports, so each builder is
-// listed once and the name is never written twice.
 const BUILDERS = {
 	text: [textField],
 	password: [passwordField],
@@ -317,11 +290,6 @@ const BUILDERS = {
 	key: [keyField, keyMessage],
 };
 
-// Sugar for the common case, where every field is one key in a storage
-// instance. `onChange` is the single seam for side effects, so the library
-// itself never needs to know about speech or anything else. It receives one
-// object: `type` and `display` are enough to phrase an announcement however the
-// caller likes, and `message` is a default for callers that do not care to.
 export function createFields({ storage, defaults = {}, onChange = null } = {}) {
 	if (!storage) throw new Error('createFields requires a storage instance');
 	const bind = (type, builder, message) => (key, label, options = {}) => {
