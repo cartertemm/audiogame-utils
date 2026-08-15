@@ -48,9 +48,10 @@ Documentation is organized by public import path:
 3. [Input](docs/input.md)
 4. [Networking](docs/net.md)
 5. [Platform detection](docs/platform.md)
-6. [Speech](docs/speech.md)
-7. [Storage](docs/storage.md)
-8. [UI](docs/ui.md)
+6. [Rotation and spatial math](docs/rotation.md)
+7. [Speech](docs/speech.md)
+8. [Storage](docs/storage.md)
+9. [UI](docs/ui.md)
 
 ## Contributing
 
