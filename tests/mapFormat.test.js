@@ -30,6 +30,39 @@ describe('parseJSON', () => {
 		delete broken[key];
 		expect(() => parseJSON(broken)).toThrow(new RegExp(key));
 	});
+
+	test('rejects entries that is not an array', () => {
+		expect(() => parseJSON({ ...file, entries: 5 })).toThrow(/^map: /);
+	});
+
+	test('rejects an entries array containing null', () => {
+		expect(() => parseJSON({ ...file, entries: [null] })).toThrow(/^map: /);
+	});
+
+	test('rejects a string that is not valid JSON', () => {
+		expect(() => parseJSON('{not json')).toThrow('map: file is not valid JSON');
+	});
+
+	test('a JSON syntax error is kept as the cause', () => {
+		try {
+			parseJSON('{not json');
+			throw new Error('expected parseJSON to throw');
+		} catch (err) {
+			expect(err.cause).toBeInstanceOf(SyntaxError);
+		}
+	});
+
+	test.each(['maxx', 'maxy', 'maxz'])('rejects a non-integer %s', (key) => {
+		expect(() => parseJSON({ ...file, [key]: '5' })).toThrow(new RegExp(`^map: .*"${key}"`));
+	});
+
+	test.each(['maxx', 'maxy', 'maxz'])('rejects a negative %s', (key) => {
+		expect(() => parseJSON({ ...file, [key]: -1 })).toThrow(new RegExp(`^map: .*"${key}"`));
+	});
+
+	test('rejects a non-string name', () => {
+		expect(() => parseJSON({ ...file, name: 5 })).toThrow(/^map: .*"name"/);
+	});
 });
 
 describe('serializeJSON', () => {
