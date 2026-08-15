@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Menu example</title>
+	<style>
+		body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 34rem; }
+		.menu-items { display: flex; flex-direction: column; gap: 0.75rem; }
+		.field { padding: 0.4rem 0.6rem; border: 2px solid transparent; border-radius: 0.3rem; }
+		.field.focused { border-color: #06c; background: #eef4ff; }
+		.hint { margin: 0.2rem 0 0; font-size: 0.85rem; color: #555; }
+		#log { margin-top: 2rem; white-space: pre-wrap; font-family: monospace; }
+	</style>
+</head>
+<body>
+	<h1>Menu example</h1>
+	<p>Press start, then use the arrow keys. Up and down move, left and right change a value, enter chooses, escape leaves.</p>
+	<button id="start" type="button">Start</button>
+	<div id="app"></div>
+	<div id="log"></div>
+	<script type="module" src="./menu.js"></script>
+</body>
+</html>
