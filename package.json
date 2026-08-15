@@ -17,7 +17,8 @@
 		"./net": "./src/net/index.js",
 		"./storage": "./src/storage.js",
 		"./platform": "./src/platform.js",
-		"./events": "./src/events.js"
+		"./events": "./src/events.js",
+		"./rotation": "./src/rotation.js"
 	},
 	"scripts": {
 		"test": "vitest run",
