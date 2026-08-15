@@ -47,12 +47,13 @@ Documentation is organized by public import path:
 2. [Events](docs/events.md)
 3. [Focus](docs/focus.md)
 4. [Input](docs/input.md)
-5. [Networking](docs/net.md)
-6. [Platform detection](docs/platform.md)
-7. [Rotation and spatial math](docs/rotation.md)
-8. [Speech](docs/speech.md)
-9. [Storage](docs/storage.md)
-10. [UI](docs/ui.md)
+5. [Maps](docs/map.md)
+6. [Networking](docs/net.md)
+7. [Platform detection](docs/platform.md)
+8. [Rotation and spatial math](docs/rotation.md)
+9. [Speech](docs/speech.md)
+10. [Storage](docs/storage.md)
+11. [UI](docs/ui.md)
 
 ## Contributing
 
