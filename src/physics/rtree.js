@@ -5,6 +5,7 @@
 const DEFAULT_NODE_SIZE = 16;
 
 export function createRTree(bounds, count, node_size = DEFAULT_NODE_SIZE) {
+	if (node_size < 2) throw new Error(`map: createRTree node_size must be at least 2, got ${node_size}`);
 	if (count === 0) return { search: () => [] };
 
 	const level_bounds = [count * 4];

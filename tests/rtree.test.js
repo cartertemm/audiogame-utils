@@ -40,6 +40,12 @@ describe('createRTree', () => {
 		expect(createRTree(new Int32Array(0), 0).search(0, 0, 0, 0)).toEqual([]);
 	});
 
+	test('rejects a node_size below 2', () => {
+		const rows = [[0, 10, 0, 10], [20, 30, 20, 30]];
+		expect(() => createRTree(pack(rows), rows.length, 1)).toThrow(/map: /);
+		expect(() => createRTree(pack(rows), rows.length, 0)).toThrow(/map: /);
+	});
+
 	test('handles a single box', () => {
 		const tree = createRTree(pack([[3, 3, 3, 3]]), 1);
 		expect(tree.search(3, 3, 3, 3)).toEqual([0]);
