@@ -1,10 +1,6 @@
 // A self-voicing menu driven by a virtual cursor.
-//
-// The cursor is not DOM focus. A focus trap puts `role="application"` on the
-// container so the browser stops interpreting keys, and the rendered fields sit
-// inside an `aria-hidden` list so the screen reader never announces them twice.
-// The menu speaks each row itself, which is what lets a slider read "55 percent"
-// while moving and "Volume, 55 percent" on arrival.
+// this matches the implementation found in many audiogames.
+// the menu options are also displayed visually. However, screen reader users do not have to interact with the DOM because the controls are aria-hidden. This lets sighted users interact with the UI as well.
 
 import { createFocusTrap } from '../focus.js';
 import { createTouch } from '../input/touch.js';
@@ -55,11 +51,8 @@ export function createMenu(options = {}) {
 			close: config.closeSound,
 		},
 	});
-
 	let list = null;
 	let focusedIndex = -1;
-	// Held separately so deleting or rebuilding an item cannot leave a stale
-	// class behind on a node the index no longer points at.
 	let focusedNode = null;
 	let wrapBlocked = false;
 	let wrapTimer = 0;
@@ -68,6 +61,7 @@ export function createMenu(options = {}) {
 	let touch = null;
 	let running = false;
 
+	// Calls speech.speak only if text is not blank. got tired of writing this manually.
 	function announce(text) {
 		if (text) speech.speak(text, true);
 	}
@@ -88,8 +82,6 @@ export function createMenu(options = {}) {
 		return items.findIndex(item => item.id === target);
 	}
 
-	// Guard the null id, or a lookup for `null` would match every item that was
-	// added without one.
 	function itemById(id) {
 		if (id === null || id === undefined) return null;
 		return items.find(item => item.id === id) ?? null;
@@ -115,10 +107,6 @@ export function createMenu(options = {}) {
 		item.node.remove();
 		if (resetCursor) setFocus(items.length ? 0 : -1, { silent: true });
 		else if (focusedIndex > index) setFocus(focusedIndex - 1, { silent: true });
-		// Deleting the focused item leaves the cursor on whatever slid into the
-		// slot, or on the new last item when the tail went away. Without this the
-		// index and the node reference disagree and the focused class strands on
-		// the removed node.
 		else if (focusedIndex === index) setFocus(Math.min(index, items.length - 1), { silent: true });
 		return true;
 	}
@@ -137,9 +125,7 @@ export function createMenu(options = {}) {
 		return usable;
 	}
 
-	// Native listeners on the node rather than `createMouse`, because the node
-	// is already in the document and reports its own hits. `aria-hidden` blocks
-	// the screen reader, not the pointer, so these still fire.
+	// Mouse support
 	function bindPointer(item) {
 		item.node.addEventListener('mouseenter', () => {
 			if (!running || item.disabled) return;
@@ -164,9 +150,6 @@ export function createMenu(options = {}) {
 		});
 	}
 
-	// A browser cannot block, so a wrap drops movement input for the delay
-	// instead. The player-visible effect is the same: a held arrow key does not
-	// trample the wrap sound.
 	function blockWrap() {
 		if (config.wrapDelay <= 0) return;
 		wrapBlocked = true;
@@ -188,9 +171,7 @@ export function createMenu(options = {}) {
 			return;
 		}
 		if (position === -1) {
-			// The cursor sits on a disabled item. Land on the nearest enabled item
-			// on the direction side, or fall through to edge and wrap handling
-			// below when there is none.
+			// The cursor is focused on a disabled item.
 			const neighbor = direction > 0
 				? usable.find(index => index > focusedIndex)
 				: usable.filter(index => index < focusedIndex).pop();
@@ -261,9 +242,7 @@ export function createMenu(options = {}) {
 		if (!item.adjust(direction)) sounds.play('edge');
 	}
 
-	// Task 5 resolves the pending `run()` promise here.
 	let pending = null;
-
 	function settle(value) {
 		running = false;
 		const resolve = pending?.resolve;
@@ -369,8 +348,7 @@ export function createMenu(options = {}) {
 		container.appendChild(list);
 		for (const item of items) list.appendChild(item.node);
 		config.root.appendChild(container);
-		// An application ancestor means the game already runs its own trap, so
-		// making a second one would fight it and steal focus on release.
+		// An application ancestor means the game already runs its own focus trap. If true, we don't need to create one ourselves.
 		if (config.root.closest('[role="application"]')) {
 			container.setAttribute('tabindex', '-1');
 			container.focus();
