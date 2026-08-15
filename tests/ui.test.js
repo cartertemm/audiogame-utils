@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from '../src/ui.js';
+import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from '../src/ui/index.js';
 import { MODE_ARIA, MODE_TTS, MODE_BOTH } from '../src/speech/index.js';
 
 function root() {

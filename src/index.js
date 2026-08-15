@@ -2,8 +2,13 @@ export { createStorage } from './storage.js';
 export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
 export { createFocusTrap } from './focus.js';
-export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from './ui.js';
-export { textField, passwordField, textAreaField, numberField } from './fields.js';
+export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from './ui/index.js';
+export {
+	createFields,
+	textField, passwordField, textAreaField, numberField,
+	rangeField, percentRangeField, selectField, checkboxField,
+	radioGroup, checkboxGroup, keyField, keyName, confirmButton,
+} from './ui/fields.js';
 export * as rotation from './rotation.js';
 export * as math from './math.js';
 
