@@ -739,3 +739,130 @@ describe('createMenu: run and close', () => {
 		expect(await pending).toBe(null);
 	});
 });
+
+describe('createMenu: keyboard', () => {
+	function press(rootNode, key) {
+		const container = rootNode.querySelector('.menu');
+		const event = new Event('keydown', { bubbles: true, cancelable: true });
+		event.key = key;
+		container.dispatchEvent(event);
+		return event;
+	}
+
+	async function keyboardMenu(options = {}) {
+		const rootNode = root();
+		const speech = fakeSpeech();
+		const audio = fakeAudio();
+		const menu = createMenu({ root: rootNode, speech, audio, ...options });
+		const start = menu.addTextItem('Start');
+		const volume = menu.addSlider('Volume', 0, 100, 50, { step: 5 });
+		const sound = menu.addCheckbox('Sound', true);
+		const quit = menu.addTextItem('Quit');
+		const pending = menu.run();
+		return { rootNode, menu, speech, audio, start, volume, sound, quit, pending };
+	}
+
+	test('ArrowDown and ArrowUp move the cursor', async () => {
+		const context = await keyboardMenu();
+		press(context.rootNode, 'ArrowDown');
+		expect(context.menu.focusedItem).toBe(context.start);
+		press(context.rootNode, 'ArrowDown');
+		expect(context.menu.focusedItem).toBe(context.volume);
+		press(context.rootNode, 'ArrowUp');
+		expect(context.menu.focusedItem).toBe(context.start);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('ArrowRight and ArrowLeft move a slider and speak the value alone', async () => {
+		const context = await keyboardMenu();
+		context.menu.focusedItem = context.volume;
+		press(context.rootNode, 'ArrowRight');
+		expect(context.volume.value).toBe(55);
+		expect(context.speech.last()).toBe('55');
+		press(context.rootNode, 'ArrowLeft');
+		expect(context.volume.value).toBe(50);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('Space toggles a checkbox and does not resolve', async () => {
+		const context = await keyboardMenu();
+		context.menu.focusedItem = context.sound;
+		press(context.rootNode, ' ');
+		expect(context.sound.value).toBe(false);
+		expect(context.speech.last()).toBe('unchecked');
+		context.menu.close();
+		expect(await context.pending).toBe(null);
+	});
+
+	test('Enter toggles a checkbox rather than resolving', async () => {
+		const context = await keyboardMenu();
+		context.menu.focusedItem = context.sound;
+		press(context.rootNode, 'Enter');
+		expect(context.sound.value).toBe(false);
+		context.menu.close();
+		expect(await context.pending).toBe(null);
+	});
+
+	test('Enter on a text item resolves with that item', async () => {
+		const context = await keyboardMenu();
+		context.menu.focusedItem = context.quit;
+		press(context.rootNode, 'Enter');
+		expect(await context.pending).toBe(context.quit);
+		context.menu.close();
+	});
+
+	test('Home and End jump to the ends', async () => {
+		const context = await keyboardMenu();
+		press(context.rootNode, 'End');
+		expect(context.menu.focusedItem).toBe(context.quit);
+		press(context.rootNode, 'Home');
+		expect(context.menu.focusedItem).toBe(context.start);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('Escape closes and resolves null', async () => {
+		const context = await keyboardMenu({ closeSound: 'close', soundsSuffix: '.ogg' });
+		press(context.rootNode, 'Escape');
+		expect(await context.pending).toBe(null);
+		expect(context.rootNode.querySelector('.menu')).toBe(null);
+		expect(context.audio.played).toContain('close.ogg');
+	});
+
+	test('a letter jumps to the matching item', async () => {
+		const context = await keyboardMenu();
+		press(context.rootNode, 'q');
+		expect(context.menu.focusedItem).toBe(context.quit);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('firstLetterNavigation false ignores letters', async () => {
+		const context = await keyboardMenu({ firstLetterNavigation: false });
+		press(context.rootNode, 'q');
+		expect(context.menu.focusedIndex).toBe(-1);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('handled keys are prevented', async () => {
+		const context = await keyboardMenu();
+		expect(press(context.rootNode, 'ArrowDown').defaultPrevented).toBe(true);
+		expect(press(context.rootNode, 'F5').defaultPrevented).toBe(false);
+		context.menu.close();
+		await context.pending;
+	});
+
+	test('keys do nothing after close', async () => {
+		const context = await keyboardMenu();
+		const container = context.rootNode.querySelector('.menu');
+		context.menu.close();
+		await context.pending;
+		const event = new Event('keydown', { bubbles: true, cancelable: true });
+		event.key = 'ArrowDown';
+		expect(() => container.dispatchEvent(event)).not.toThrow();
+		expect(context.menu.focusedIndex).toBe(-1);
+	});
+});

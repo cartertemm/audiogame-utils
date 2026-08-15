@@ -29,6 +29,9 @@ const DEFAULTS = {
 	label: '',
 };
 
+const MOVE_KEYS = { ArrowUp: -1, ArrowDown: 1 };
+const ADJUST_KEYS = { ArrowLeft: -1, ArrowRight: 1 };
+
 export function createMenu(options = {}) {
 	if (!options.root) throw new Error('createMenu requires a root element');
 	if (!options.speech) throw new Error('createMenu requires a speech instance');
@@ -234,6 +237,44 @@ export function createMenu(options = {}) {
 		activateFocused();
 	}
 
+	function onKeyDown(event) {
+		if (!running) return;
+		const key = event.key;
+		if (key in MOVE_KEYS) {
+			event.preventDefault();
+			move(MOVE_KEYS[key]);
+			return;
+		}
+		if (key in ADJUST_KEYS) {
+			event.preventDefault();
+			adjustFocused(ADJUST_KEYS[key]);
+			return;
+		}
+		if (key === 'Home' || key === 'End') {
+			event.preventDefault();
+			jumpToEnd(key === 'Home' ? 1 : -1);
+			return;
+		}
+		if (key === ' ') {
+			event.preventDefault();
+			spaceFocused();
+			return;
+		}
+		if (key === 'Enter') {
+			event.preventDefault();
+			activateFocused();
+			return;
+		}
+		if (key === 'Escape') {
+			event.preventDefault();
+			close();
+			return;
+		}
+		if (!config.firstLetterNavigation || key.length !== 1) return;
+		event.preventDefault();
+		jumpToLetter(key);
+	}
+
 	function open() {
 		container = el('div', { class: 'menu' });
 		list = el('div', { class: 'menu-items', 'aria-hidden': 'true' });
@@ -248,6 +289,7 @@ export function createMenu(options = {}) {
 		} else {
 			trap = createFocusTrap(container, { label: config.label });
 		}
+		container.addEventListener('keydown', onKeyDown);
 		sounds.play('open');
 		let text = config.introText;
 		if (config.focusFirstItem) {
@@ -272,6 +314,7 @@ export function createMenu(options = {}) {
 		if (container) {
 			clearTimeout(wrapTimer);
 			wrapBlocked = false;
+			container.removeEventListener('keydown', onKeyDown);
 			sounds.play('close');
 			trap?.release();
 			trap = null;
