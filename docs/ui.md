@@ -211,3 +211,123 @@ renderScreen(root, renderSpeechSettings, {
 	modes: [MODE_ARIA, MODE_TTS, MODE_BOTH],
 })
 ```
+
+## Menus
+
+`createMenu` builds a self-voicing menu driven by a virtual cursor. The cursor
+is not DOM focus. A focus trap puts `role="application"` on the menu container
+so the browser hands every keystroke to the game, and the rendered fields sit
+inside an `aria-hidden` list so the screen reader never announces them twice.
+The menu speaks each row itself.
+
+```js
+import { createMenu, createSpeech, createAudio, createStorage } from 'audiogame-utils';
+
+const menu = createMenu({
+	root: document.getElementById('app'),
+	speech: createSpeech({ storage: createStorage('game') }),
+	audio: createAudio(),
+	label: 'Main menu',
+	introText: 'Main menu',
+	clickSound: 'click',
+	selectSound: 'select',
+	soundsPrefix: 'sounds/',
+	soundsSuffix: '.ogg',
+});
+
+const start = menu.addTextItem('Start game');
+const volume = menu.addSlider('Volume', 0, 100, 50, { format: v => `${v} percent` });
+const sound = menu.addCheckbox('Sound', true);
+const quit = menu.addTextItem('Quit');
+
+const chosen = await menu.run();
+if (chosen === start) startGame({ volume: volume.value, sound: sound.value });
+```
+
+`run()` waits. It resolves with the item when a text item is activated, and with
+`null` when the player escapes. Sliders and checkboxes change in place and never
+resolve, so they are state you read afterwards. The menu stays mounted when it
+resolves on an item, which makes a settings screen a plain loop:
+
+```js
+let chosen;
+while ((chosen = await menu.run()) !== null) {
+	if (chosen === back) break;
+}
+menu.close();
+```
+
+### Options
+
+| Option | Default | Meaning |
+|---|---|---|
+| `root` | required | Element the menu mounts into. |
+| `speech` | required | Instance from `createSpeech`. |
+| `audio` | `null` | Instance from `createAudio`. Omit for a silent menu. |
+| `introText` | `''` | Spoken when `run()` first mounts the menu. |
+| `clickSound` | `''` | Cursor moved to another item. |
+| `selectSound` | `''` | An item was activated. |
+| `edgeSound` | `''` | Cursor hit an edge, or a value could not move further. |
+| `wrapSound` | `''` | Cursor wrapped. |
+| `openSound` | `''` | Played with the intro. |
+| `closeSound` | `''` | Played on close. |
+| `soundsPrefix` | `''` | Prepended to every sound given as a string. |
+| `soundsSuffix` | `''` | Appended to every sound given as a string. |
+| `wrap` | `false` | Jump to the other edge instead of playing `edgeSound`. |
+| `wrapDelay` | `10` | Milliseconds of ignored movement after a wrap. |
+| `focusFirstItem` | `false` | Put the cursor on the first item at intro. |
+| `firstLetterNavigation` | `true` | Letter keys jump to the next matching label. |
+| `multiTapWindow` | `250` | Milliseconds allowed between taps of a double tap. |
+| `label` | `''` | `aria-label` on the container. |
+
+Each sound takes a name, a full URL, a loader function such as
+`() => import('./click.ogg?url')`, or an sfx handle you already built. Strings
+get the prefix and suffix; anything else passes through untouched.
+
+### Items
+
+```js
+menu.addItem(type, label, options)          // type is 'text', 'slider', or 'checkbox'
+menu.addTextItem(text, options)
+menu.addSlider(text, min, max, defaultValue, options)
+menu.addCheckbox(text, defaultState, options)
+menu.deleteItem(index, resetCursor = true)
+menu.deleteAllItems()
+```
+
+`options` accepts `id`, `position`, `disabled`, `hint`, `onChange`, `format`,
+`speak`, and `speakValue`, all optional. `position` defaults to `-1`, meaning
+append. Every builder returns the item.
+
+An item exposes `type`, `label`, `value`, `id`, `index`, `disabled`, `node`,
+`speak()`, `speakValue()`, `focus()`, and `toggle()` on checkboxes. Sliders add
+`min`, `max`, and `step`.
+
+An item reads differently depending on why it is announced. Arriving on it
+speaks `speak()`, the label with the value. Changing its value speaks
+`speakValue()`, the value alone, so a slider does not repeat its label on every
+press.
+
+### Keys and gestures
+
+| Key | Action |
+|---|---|
+| Up, Down | Previous, next item. |
+| Left, Right | Change the focused value. |
+| Home, End | First, last item. |
+| Enter | Activate a text item, toggle a checkbox. |
+| Space | Toggle a checkbox, otherwise the same as Enter. |
+| Escape | Close. |
+| A letter | Jump to the next label starting with it. |
+
+| Gesture | Action |
+|---|---|
+| Swipe left, right | Previous, next item. |
+| Swipe up, down | Change the focused value. |
+| Double tap | Activate. |
+| Two finger tap | Close. |
+
+### Styling
+
+No stylesheet ships with the library. Style `.menu`, `.menu-items`, `.field`,
+and `.focused` yourself. The focused item carries `.focused`.

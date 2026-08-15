@@ -1060,3 +1060,18 @@ describe('createMenu: touch', () => {
 		expect(context.menu.focusedIndex).toBe(-1);
 	});
 });
+
+import * as pkg from '../src/index.js';
+import * as ui from '../src/ui/index.js';
+
+describe('menu exports', () => {
+	test('createMenu and MenuItem are exported from the package root', () => {
+		expect(typeof pkg.createMenu).toBe('function');
+		expect(typeof pkg.MenuItem).toBe('function');
+	});
+
+	test('createMenu and MenuItem are exported from the ui entry point', () => {
+		expect(typeof ui.createMenu).toBe('function');
+		expect(typeof ui.MenuItem).toBe('function');
+	});
+});

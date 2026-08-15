@@ -21,7 +21,7 @@
 		"./storage": "./src/storage.js",
 		"./platform": "./src/platform.js",
 		"./events": "./src/events.js",
-		"./ui": "./src/ui.js",
+		"./ui": "./src/ui/index.js",
 		"./focus": "./src/focus.js",
 		"./rotation": "./src/rotation.js",
 		"./math": "./src/math.js",
