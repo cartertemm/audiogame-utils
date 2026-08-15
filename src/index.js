@@ -3,6 +3,7 @@ export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
 export { createFocusTrap } from './focus.js';
 export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from './ui.js';
+export { textField } from './fields.js';
 export * as rotation from './rotation.js';
 export * as math from './math.js';
 
