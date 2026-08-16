@@ -46,7 +46,7 @@ See [examples/](examples/) for more of what you can do.
 | [Events](docs/events.md) | `audiogame-utils/events` | A small event emitter. |
 | [Focus](docs/focus.md) | `audiogame-utils/focus` | Keyboard trapping for gameplay using a virtual cursor. |
 | [Input](docs/input.md) | `audiogame-utils/input` | Keyboard, mouse, touch gesture, and named action input. |
-| [Maps](src/map/index.js) | `audiogame-utils/map` | Representation of spatial data, map loading, queries, and serialization. Able to load maps with hundreds of thousands of objects in less than a second. |
+| [Maps](docs/map.md) | `audiogame-utils/map` | Representation of spatial data, map loading, queries, and serialization. Able to load maps with hundreds of thousands of objects in less than a second. |
 | [Math](src/math.js) | `audiogame-utils/math` | Range, angle, interpolation, and randomization helpers. |
 | [Networking](docs/net.md) | `audiogame-utils/net` | WebSocket messaging, reconnection, and player identity. |
 | [Physics](src/physics/index.js) | `audiogame-utils/physics` | Static R tree spatial indexing for now, more to be added soon. |
