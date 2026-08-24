@@ -106,3 +106,28 @@ await sounds.hit.play({ position: [1, 0, -2] })
 `createCacophonyEngine()` creates the adapter used by the default audio instance. Its interface consists of `load`, `play`, `stop`, and `setPosition`.
 
 `createSfx(getEngine, source)` creates an individual sound handle. `getEngine` must be an asynchronous function that resolves to a compatible engine or `null`. Applications that do not provide a custom engine should use `createAudio().sfx(source)` instead.
+
+## Surface footstep manager
+
+`createSurfaceManager({ audio, pool })` manages surface sound banks and triggers spatial footstep sounds from an arbitrary count of registered footstep audio files per surface type.
+
+```js
+import { createAudio, createSurfaceManager } from 'audiogame-utils/audio'
+
+const audio = createAudio()
+const surfaces = createSurfaceManager({ audio })
+
+surfaces.registerSurface('wood', [
+	'/sounds/wood1.ogg',
+	'/sounds/wood2.ogg',
+	'/sounds/wood3.ogg',
+	'/sounds/wood4.ogg',
+	'/sounds/wood5.ogg',
+])
+
+surfaces.addSound('wood', '/sounds/wood6.ogg')
+
+// Play a random step sound from the 'wood' bank at position (x, y, z)
+surfaces.playStep('wood', 5, 0, 10)
+```
+

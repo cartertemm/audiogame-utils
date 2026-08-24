@@ -45,5 +45,6 @@ export { createSfx } from './sfx.js';
 export { createCacophonyEngine } from './cacophony.js';
 export { get_shared_engine, audio_available } from './engine.js';
 export { sound_pool, sound_pool_item, create_sound_pool, sound_pool_default_y_elevation, set_sound_pool_default_y_elevation } from './pool.js';
+export { createSurfaceManager } from './surface.js';
 export * from './coords.js';
 export * from './units.js';
