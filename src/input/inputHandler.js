@@ -1,5 +1,5 @@
-// Maps named game actions to keys, taps, and swipes. Game code can check an
-// action without depending on its configured input.
+// Maps named game actions to keys, taps, swipes, and gamepad buttons. Game code
+// can check an action without depending on its configured input.
 //
 // Consume actions in two ways:
 //   `wasTriggered(name)` polls an action and consumes its discrete trigger.
@@ -7,7 +7,7 @@
 // Both methods report the same action. A `hold` binding is available only
 // through polling because it does not produce a discrete trigger.
 
-export function createInputHandler({ keyboard = null, touch = null, attach: autoAttach = true } = {}) {
+export function createInputHandler({ keyboard = null, touch = null, gamepad = null, attach: autoAttach = true } = {}) {
 	const bindings = new Map();
 	const handlers = new Map();
 	const pending = new Set();
@@ -15,6 +15,7 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 	let keyPressHandler = null;
 	let tapHandler = null;
 	let swipeHandler = null;
+	let gamepadPressHandler = null;
 
 	function fire(name) {
 		pending.add(name);
@@ -37,6 +38,13 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 		}
 	}
 
+	function handleGamepadPress(event) {
+		const btn = event.button;
+		for (const [name, b] of bindings) {
+			if (b.gamepad.includes(btn)) fire(name);
+		}
+	}
+
 	function handleGesture(kind) {
 		return event => {
 			for (const [name, b] of bindings) {
@@ -54,6 +62,7 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 		const list = [];
 		for (const key of b.hold) list.push({ kind: 'hold', key });
 		for (const key of b.press) list.push({ kind: 'press', key });
+		for (const button of b.gamepad) list.push({ kind: 'gamepad', button });
 		for (const spec of b.tap) list.push({ kind: 'tap', ...spec });
 		for (const spec of b.swipe) list.push({ kind: 'swipe', ...spec });
 		return { name, bindings: list };
@@ -62,9 +71,11 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 	function attach() {
 		if (attached) return;
 		keyPressHandler = handleKeyPress;
+		gamepadPressHandler = handleGamepadPress;
 		tapHandler = handleGesture('tap');
 		swipeHandler = handleGesture('swipe');
 		keyboard?.on('keypress', keyPressHandler);
+		gamepad?.on('buttonpress', gamepadPressHandler);
 		touch?.on('tap', tapHandler);
 		touch?.on('swipe', swipeHandler);
 		attached = true;
@@ -73,9 +84,11 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 	function detach() {
 		if (!attached) return;
 		keyboard?.off('keypress', keyPressHandler);
+		gamepad?.off('buttonpress', gamepadPressHandler);
 		touch?.off('tap', tapHandler);
 		touch?.off('swipe', swipeHandler);
 		keyPressHandler = null;
+		gamepadPressHandler = null;
 		tapHandler = null;
 		swipeHandler = null;
 		attached = false;
@@ -92,6 +105,7 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 			bindings.set(name, {
 				hold: binding.hold ?? [],
 				press: binding.press ?? [],
+				gamepad: binding.gamepad ?? [],
 				tap: binding.tap ?? [],
 				swipe: binding.swipe ?? [],
 			});
@@ -113,6 +127,9 @@ export function createInputHandler({ keyboard = null, touch = null, attach: auto
 			}
 			for (const key of b.hold) {
 				if (keyboard?.isDown(key)) return true;
+			}
+			for (const btn of b.gamepad) {
+				if (gamepad?.isDown(btn)) return true;
 			}
 			return false;
 		},
