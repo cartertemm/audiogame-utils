@@ -1,7 +1,37 @@
 {
+	"name": "audiogame-utils",
+	"version": "0.1.0",
+	"compilerOptions": {
+		"lib": [
+			"dom",
+			"dom.iterable",
+			"deno.ns",
+			"esnext"
+		]
+	},
+	"exports": {
+		".": "./src/index.js",
+		"./input": "./src/input/index.js",
+		"./speech": "./src/speech/index.js",
+		"./audio": "./src/audio/index.js",
+		"./audio/pool": "./src/audio/pool.js",
+		"./audio/coords": "./src/audio/coords.js",
+		"./audio/units": "./src/audio/units.js",
+		"./net": "./src/net/index.js",
+		"./storage": "./src/storage.js",
+		"./platform": "./src/platform.js",
+		"./events": "./src/events.js",
+		"./ui": "./src/ui/index.js",
+		"./focus": "./src/focus.js",
+		"./rotation": "./src/rotation.js",
+		"./math": "./src/math.js",
+		"./map": "./src/map/index.js",
+		"./physics": "./src/physics/index.js"
+	},
 	"tasks": {
 		"test": "vitest run",
 		"test:deno": "deno run -A npm:vitest run",
+		"check": "deno check types/index.d.ts",
 		"build": "npm run build"
 	},
 	"fmt": {

@@ -4,30 +4,83 @@
 	"description": "Building blocks for audiogames in the browser including accessible speech output, multi-finger gesture input, spatial sound, networking, UI management, menus, and more.",
 	"type": "module",
 	"license": "MIT",
+	"types": "./types/index.d.ts",
 	"files": [
 		"src",
 		"dist",
+		"types",
 		"README.md",
 		"LICENSE"
 	],
 	"exports": {
-		".": "./src/index.js",
-		"./input": "./src/input/index.js",
-		"./speech": "./src/speech/index.js",
-		"./audio": "./src/audio/index.js",
-		"./audio/pool": "./src/audio/pool.js",
-		"./audio/coords": "./src/audio/coords.js",
-		"./audio/units": "./src/audio/units.js",
-		"./net": "./src/net/index.js",
-		"./storage": "./src/storage.js",
-		"./platform": "./src/platform.js",
-		"./events": "./src/events.js",
-		"./ui": "./src/ui/index.js",
-		"./focus": "./src/focus.js",
-		"./rotation": "./src/rotation.js",
-		"./math": "./src/math.js",
-		"./map": "./src/map/index.js",
-		"./physics": "./src/physics/index.js"
+		".": {
+			"types": "./types/index.d.ts",
+			"default": "./src/index.js"
+		},
+		"./input": {
+			"types": "./types/input.d.ts",
+			"default": "./src/input/index.js"
+		},
+		"./speech": {
+			"types": "./types/speech.d.ts",
+			"default": "./src/speech/index.js"
+		},
+		"./audio": {
+			"types": "./types/audio.d.ts",
+			"default": "./src/audio/index.js"
+		},
+		"./audio/pool": {
+			"types": "./types/audio.d.ts",
+			"default": "./src/audio/pool.js"
+		},
+		"./audio/coords": {
+			"types": "./types/audio.d.ts",
+			"default": "./src/audio/coords.js"
+		},
+		"./audio/units": {
+			"types": "./types/audio.d.ts",
+			"default": "./src/audio/units.js"
+		},
+		"./net": {
+			"types": "./types/net.d.ts",
+			"default": "./src/net/index.js"
+		},
+		"./storage": {
+			"types": "./types/storage.d.ts",
+			"default": "./src/storage.js"
+		},
+		"./platform": {
+			"types": "./types/platform.d.ts",
+			"default": "./src/platform.js"
+		},
+		"./events": {
+			"types": "./types/events.d.ts",
+			"default": "./src/events.js"
+		},
+		"./ui": {
+			"types": "./types/ui.d.ts",
+			"default": "./src/ui/index.js"
+		},
+		"./focus": {
+			"types": "./types/focus.d.ts",
+			"default": "./src/focus.js"
+		},
+		"./rotation": {
+			"types": "./types/rotation.d.ts",
+			"default": "./src/rotation.js"
+		},
+		"./math": {
+			"types": "./types/math.d.ts",
+			"default": "./src/math.js"
+		},
+		"./map": {
+			"types": "./types/map.d.ts",
+			"default": "./src/map/index.js"
+		},
+		"./physics": {
+			"types": "./types/physics.d.ts",
+			"default": "./src/physics/index.js"
+		}
 	},
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",

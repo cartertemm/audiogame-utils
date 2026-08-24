@@ -1,0 +1,11 @@
+export function clamp(value: number, min: number, max: number): number;
+export function lerp(a: number, b: number, t: number): number;
+export function inverse_lerp(a: number, b: number, value: number): number;
+export function range_convert(value: number, in_min: number, in_max: number, out_min: number, out_max: number): number;
+export function angle_difference(from: number, to: number): number;
+export function wrap(value: number, min: number, max: number): number;
+export function random_int(min: number, max: number): number;
+export function random_float(min?: number, max?: number): number;
+export function random_choice<T>(list: T[]): T | undefined;
+export function weighted_choice<T>(list: T[], weights: number[]): T | undefined;
+export function shuffle<T>(list: T[]): T[];
