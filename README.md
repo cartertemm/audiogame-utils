@@ -6,7 +6,7 @@ The package publishes ECMAScript modules and requires no build step. Its only ru
 
 ## Requirements
 
-Local development requires Node.js and npm.
+Local development requires Node.js (and npm) or Deno 2+.
 
 ## Installation
 
@@ -30,6 +30,15 @@ const audio = createAudio()
 
 speech.init()
 const startSound = audio.sfx('/sounds/start.ogg')
+```
+
+### Deno
+
+In Deno 2 or later, import directly using the `npm:` specifier or `deno.json` exports:
+
+```js
+import { createStorage, createSpeech } from 'npm:audiogame-utils'
+import { createAudio } from 'npm:audiogame-utils/audio'
 ```
 
 See [examples/](examples/) for more of what you can do.
@@ -63,6 +72,12 @@ Clone your fork and open the repository directory. Then install the dependencies
 ```sh
 npm install
 npm test
+```
+
+Or run tests under Deno using the Deno task:
+
+```sh
+deno task test:deno
 ```
 
 The tests use Vitest with happy-dom. Run `npm run test:watch` while developing to rerun tests when files change.

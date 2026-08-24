@@ -1,4 +1,4 @@
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAudio } from '../src/audio/index.js';
 import { createCacophonyEngine } from '../src/audio/cacophony.js';
 
@@ -132,14 +132,38 @@ describe('cacophony engine', () => {
 	});
 
 	test('ready supplies a fallback cache when the Cache API is missing', async () => {
-		expect(typeof caches).toBe('undefined');
-		constructorArgs.length = 0;
-		await createCacophonyEngine().ready();
-		expect(constructorArgs[0][1]).toBeTruthy();
+		const originalCaches = globalThis.caches;
+		delete globalThis.caches;
+		try {
+			constructorArgs.length = 0;
+			await createCacophonyEngine().ready();
+			expect(constructorArgs[0][1]).toBeTruthy();
+		} finally {
+			if (originalCaches !== undefined) {
+				globalThis.caches = originalCaches;
+			} else {
+				delete globalThis.caches;
+			}
+		}
 	});
 });
 
 describe('memory cache', () => {
+	let originalCaches;
+
+	beforeEach(() => {
+		originalCaches = globalThis.caches;
+		delete globalThis.caches;
+	});
+
+	afterEach(() => {
+		if (originalCaches !== undefined) {
+			globalThis.caches = originalCaches;
+		} else {
+			delete globalThis.caches;
+		}
+	});
+
 	function makeContext() {
 		return {
 			decodeCalls: 0,
