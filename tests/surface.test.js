@@ -44,6 +44,14 @@ describe('createSurfaceManager', () => {
 		expect(engine.playbacks).toHaveLength(1);
 	});
 
+	test('addSound requires a valid surface name', () => {
+		const manager = createSurfaceManager({ audio: { sfx: vi.fn() } });
+
+		expect(() => manager.addSound('', '/sounds/a.ogg')).toThrow(/valid surface name/);
+		expect(() => manager.addSound(undefined, '/sounds/a.ogg')).toThrow(/valid surface name/);
+		expect(manager.hasSurface(undefined)).toBe(false);
+	});
+
 	test('registerSurface rejects a non-string source on a pool backed manager', () => {
 		const manager = createSurfaceManager({ pool: { play_3d: vi.fn() } });
 

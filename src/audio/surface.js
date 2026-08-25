@@ -24,16 +24,21 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 		}
 	}
 
-	function registerSurface(name, sources = []) {
+	function assertSurfaceName(caller, name) {
 		if (typeof name !== 'string' || name.length === 0) {
-			throw new Error('registerSurface requires a valid surface name');
+			throw new Error(`${caller} requires a valid surface name`);
 		}
+	}
+
+	function registerSurface(name, sources = []) {
+		assertSurfaceName('registerSurface', name);
 		const list = Array.isArray(sources) ? [...sources] : [sources];
 		list.forEach(assertPlayable);
 		surfaces.set(name, list);
 	}
 
 	function addSound(surfaceName, source) {
+		assertSurfaceName('addSound', surfaceName);
 		assertPlayable(source);
 		if (!surfaces.has(surfaceName)) {
 			surfaces.set(surfaceName, []);
