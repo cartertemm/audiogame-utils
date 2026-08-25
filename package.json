@@ -26,19 +26,19 @@
 			"default": "./src/speech/index.js"
 		},
 		"./audio": {
-			"types": "./types/audio.d.ts",
+			"types": "./types/audio/index.d.ts",
 			"default": "./src/audio/index.js"
 		},
 		"./audio/pool": {
-			"types": "./types/audio.d.ts",
+			"types": "./types/audio/pool.d.ts",
 			"default": "./src/audio/pool.js"
 		},
 		"./audio/coords": {
-			"types": "./types/audio.d.ts",
+			"types": "./types/audio/coords.d.ts",
 			"default": "./src/audio/coords.js"
 		},
 		"./audio/units": {
-			"types": "./types/audio.d.ts",
+			"types": "./types/audio/units.d.ts",
 			"default": "./src/audio/units.js"
 		},
 		"./net": {

@@ -3,7 +3,7 @@ export { isIOS, isIOSStandalone } from './platform.d.ts';
 export { EventEmitter } from './events.d.ts';
 export { createFocusTrap } from './focus.d.ts';
 export {
-	el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, createMenu, MenuItemInstance,
+	el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, createMenu, MenuItem,
 	createFields, textField, passwordField, textAreaField, numberField,
 	rangeField, percentRangeField, selectField, checkboxField,
 	radioGroup, checkboxGroup, keyField, keyName, confirmButton,
@@ -14,6 +14,6 @@ export * as physics from './physics.d.ts';
 
 export { createKeyboard, createMouse, createTouch, createInputHandler, formatBinding } from './input.d.ts';
 export { createSpeech, MODE_ARIA, MODE_TTS, MODE_BOTH } from './speech.d.ts';
-export { createAudio, createSfx, createCacophonyEngine } from './audio.d.ts';
+export { createAudio, createSfx, createCacophonyEngine } from './audio/index.d.ts';
 export { wrapSocket, createReconnectingClient, createIdentity } from './net.d.ts';
 export { createMap } from './map.d.ts';

@@ -31,7 +31,7 @@
 	"tasks": {
 		"test": "vitest run",
 		"test:deno": "deno run -A npm:vitest run",
-		"check": "deno check types/index.d.ts",
+		"check": "deno check types/index.d.ts tests/types.usage.ts",
 		"build": "npm run build"
 	},
 	"fmt": {
