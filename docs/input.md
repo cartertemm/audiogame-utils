@@ -185,6 +185,7 @@ Button inputs accept zero-based numbers or standard button name strings:
 - `'dpad_down'` or `'down'` (13)
 - `'dpad_left'` or `'left'` (14)
 - `'dpad_right'` or `'right'` (15)
+- `'guide'` or `'home'` (16)
 
 ### Haptic Feedback
 

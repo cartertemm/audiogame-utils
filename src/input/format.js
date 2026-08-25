@@ -1,6 +1,8 @@
 // Formats input bindings as controls help that a player can hear or read.
 // Generating help from the active bindings keeps the text synchronized.
 
+import { BUTTON_NAMES, resolveButtonIndex } from './buttons.js';
+
 const SPECIAL_KEYS = {
 	' ': 'Space',
 	'arrowleft': 'Arrow Left',
@@ -17,25 +19,6 @@ const SPECIAL_KEYS = {
 	'backspace': 'Backspace',
 };
 
-const GAMEPAD_BUTTON_NAMES = {
-	0: 'Gamepad A',
-	1: 'Gamepad B',
-	2: 'Gamepad X',
-	3: 'Gamepad Y',
-	4: 'Gamepad LB',
-	5: 'Gamepad RB',
-	6: 'Gamepad LT',
-	7: 'Gamepad RT',
-	8: 'Gamepad Back',
-	9: 'Gamepad Start',
-	10: 'Gamepad L3',
-	11: 'Gamepad R3',
-	12: 'Gamepad D-Pad Up',
-	13: 'Gamepad D-Pad Down',
-	14: 'Gamepad D-Pad Left',
-	15: 'Gamepad D-Pad Right',
-};
-
 const FINGER_WORDS = { 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five' };
 
 function formatKey(key) {
@@ -46,13 +29,9 @@ function formatKey(key) {
 }
 
 function formatGamepad(button) {
-	if (typeof button === 'number') {
-		return GAMEPAD_BUTTON_NAMES[button] ?? `Gamepad Button ${button}`;
-	}
-	if (typeof button === 'string') {
-		return `Gamepad ${button.toUpperCase()}`;
-	}
-	return 'Gamepad Button';
+	const index = resolveButtonIndex(button);
+	if (index < 0) return 'Gamepad Button';
+	return BUTTON_NAMES[index] ?? `Gamepad Button ${index}`;
 }
 
 function fingerPrefix(n) {

@@ -1,24 +1,6 @@
 // Tracks gamepad button presses, analog stick axes, and haptic feedback.
 
-const BUTTON_ALIASES = {
-	a: 0, south: 0,
-	b: 1, east: 1,
-	x: 2, west: 2,
-	y: 3, north: 3,
-	lb: 4, l1: 4,
-	rb: 5, r1: 5,
-	lt: 6, l2: 6,
-	rt: 7, r2: 7,
-	select: 8, back: 8,
-	start: 9, menu: 9,
-	l3: 10, leftstick: 10,
-	r3: 11, rightstick: 11,
-	dpad_up: 12, up: 12,
-	dpad_down: 13, down: 13,
-	dpad_left: 14, left: 14,
-	dpad_right: 15, right: 15,
-	guide: 16, home: 16,
-};
+import { resolveButtonIndex } from './buttons.js';
 
 export function createGamepad({ target = null, deadzone = 0.25, index = null } = {}) {
 	const node = target ?? (typeof window !== 'undefined' ? window : null);
@@ -34,17 +16,6 @@ export function createGamepad({ target = null, deadzone = 0.25, index = null } =
 	let justPressed = new Set();
 	let justReleased = new Set();
 	let attached = false;
-
-	function resolveButtonIndex(btn) {
-		if (typeof btn === 'number') return btn;
-		if (typeof btn === 'string') {
-			const lower = btn.toLowerCase();
-			if (BUTTON_ALIASES[lower] !== undefined) return BUTTON_ALIASES[lower];
-			const parsed = parseInt(lower, 10);
-			if (!Number.isNaN(parsed)) return parsed;
-		}
-		return -1;
-	}
 
 	function getGamepads() {
 		if (typeof navigator === 'undefined' || !navigator.getGamepads) return [];

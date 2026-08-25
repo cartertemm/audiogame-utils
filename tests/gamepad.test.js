@@ -1,6 +1,7 @@
 import { describe, test, expect, afterEach } from 'vitest';
 import { createGamepad } from '../src/input/gamepad.js';
 import { createInputHandler } from '../src/input/inputHandler.js';
+import { formatBinding } from '../src/input/format.js';
 
 describe('createGamepad', () => {
 	let originalNavigator;
@@ -97,6 +98,38 @@ describe('createGamepad', () => {
 
 		gamepad.poll();
 		expect(pressCalls).toEqual([0]);
+	});
+
+	test('binds gamepad buttons by alias name', () => {
+		const fakePad = {
+			index: 0,
+			buttons: [{ pressed: false }, { pressed: false }, { pressed: false }, { pressed: false },
+				{ pressed: false }, { pressed: false }, { pressed: false }, { pressed: false },
+				{ pressed: false }, { pressed: false }, { pressed: false }, { pressed: false },
+				{ pressed: true }],
+			axes: [],
+		};
+		mockNavigator([fakePad]);
+
+		const gamepad = createGamepad();
+		const handler = createInputHandler({ gamepad });
+		const fired = [];
+		handler.bind('forward', { gamepad: ['dpad_up'] });
+		handler.on('forward', e => fired.push(e.name));
+
+		gamepad.poll();
+		expect(fired).toEqual(['forward']);
+		expect(handler.wasTriggered('forward')).toBe(true);
+	});
+
+	test('describes and formats alias bindings by their standard name', () => {
+		const handler = createInputHandler({});
+		handler.bind('forward', { gamepad: ['dpad_up'] });
+
+		const described = handler.describe('forward');
+		expect(described.bindings).toEqual([{ kind: 'gamepad', button: 12 }]);
+		expect(formatBinding(described.bindings[0])).toBe('Gamepad D-Pad Up');
+		expect(formatBinding({ kind: 'gamepad', button: 'leftstick' })).toBe('Gamepad L3');
 	});
 
 	test('integrates with createInputHandler', () => {

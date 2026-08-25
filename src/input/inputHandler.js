@@ -7,6 +7,8 @@
 // Both methods report the same action. A `hold` binding is available only
 // through polling because it does not produce a discrete trigger.
 
+import { resolveButtonIndex } from './buttons.js';
+
 export function createInputHandler({ keyboard = null, touch = null, gamepad = null, attach: autoAttach = true } = {}) {
 	const bindings = new Map();
 	const handlers = new Map();
@@ -105,7 +107,7 @@ export function createInputHandler({ keyboard = null, touch = null, gamepad = nu
 			bindings.set(name, {
 				hold: binding.hold ?? [],
 				press: binding.press ?? [],
-				gamepad: binding.gamepad ?? [],
+				gamepad: (binding.gamepad ?? []).map(resolveButtonIndex),
 				tap: binding.tap ?? [],
 				swipe: binding.swipe ?? [],
 			});
