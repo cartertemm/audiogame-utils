@@ -28,7 +28,9 @@
 		"./math": "./src/math.js",
 		"./map": "./src/map/index.js",
 		"./physics": "./src/physics/index.js",
-		"./clock": "./src/clock.js"
+		"./clock": "./src/clock.js",
+		"./stats": "./src/stats.js",
+		"./text": "./src/text.js"
 	},
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",
