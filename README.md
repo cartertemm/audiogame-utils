@@ -34,7 +34,7 @@ const startSound = audio.sfx('/sounds/start.ogg')
 
 ### Deno
 
-In Deno 2 or later, import directly using the `npm:` specifier or `deno.json` exports:
+In Deno 2 or later, import directly using the `npm:` specifier. Deno resolves the subpaths from the package.json `exports` map:
 
 ```js
 import { createStorage, createSpeech } from 'npm:audiogame-utils'
