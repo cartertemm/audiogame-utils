@@ -21,8 +21,8 @@ export function createAudio({ engine = null } = {}) {
 	}
 
 	return {
-		sfx(source) {
-			const handle = createSfx(getEngine, source);
+		sfx(source, options) {
+			const handle = createSfx(getEngine, source, options);
 			handles.add(handle);
 			return handle;
 		},

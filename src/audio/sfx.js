@@ -20,7 +20,7 @@ async function resolveSource(source) {
 	throw new Error('sfx source must resolve to a URL string');
 }
 
-export function createSfx(getEngine, source) {
+export function createSfx(getEngine, source, { panType = 'stereo' } = {}) {
 	let loadPromise = null;
 	let looping = false;
 	let epoch = 0;
@@ -40,7 +40,7 @@ export function createSfx(getEngine, source) {
 				const engine = await getEngine();
 				if (!engine) return null;
 				const url = await resolveSource(source);
-				return { engine, handle: await engine.load(url) };
+				return { engine, handle: await engine.load(url, { panType }) };
 			})();
 		}
 		return loadPromise;

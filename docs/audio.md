@@ -105,7 +105,7 @@ await sounds.hit.play({ position: [1, 0, -2] })
 
 `createCacophonyEngine()` creates the adapter used by the default audio instance. Its interface consists of `load`, `play`, `stop`, and `setPosition`.
 
-`createSfx(getEngine, source)` creates an individual sound handle. `getEngine` must be an asynchronous function that resolves to a compatible engine or `null`. Applications that do not provide a custom engine should use `createAudio().sfx(source)` instead.
+`createSfx(getEngine, source, { panType })` creates an individual sound handle. `panType` defaults to `'stereo'`. Pass `'HRTF'` for a handle you intend to position in 3D, because `setPosition()` and the `position` play option have no effect on a stereo handle. `getEngine` must be an asynchronous function that resolves to a compatible engine or `null`. Applications that do not provide a custom engine should use `createAudio().sfx(source)` instead.
 
 ## Surface footstep manager
 
@@ -128,6 +128,9 @@ surfaces.registerSurface('wood', [
 surfaces.addSound('wood', '/sounds/wood6.ogg')
 
 // Play a random step sound from the 'wood' bank at position (x, y, z)
-surfaces.playStep('wood', 5, 0, 10)
+surfaces.playStep('wood', 5, 0, 10, { listenerX: 4, listenerY: 8, rotation: 90 })
 ```
 
+`playStep(surface, x, y, z, options)` takes the step position in game coordinates. Pass the player position as `options.listenerX`, `listenerY`, `listenerZ`, and `options.rotation` so the step is placed relative to the player. A manager built on `audio` converts these to a listener relative position itself. A manager built on `pool` forwards them to `play_3d()`, which also accepts them from the pool's last known listener when you omit them.
+
+Each `playStep()` call positions its own playback, so overlapping steps from the same file do not move one another.

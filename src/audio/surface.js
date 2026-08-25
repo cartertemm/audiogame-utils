@@ -1,6 +1,8 @@
 // Manages surface footstep sound banks and spatial step sound playback.
 
 import { random_choice } from '../math.js';
+import { listener_relative } from './coords.js';
+import { sound_pool_default_y_elevation } from './pool.js';
 
 export function createSurfaceManager({ audio = null, pool = null } = {}) {
 	if (!audio && !pool) {
@@ -12,7 +14,7 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 	function getHandle(source) {
 		if (typeof source !== 'string') return source;
 		if (!handles.has(source) && audio) {
-			handles.set(source, audio.sfx(source));
+			handles.set(source, audio.sfx(source, { panType: 'HRTF' }));
 		}
 		return handles.get(source) ?? source;
 	}
@@ -57,10 +59,12 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 
 		if (audio) {
 			const handle = getHandle(source);
-			if (typeof handle.setPosition === 'function') {
-				handle.setPosition([x, y, z]);
-			}
-			return handle.play(options);
+			// Position goes in the play options rather than on the handle, because
+			// the handle wraps a cached Sound shared by every step from this file.
+			// Writing to it would move steps that are already sounding.
+			const { listenerX = 0, listenerY = 0, listenerZ = 0, rotation = 0, ...playOptions } = options;
+			const rel = listener_relative(x, y, z, listenerX, listenerY, listenerZ, rotation, sound_pool_default_y_elevation);
+			return handle.play({ ...playOptions, position: [rel.right, rel.up, -rel.forward] });
 		}
 
 		return null;

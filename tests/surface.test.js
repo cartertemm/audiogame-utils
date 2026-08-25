@@ -1,5 +1,7 @@
 import { describe, test, expect, vi } from 'vitest';
 import { createSurfaceManager } from '../src/audio/surface.js';
+import { createAudio } from '../src/audio/index.js';
+import { createCacophonyEngine } from '../src/audio/cacophony.js';
 
 describe('createSurfaceManager', () => {
 	test('throws if neither audio nor pool is provided', () => {
@@ -31,23 +33,15 @@ describe('createSurfaceManager', () => {
 		]);
 	});
 
-	test('playStep picks from surface bank and sets spatial position', () => {
-		const mockHandle = {
-			setPosition: vi.fn(),
-			play: vi.fn(() => ({ isPlaying: true })),
-		};
-		const fakeAudio = {
-			sfx: vi.fn(() => mockHandle),
-		};
-		const manager = createSurfaceManager({ audio: fakeAudio });
+	test('playStep plays a source from the surface bank', async () => {
+		const engine = makeRecordingEngine();
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
 		manager.registerSurface('grass', ['/sounds/grass1.ogg']);
 
-		const result = manager.playStep('grass', 5, 10, 2);
+		await manager.playStep('grass', 5, 10, 2);
 
-		expect(fakeAudio.sfx).toHaveBeenCalledWith('/sounds/grass1.ogg');
-		expect(mockHandle.setPosition).toHaveBeenCalledWith([5, 10, 2]);
-		expect(mockHandle.play).toHaveBeenCalled();
-		expect(result).toEqual({ isPlaying: true });
+		expect(engine.loadedUrls).toEqual(['/sounds/grass1.ogg']);
+		expect(engine.playbacks).toHaveLength(1);
 	});
 
 	test('playStep delegates to sound_pool when pool is provided', () => {
@@ -72,5 +66,68 @@ describe('createSurfaceManager', () => {
 		const manager = createSurfaceManager({ audio: fakeAudio });
 
 		expect(manager.playStep('unknown', 0, 0, 0)).toBe(null);
+	});
+});
+
+// Exercises the real createSfx and cacophony wiring instead of a hand written
+// handle, because both of these bugs live in that wiring rather than in
+// surface.js alone.
+function makeRecordingEngine() {
+	const engine = {
+		loadedUrls: [],
+		loadOptions: [],
+		playbacks: [],
+		async load(url, options) {
+			engine.loadedUrls.push(url);
+			engine.loadOptions.push(options);
+			return {
+				preplay() {
+					const inst = { position: null, play() {}, stop() {} };
+					engine.playbacks.push(inst);
+					return [inst];
+				},
+			};
+		},
+		play(handle, options) {
+			return createCacophonyEngine().play(handle, options);
+		},
+		stop() {},
+		setPosition() {},
+	};
+	return engine;
+}
+
+describe('createSurfaceManager spatial playback', () => {
+	test('loads step sounds as HRTF so positioning applies', async () => {
+		const engine = makeRecordingEngine();
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
+		manager.registerSurface('wood', ['/sounds/wood1.ogg']);
+
+		await manager.playStep('wood', 5, 0, 10);
+
+		expect(engine.loadOptions).toEqual([{ panType: 'HRTF' }]);
+	});
+
+	test('gives each step its own position', async () => {
+		const engine = makeRecordingEngine();
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
+		manager.registerSurface('wood', ['/sounds/wood1.ogg']);
+
+		await manager.playStep('wood', 3, 4, 0);
+		await manager.playStep('wood', -3, -4, 0);
+
+		expect(engine.playbacks.map(p => p.position)).toEqual([[3, 0, -4], [-3, 0, 4]]);
+	});
+
+	test('places the step relative to the listener', async () => {
+		const engine = makeRecordingEngine();
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
+		manager.registerSurface('wood', ['/sounds/wood1.ogg']);
+
+		// Step is 2 east and 5 north of a listener facing north, so it should
+		// land straight ahead at a depth of 5.
+		await manager.playStep('wood', 12, 15, 0, { listenerX: 10, listenerY: 10 });
+
+		expect(engine.playbacks[0].position).toEqual([2, 0, -5]);
 	});
 });
