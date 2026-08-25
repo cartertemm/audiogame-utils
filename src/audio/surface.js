@@ -12,11 +12,16 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 	const handles = new Map();
 
 	function getHandle(source) {
-		if (typeof source !== 'string') return source;
-		if (!handles.has(source) && audio) {
+		if (!handles.has(source)) {
 			handles.set(source, audio.sfx(source, { panType: 'HRTF' }));
 		}
-		return handles.get(source) ?? source;
+		return handles.get(source);
+	}
+
+	function assertPlayable(source) {
+		if (pool && typeof source !== 'string') {
+			throw new Error('a sound_pool backed surface manager requires string sources');
+		}
 	}
 
 	function registerSurface(name, sources = []) {
@@ -24,10 +29,12 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 			throw new Error('registerSurface requires a valid surface name');
 		}
 		const list = Array.isArray(sources) ? [...sources] : [sources];
+		list.forEach(assertPlayable);
 		surfaces.set(name, list);
 	}
 
 	function addSound(surfaceName, source) {
+		assertPlayable(source);
 		if (!surfaces.has(surfaceName)) {
 			surfaces.set(surfaceName, []);
 		}
@@ -47,26 +54,22 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 		if (!list || list.length === 0) return null;
 		const source = random_choice(list);
 		if (!source) return null;
-
 		if (pool) {
 			const listenerX = options.listenerX ?? pool.last_listener_x ?? 0;
 			const listenerY = options.listenerY ?? pool.last_listener_y ?? 0;
 			const listenerZ = options.listenerZ ?? pool.last_listener_z ?? 0;
 			const rotation = options.rotation ?? pool.last_listener_rotation ?? 0;
-			const filename = typeof source === 'string' ? source : String(source);
-			return pool.play_3d(filename, listenerX, listenerY, listenerZ, x, y, z, rotation, false);
+			return pool.play_3d(source, listenerX, listenerY, listenerZ, x, y, z, rotation, false);
 		}
-
 		if (audio) {
 			const handle = getHandle(source);
 			// Position goes in the play options rather than on the handle, because
 			// the handle wraps a cached Sound shared by every step from this file.
-			// Writing to it would move steps that are already sounding.
+			// We do not want to move steps that are already playing.
 			const { listenerX = 0, listenerY = 0, listenerZ = 0, rotation = 0, ...playOptions } = options;
 			const rel = listener_relative(x, y, z, listenerX, listenerY, listenerZ, rotation, sound_pool_default_y_elevation);
 			return handle.play({ ...playOptions, position: [rel.right, rel.up, -rel.forward] });
 		}
-
 		return null;
 	}
 

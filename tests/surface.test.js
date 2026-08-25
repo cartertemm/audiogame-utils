@@ -44,6 +44,21 @@ describe('createSurfaceManager', () => {
 		expect(engine.playbacks).toHaveLength(1);
 	});
 
+	test('registerSurface rejects a non-string source on a pool backed manager', () => {
+		const manager = createSurfaceManager({ pool: { play_3d: vi.fn() } });
+
+		expect(() => manager.registerSurface('wood', [() => '/sounds/wood1.ogg']))
+			.toThrow(/string sources/);
+	});
+
+	test('addSound rejects a non-string source on a pool backed manager', () => {
+		const manager = createSurfaceManager({ pool: { play_3d: vi.fn() } });
+		manager.registerSurface('wood', ['/sounds/wood1.ogg']);
+
+		expect(() => manager.addSound('wood', () => '/sounds/wood2.ogg'))
+			.toThrow(/string sources/);
+	});
+
 	test('playStep delegates to sound_pool when pool is provided', () => {
 		const fakePool = {
 			last_listener_x: 0,
@@ -117,6 +132,29 @@ describe('createSurfaceManager spatial playback', () => {
 		await manager.playStep('wood', -3, -4, 0);
 
 		expect(engine.playbacks.map(p => p.position)).toEqual([[3, 0, -4], [-3, 0, 4]]);
+	});
+
+	test('plays a source that resolves lazily', async () => {
+		const engine = makeRecordingEngine();
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
+		manager.registerSurface('wood', [() => '/sounds/wood1.ogg']);
+
+		await manager.playStep('wood', 1, 2, 0);
+
+		expect(engine.loadedUrls).toEqual(['/sounds/wood1.ogg']);
+	});
+
+	test('reuses one handle per source across steps', async () => {
+		const engine = makeRecordingEngine();
+		const source = () => '/sounds/wood1.ogg';
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
+		manager.registerSurface('wood', [source]);
+
+		await manager.playStep('wood', 1, 2, 0);
+		await manager.playStep('wood', 3, 4, 0);
+
+		expect(engine.loadedUrls).toEqual(['/sounds/wood1.ogg']);
+		expect(engine.playbacks).toHaveLength(2);
 	});
 
 	test('places the step relative to the listener', async () => {
