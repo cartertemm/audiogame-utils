@@ -138,4 +138,59 @@ for (const action of input.describe()) {
 }
 ```
 
-The formatter handles key names, holds, presses, tap counts, finger counts, and swipe directions. It returns an empty string for an unknown binding kind.
+The formatter handles key names, holds, presses, tap counts, finger counts, swipe directions, and gamepad buttons. It returns an empty string for an unknown binding kind.
+
+## Gamepad
+
+```js
+import { createGamepad } from 'audiogame-utils/input'
+
+const gamepad = createGamepad({ deadzone: 0.25 })
+
+// Call poll() inside your game loop
+gamepad.poll()
+
+if (gamepad.isDown('a') || gamepad.isDown(0)) {
+	jump()
+}
+
+const moveX = gamepad.getAxis(0)
+```
+
+`createGamepad(options)` tracks button states, analog sticks, and haptic feedback via the Web Gamepad API.
+
+| Option | Default | Description |
+| --- | ---: | --- |
+| `target` | `window` | Target object receiving connection events. |
+| `deadzone` | `0.25` | Analog stick deadzone threshold between 0 and 1. |
+| `index` | `null` | Index of the specific gamepad to track (default tracks first active gamepad). |
+
+### Button Aliases
+
+Button inputs accept zero-based numbers or standard button name strings:
+
+- `'a'` or `'south'` (0)
+- `'b'` or `'east'` (1)
+- `'x'` or `'west'` (2)
+- `'y'` or `'north'` (3)
+- `'lb'` or `'l1'` (4)
+- `'rb'` or `'r1'` (5)
+- `'lt'` or `'l2'` (6)
+- `'rt'` or `'r2'` (7)
+- `'select'` or `'back'` (8)
+- `'start'` or `'menu'` (9)
+- `'l3'` or `'leftstick'` (10)
+- `'r3'` or `'rightstick'` (11)
+- `'dpad_up'` or `'up'` (12)
+- `'dpad_down'` or `'down'` (13)
+- `'dpad_left'` or `'left'` (14)
+- `'dpad_right'` or `'right'` (15)
+- `'guide'` or `'home'` (16)
+
+### Haptic Feedback
+
+Use `vibrate(options)` to trigger controller rumble effects:
+
+```js
+await gamepad.vibrate({ duration: 300, strongMagnitude: 0.8, weakMagnitude: 0.5 })
+```

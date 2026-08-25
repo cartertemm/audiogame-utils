@@ -1,6 +1,8 @@
 // Formats input bindings as controls help that a player can hear or read.
 // Generating help from the active bindings keeps the text synchronized.
 
+import { BUTTON_NAMES, resolveButtonIndex } from './buttons.js';
+
 const SPECIAL_KEYS = {
 	' ': 'Space',
 	'arrowleft': 'Arrow Left',
@@ -24,6 +26,12 @@ function formatKey(key) {
 	if (SPECIAL_KEYS[key] !== undefined) return SPECIAL_KEYS[key];
 	if (key.length === 1) return key.toUpperCase();
 	return key[0].toUpperCase() + key.slice(1);
+}
+
+function formatGamepad(button) {
+	const index = resolveButtonIndex(button);
+	if (index < 0) return 'Gamepad Button';
+	return BUTTON_NAMES[index] ?? `Gamepad Button ${index}`;
 }
 
 function fingerPrefix(n) {
@@ -60,6 +68,8 @@ export function formatBinding(binding) {
 		case 'hold':
 		case 'press':
 			return formatKey(binding.key);
+		case 'gamepad':
+			return formatGamepad(binding.button);
 		case 'tap':
 			return formatTap(binding);
 		case 'swipe':
