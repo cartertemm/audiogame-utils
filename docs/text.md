@@ -1,10 +1,11 @@
 # Text helpers
 
-The `audiogame-utils/text` module formats lists, durations, and large numbers for display. It also compares strings and finds the closest candidate for input that may contain a typo.
+The `audiogame-utils/text` module formats counts, lists, durations, and large numbers for display. It also compares strings and finds the closest candidate for input that may contain a typo.
 
 ```js
 import {
 	prettySequence,
+	pluralize,
 	formatTime,
 	prettyNumber,
 	stringDistance,
@@ -40,6 +41,29 @@ prettySequence(new Set(['a', 'b']), 'and') // "a and b"
 ```
 
 When `last` is omitted, `null`, or another falsy value, every item is separated by a comma. The function does not add an Oxford comma before a conjunction.
+
+## Counting things
+
+### `pluralize(count, singular, plural)`
+
+Joins a count to the name of the thing it counts, and gives the name its plural form when the count is not one. `plural` defaults to the singular name with an `s` added, so pass it only for an irregular word.
+
+```js
+pluralize(1, 'arrow') // "1 arrow"
+pluralize(3, 'arrow') // "3 arrows"
+pluralize(0, 'arrow') // "0 arrows"
+
+pluralize(3, 'life', 'lives') // "3 lives"
+```
+
+Only a count of exactly one is singular, so a fraction reads as a plural, and `-1` reads as a singular.
+
+```js
+pluralize(1.5, 'second') // "1.5 seconds"
+pluralize(-1, 'step')    // "-1 step"
+```
+
+The count can be a number or a `BigInt`.
 
 ## Formatting durations
 

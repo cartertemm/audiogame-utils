@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { prettySequence, formatTime, prettyNumber, stringDistance, closestMatch } from '../src/text.js';
+import { prettySequence, pluralize, formatTime, prettyNumber, stringDistance, closestMatch } from '../src/text.js';
 
 describe('prettySequence', () => {
 	test('returns an empty string for an empty list', () => {
@@ -38,6 +38,35 @@ describe('prettySequence', () => {
 		const items = ['a', 'b'];
 		prettySequence(items, 'and');
 		expect(items).toEqual(['a', 'b']);
+	});
+});
+
+describe('pluralize', () => {
+	test('keeps the singular name for a count of one', () => {
+		expect(pluralize(1, 'arrow')).toBe('1 arrow');
+	});
+
+	test('adds an s for any other count', () => {
+		expect(pluralize(3, 'arrow')).toBe('3 arrows');
+		expect(pluralize(0, 'arrow')).toBe('0 arrows');
+	});
+
+	test('accepts an irregular plural', () => {
+		expect(pluralize(1, 'life', 'lives')).toBe('1 life');
+		expect(pluralize(3, 'life', 'lives')).toBe('3 lives');
+	});
+
+	test('treats a single item as singular whichever way it is counted', () => {
+		expect(pluralize(-1, 'step')).toBe('-1 step');
+	});
+
+	test('treats a fraction as plural', () => {
+		expect(pluralize(1.5, 'second')).toBe('1.5 seconds');
+	});
+
+	test('counts a BigInt', () => {
+		expect(pluralize(1n, 'coin')).toBe('1 coin');
+		expect(pluralize(9007199254740993n, 'coin')).toBe('9007199254740993 coins');
 	});
 });
 

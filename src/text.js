@@ -14,13 +14,18 @@ export function prettySequence(list, last = null) {
 	return `${parts.join(', ')}${last ? ` ${last} ` : ', '}${end}`;
 }
 
+export function pluralize(count, singular, plural = `${singular}s`) {
+	const single = count === 1 || count === -1 || count === 1n || count === -1n;
+	return `${count} ${single ? singular : plural}`;
+}
+
 export function formatTime(ms, pretty = true) {
 	let remaining = Math.floor(Math.abs(ms));
 	const parts = [];
 	for (const unit of UNITS) {
 		const count = Math.floor(remaining / unit.ms);
 		remaining -= count * unit.ms;
-		if (count > 0) parts.push(`${count} ${unit.name}${count === 1 ? '' : 's'}`);
+		if (count > 0) parts.push(pluralize(count, unit.name));
 	}
 	if (parts.length === 0) return 'no time at all';
 	return pretty ? prettySequence(parts, 'and') : parts.join(' ');
