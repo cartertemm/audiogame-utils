@@ -77,6 +77,29 @@ describe('StatSet', () => {
 		expect(set1.get('keys').val).toBe(1);
 	});
 
+	test('adds a plain object of name and value pairs', () => {
+		const set = createStatSet({ score: 10, hp: 5 });
+		expect(set.size).toBe(2);
+		expect(set.get('score').val).toBe(10);
+		expect(set.get('hp').val).toBe(5);
+	});
+
+	test('adds an object whose values are stat shaped objects', () => {
+		const set = createStatSet({ score: { name: 'score', val: 10, text: 'Score: %0' } });
+		expect(set.get('score').val).toBe(10);
+		expect(set.get('score').format()).toBe('Score: 10');
+	});
+
+	test('does not share user data between a set and its copy', () => {
+		const orig = createStatSet();
+		orig.add('x', 1, '%0', null, { tag: 'original' });
+
+		const copy = createStatSet(orig);
+		copy.get('x').user.tag = 'changed';
+
+		expect(orig.get('x').user.tag).toBe('original');
+	});
+
 	test('serializes and deserializes linear format', () => {
 		const set = createStatSet();
 		set.add('level', 5);

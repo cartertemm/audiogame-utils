@@ -165,7 +165,12 @@ total.get('coins').val // 15
 total.get('keys').val  // 1
 ```
 
-`addSet` accepts another `StatSet`, an array of stat shaped objects, or an object whose values are stat shaped objects. Each object needs a nonempty `name`. The method returns the current set, so calls can be chained.
+`addSet` accepts another `StatSet`, an array of stat shaped objects, or a plain object. In a plain object, a value can be a stat shaped object or a bare value, in which case the key becomes the name. Stats taken from an array or another set need a nonempty `name`. Copied stats get their own copy of `user`, so changes to one set do not affect the other. The method returns the current set, so calls can be chained.
+
+```js
+const set = createStatSet({ score: 10, hp: 5 })
+set.get('score').val // 10
+```
 
 Passing another collection to `createStatSet(other)` or `new StatSet(other)` fills the new set using the same rules.
 

@@ -161,14 +161,24 @@ export class StatSet {
 
 	addSet(other) {
 		if (!other) return this;
-		const otherStats = other instanceof StatSet ? other.getStats() : (Array.isArray(other) ? other : Object.values(other));
-		for (const st of otherStats) {
-			if (!st || !st.name) continue;
-			if (this.exists(st.name)) {
-				const existing = this.get(st.name);
+		let entries;
+		if (other instanceof StatSet) {
+			entries = other.getStats().map((st) => [st.name, st]);
+		} else if (Array.isArray(other)) {
+			entries = other.map((st) => [st && st.name, st]);
+		} else {
+			entries = Object.entries(other);
+		}
+		for (const [key, value] of entries) {
+			// A plain object may hold either a stat shaped object or a bare value keyed by name.
+			const st = value && typeof value === 'object' && 'val' in value ? value : { name: key, val: value };
+			const name = st.name ?? key;
+			if (!name) continue;
+			if (this.exists(name)) {
+				const existing = this.get(name);
 				existing.val += st.val;
 			} else {
-				const created = this.add(st.name, st.val, st.text, st.callback, st.user);
+				const created = this.add(name, st.val, st.text, st.callback, st.user ? { ...st.user } : null);
 				if (created && typeof st.sortCounter === 'number') {
 					created.sortCounter = st.sortCounter;
 				}
