@@ -1,0 +1,11 @@
+{
+	"tasks": {
+		"test": "vitest run",
+		"test:deno": "deno run -A npm:vitest run",
+		"build": "npm run build"
+	},
+	"fmt": {
+		"useTabs": true,
+		"singleQuote": true
+	}
+}
