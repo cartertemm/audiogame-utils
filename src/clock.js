@@ -1,11 +1,15 @@
 // Manages 60 FPS game loop timing, delta time, and countdown timers.
 
+const FRAME_INTERVAL_TOLERANCE_MS = 0.01;
+
 export function createClock({ fps = 60, onTick = null, autoStart = false } = {}) {
 	let targetFps = Math.max(1, fps);
 	let frameInterval = 1000 / targetFps;
 	let running = false;
 	let timerId = null;
 	let lastTime = 0;
+	let lastTickTime = 0;
+	let accumulatedFrameTime = 0;
 	let dt = 0;
 	let elapsed = 0;
 	let tickCount = 0;
@@ -30,12 +34,19 @@ export function createClock({ fps = 60, onTick = null, autoStart = false } = {})
 		const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 		const deltaMs = lastTime > 0 ? now - lastTime : frameInterval;
 		lastTime = now;
-		const deltaSec = deltaMs / 1000;
-		step(deltaSec);
 
 		if (typeof requestAnimationFrame !== 'undefined' && targetFps >= 50 && targetFps <= 65) {
+			accumulatedFrameTime += deltaMs;
+			if (accumulatedFrameTime + FRAME_INTERVAL_TOLERANCE_MS >= frameInterval) {
+				step((now - lastTickTime) / 1000);
+				lastTickTime = now;
+				accumulatedFrameTime = accumulatedFrameTime >= frameInterval
+					? accumulatedFrameTime % frameInterval
+					: 0;
+			}
 			timerId = requestAnimationFrame(loop);
 		} else {
+			step(deltaMs / 1000);
 			timerId = setTimeout(loop, frameInterval);
 		}
 	}
@@ -44,6 +55,8 @@ export function createClock({ fps = 60, onTick = null, autoStart = false } = {})
 		if (running) return;
 		running = true;
 		lastTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+		lastTickTime = lastTime;
+		accumulatedFrameTime = 0;
 		if (typeof requestAnimationFrame !== 'undefined' && targetFps >= 50 && targetFps <= 65) {
 			timerId = requestAnimationFrame(loop);
 		} else {
@@ -69,6 +82,8 @@ export function createClock({ fps = 60, onTick = null, autoStart = false } = {})
 		elapsed = 0;
 		tickCount = 0;
 		lastTime = 0;
+		lastTickTime = 0;
+		accumulatedFrameTime = 0;
 	}
 
 	if (autoStart) {

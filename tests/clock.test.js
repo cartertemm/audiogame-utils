@@ -38,6 +38,56 @@ describe('createClock', () => {
 		expect(clock.elapsed).toBe(0);
 		expect(clock.running).toBe(false);
 	});
+
+	test('enforces the target FPS when using animation frames', () => {
+		let now = 1000;
+		const callbacks = [];
+		vi.stubGlobal('performance', { now: () => now });
+		vi.stubGlobal('requestAnimationFrame', (callback) => {
+			callbacks.push(callback);
+			return callbacks.length;
+		});
+		vi.stubGlobal('cancelAnimationFrame', () => {});
+		const clock = createClock({ fps: 50 });
+
+		try {
+			clock.start();
+			for (let frame = 0; frame < 60; frame++) {
+				now += 1000 / 60;
+				callbacks.shift()();
+			}
+
+			expect(clock.tickCount).toBe(50);
+		} finally {
+			clock.stop();
+			vi.unstubAllGlobals();
+		}
+	});
+
+	test.each([75, 90, 120, 144, 165])('enforces 60 FPS at %i Hz', (refreshRate) => {
+		let now = 1000;
+		const callbacks = [];
+		vi.stubGlobal('performance', { now: () => now });
+		vi.stubGlobal('requestAnimationFrame', (callback) => {
+			callbacks.push(callback);
+			return callbacks.length;
+		});
+		vi.stubGlobal('cancelAnimationFrame', () => {});
+		const clock = createClock({ fps: 60 });
+
+		try {
+			clock.start();
+			for (let frame = 0; frame < refreshRate; frame++) {
+				now += 1000 / refreshRate;
+				callbacks.shift()();
+			}
+
+			expect(clock.tickCount).toBe(60);
+		} finally {
+			clock.stop();
+			vi.unstubAllGlobals();
+		}
+	});
 });
 
 describe('createTimer', () => {
