@@ -145,6 +145,13 @@ export function createTimer({ duration = 1, onTick = null, onComplete = null, au
 	}
 
 	function start() {
+		if (targetDuration === 0) {
+			running = false;
+			if (typeof onComplete === 'function') {
+				onComplete();
+			}
+			return;
+		}
 		if (remaining <= 0) {
 			remaining = targetDuration;
 		}

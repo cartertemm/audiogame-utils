@@ -91,6 +91,15 @@ describe('createClock', () => {
 });
 
 describe('createTimer', () => {
+	test('completes a zero duration timer immediately', () => {
+		const onComplete = vi.fn();
+		const timer = createTimer({ duration: 0, onComplete, autoStart: true });
+
+		expect(timer.running).toBe(false);
+		expect(timer.remaining).toBe(0);
+		expect(onComplete).toHaveBeenCalledTimes(1);
+	});
+
 	test('tracks remaining time and progress', () => {
 		const onComplete = vi.fn();
 		const timer = createTimer({ duration: 2, onComplete, autoStart: true });
