@@ -105,7 +105,7 @@ function makeRecordingEngine() {
 			engine.loadOptions.push(options);
 			return {
 				preplay() {
-					const inst = { position: null, play() {}, stop() {} };
+					const inst = { position: null, stopped: false, play() {}, stop() { inst.stopped = true; } };
 					engine.playbacks.push(inst);
 					return [inst];
 				},
@@ -163,6 +163,17 @@ describe('createSurfaceManager spatial playback', () => {
 
 		expect(engine.loadedUrls).toEqual(['/sounds/wood1.ogg']);
 		expect(engine.playbacks).toHaveLength(2);
+	});
+
+	test('clear stops steps that are still sounding', async () => {
+		const engine = makeRecordingEngine();
+		const manager = createSurfaceManager({ audio: createAudio({ engine }) });
+		manager.registerSurface('wood', ['/sounds/wood1.ogg']);
+		await manager.playStep('wood', 1, 2, 0);
+
+		manager.clear();
+
+		expect(engine.playbacks[0].stopped).toBe(true);
 	});
 
 	test('places the step relative to the listener', async () => {

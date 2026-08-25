@@ -84,7 +84,10 @@ export function createSurfaceManager({ audio = null, pool = null } = {}) {
 		getSounds,
 		hasSurface,
 		playStep,
+		// `stop()` silences the current playback synchronously and releases the
+		// engine resources on its own. It never rejects, so it needs no await.
 		clear() {
+			for (const handle of handles.values()) handle.stop();
 			surfaces.clear();
 			handles.clear();
 		},
