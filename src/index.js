@@ -19,3 +19,4 @@ export { createAudio, createSfx, createCacophonyEngine, createSurfaceManager } f
 export { wrapSocket, createReconnectingClient, createIdentity } from './net/index.js';
 export { createMap } from './map/index.js';
 export { Stat, StatSet, createStatSet, STAT_SORT_MODE } from './stats.js';
+export { closestMatch, formatTime, prettySequence, stringDistance } from './text.js';
