@@ -49,7 +49,11 @@ export class EventEmitter {
 			try {
 				handler(data);
 			} catch (err) {
-				if (!firstError) firstError = err;
+				if (firstError) {
+					console.error(err);
+				} else {
+					firstError = err;
+				}
 			}
 		}
 		if (firstError) throw firstError;
