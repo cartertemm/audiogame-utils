@@ -56,9 +56,9 @@ See [examples/](examples/) for more of what you can do.
 | [Focus](docs/focus.md) | `audiogame-utils/focus` | Keyboard trapping for gameplay using a virtual cursor. |
 | [Input](docs/input.md) | `audiogame-utils/input` | Keyboard, mouse, touch gesture, and named action input. |
 | [Maps](docs/map.md) | `audiogame-utils/map` | Representation of spatial data, map loading, queries, and serialization. Able to load maps with hundreds of thousands of objects in less than a second. |
-| [Math](src/math.js) | `audiogame-utils/math` | Range, angle, interpolation, and randomization helpers. |
+| [Math](docs/math.md) | `audiogame-utils/math` | Range, angle, interpolation, and randomization helpers. |
 | [Networking](docs/net.md) | `audiogame-utils/net` | WebSocket messaging, reconnection, and player identity. |
-| [Physics](src/physics/index.js) | `audiogame-utils/physics` | Static R tree spatial indexing for now, more to be added soon. |
+| [Physics](docs/physics.md) | `audiogame-utils/physics` | Static R tree spatial indexing for now, more to be added soon. |
 | [Platform detection](docs/platform.md) | `audiogame-utils/platform` | iOS and installed web app detection. |
 | [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and spatial math helpers. |
 | [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
