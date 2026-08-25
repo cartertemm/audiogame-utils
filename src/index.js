@@ -18,3 +18,4 @@ export { createSpeech, MODE_ARIA, MODE_TTS, MODE_BOTH } from './speech/index.js'
 export { createAudio, createSfx, createCacophonyEngine } from './audio/index.js';
 export { wrapSocket, createReconnectingClient, createIdentity } from './net/index.js';
 export { createMap } from './map/index.js';
+export { Stat, StatSet, createStatSet, STAT_SORT_MODE } from './stats.js';

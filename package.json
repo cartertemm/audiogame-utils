@@ -27,7 +27,8 @@
 		"./rotation": "./src/rotation.js",
 		"./math": "./src/math.js",
 		"./map": "./src/map/index.js",
-		"./physics": "./src/physics/index.js"
+		"./physics": "./src/physics/index.js",
+		"./stats": "./src/stats.js"
 	},
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",
