@@ -5,7 +5,17 @@ export class EventEmitter {
 
 	on(event, handler) {
 		(this._handlers[event] ??= []).push(handler);
-		return () => this.off(event, handler);
+		let unbound = false;
+		return () => {
+			if (unbound) return;
+			unbound = true;
+			const list = this._handlers[event];
+			if (!list) return;
+			const index = list.indexOf(handler);
+			if (index === -1) return;
+			list.splice(index, 1);
+			if (list.length === 0) delete this._handlers[event];
+		};
 	}
 
 	once(event, handler) {
