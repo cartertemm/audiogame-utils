@@ -33,9 +33,6 @@ const SCALES = [
 	'septendecillion', 'octodecillion', 'novemdecillion', 'vigintillion',
 ];
 
-// Names the scale of a large number instead of reading every digit. Rounding can
-// push a value up a scale, such as 999999 becoming a million, so the result is
-// checked once more afterward.
 export function prettyNumber(number, decimals = 2) {
 	let value = number;
 	let index = 0;
@@ -79,8 +76,6 @@ export function stringDistance(a, b) {
 	return previous[to.length];
 }
 
-// Picks the candidate a typed word most likely meant, so a mistyped command or
-// menu entry can still reach its target. Ties go to the earlier candidate.
 export function closestMatch(input, candidates, maxDistance = Infinity) {
 	const needle = String(input).toLowerCase();
 	let best = null;
