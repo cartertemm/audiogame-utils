@@ -42,28 +42,33 @@ prettySequence(new Set(['a', 'b']), 'and') // "a and b"
 
 When `last` is omitted, `null`, or another falsy value, every item is separated by a comma. The function does not add an Oxford comma before a conjunction.
 
-## Counting things
+## Formatting counts
 
 ### `pluralize(count, singular, plural)`
 
-Joins a count to the name of the thing it counts, and gives the name its plural form when the count is not one. `plural` defaults to the singular name with an `s` added, so pass it only for an irregular word.
+Joins a count and a noun with a space, choosing the singular or plural form of the noun. The `plural` argument defaults to the singular form followed by `s`.
 
 ```js
 pluralize(1, 'arrow') // "1 arrow"
 pluralize(3, 'arrow') // "3 arrows"
 pluralize(0, 'arrow') // "0 arrows"
+```
 
+Pass the third argument for an irregular plural:
+
+```js
+pluralize(1, 'life', 'lives') // "1 life"
 pluralize(3, 'life', 'lives') // "3 lives"
 ```
 
-Only a count of exactly one is singular, so a fraction reads as a plural, and `-1` reads as a singular.
+The values `1` and `-1` use the singular form. Every other count, including fractional values, uses the plural form. The count can be a `Number` or `BigInt`.
 
 ```js
-pluralize(1.5, 'second') // "1.5 seconds"
-pluralize(-1, 'step')    // "-1 step"
+pluralize(-1, 'step')     // "-1 step"
+pluralize(1.5, 'second')  // "1.5 seconds"
+pluralize(1n, 'coin')     // "1 coin"
+pluralize(3n, 'coin')     // "3 coins"
 ```
-
-The count can be a number or a `BigInt`.
 
 ## Formatting durations
 
