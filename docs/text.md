@@ -1,11 +1,12 @@
 # Text helpers
 
-The `audiogame-utils/text` module formats lists and durations for display. It also compares strings and finds the closest candidate for input that may contain a typo.
+The `audiogame-utils/text` module formats lists, durations, and large numbers for display. It also compares strings and finds the closest candidate for input that may contain a typo.
 
 ```js
 import {
 	prettySequence,
 	formatTime,
+	prettyNumber,
 	stringDistance,
 	closestMatch,
 } from 'audiogame-utils/text'
@@ -77,42 +78,58 @@ Negative values are treated as elapsed durations, so their sign is ignored:
 formatTime(-61_000) // "1 minute and 1 second"
 ```
 
-## Measuring string distance
+## Formatting numbers
 
-### `prettyNumber(number, decimals)`
+### `prettyNumber(number, decimals = 2)`
 
 Names the scale of a large number instead of reading every digit. A score of 1271334251 is hard to hear, but "1.27 billion" is not. Use it in summaries, where the exact quantity does not matter.
 
-`decimals` sets how many decimal places to keep, and defaults to 2. Trailing zeros are removed, so a round number stays short.
+`decimals` sets how many decimal places to keep on a scaled value. Trailing zeros are removed.
 
 ```js
-prettyNumber(1271334251)    // '1.27 billion'
-prettyNumber(1271334251, 0) // '1 billion'
-prettyNumber(1500000)       // '1.5 million'
-prettyNumber(2000000)       // '2 million'
+prettyNumber(1_271_334_251)
+// "1.27 billion"
+
+prettyNumber(1_271_334_251, 0)
+// "1 billion"
+
+prettyNumber(1_500_000)
+// "1.5 million"
 ```
 
-Numbers below 1000 have no scale name and are rounded to whole numbers, because `decimals` applies only to a scaled value.
+Numbers below 1000 have no scale name and are rounded to a whole number, because `decimals` applies only to a scaled value.
 
 ```js
-prettyNumber(999)  // '999'
-prettyNumber(12.7) // '13'
+prettyNumber(999)  // "999"
+prettyNumber(12.7) // "13"
 ```
 
-Scale names go from thousand up to vigintillion (1 followed by 63 zeros). A number larger than that keeps the vigintillion name, so `prettyNumber(1e66)` gives `'1000 vigintillion'`. Negative numbers keep their sign.
+Rounding that reaches the next scale moves up to it, so `prettyNumber(999_999)` returns `"1 million"` rather than `"1000 thousand"`.
 
-### Large scores
+Scale names go from thousand up to vigintillion, which is 1 followed by 63 zeros. A larger number keeps the vigintillion name. Negative values keep their sign.
+
+```js
+prettyNumber(1e66)       // "1000 vigintillion"
+prettyNumber(-1_500_000) // "-1.5 million"
+```
+
+#### Large scores
 
 A plain JavaScript number holds about 15 correct digits, so a score above roughly 9 quadrillion is already approximate before this function sees it. Pass a `BigInt` when the exact digits matter, such as in an idle game where scores grow without limit. Scaling then uses whole number math and keeps every digit.
 
 ```js
-prettyNumber(9007199254740993n, 6) // '9.007199 quadrillion'
-prettyNumber(10n ** 63n)           // '1 vigintillion'
+prettyNumber(9007199254740993n, 6)
+// "9.007199 quadrillion"
+
+prettyNumber(10n ** 63n)
+// "1 vigintillion"
 ```
 
 Both kinds of number follow the same rules for decimals, rounding, and scale names.
 
-## `stringDistance(a, b)`
+## Measuring string distance
+
+### `stringDistance(a, b)`
 
 Returns the number of edits needed to change string `a` into string `b`. An insertion, deletion, substitution, or swap of two adjacent characters counts as one edit.
 
