@@ -33,7 +33,36 @@ const SCALES = [
 	'septendecillion', 'octodecillion', 'novemdecillion', 'vigintillion',
 ];
 
+function roundedDivide(numerator, divisor) {
+	const whole = numerator / divisor;
+	return (numerator % divisor) * 2n >= divisor ? whole + 1n : whole;
+}
+
+// Scales a BigInt without turning it into a float first, which would lose digits
+// long before the largest scale names are reached.
+function prettyBigInt(number, decimals) {
+	const negative = number < 0n;
+	const magnitude = negative ? -number : number;
+	let index = 0;
+	for (let counter = magnitude; counter >= 1000n && index < SCALES.length; counter /= 1000n) index++;
+	const precision = index === 0 ? 0 : decimals;
+	const power = 10n ** BigInt(precision);
+	let scaled = roundedDivide(magnitude * power, 1000n ** BigInt(index));
+	if (scaled >= 1000n * power && index < SCALES.length) {
+		index++;
+		scaled = roundedDivide(magnitude * power, 1000n ** BigInt(index));
+	}
+	let text = String(scaled / power);
+	if (precision > 0) {
+		const fraction = String(scaled % power).padStart(precision, '0').replace(/0+$/, '');
+		if (fraction !== '') text += `.${fraction}`;
+	}
+	if (negative) text = `-${text}`;
+	return index === 0 ? text : `${text} ${SCALES[index - 1]}`;
+}
+
 export function prettyNumber(number, decimals = 2) {
+	if (typeof number === 'bigint') return prettyBigInt(number, decimals);
 	let value = number;
 	let index = 0;
 	while (Math.abs(value) >= 1000 && index < SCALES.length) {

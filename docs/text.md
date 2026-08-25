@@ -101,6 +101,17 @@ prettyNumber(12.7) // '13'
 
 Scale names go from thousand up to vigintillion (1 followed by 63 zeros). A number larger than that keeps the vigintillion name, so `prettyNumber(1e66)` gives `'1000 vigintillion'`. Negative numbers keep their sign.
 
+### Large scores
+
+A plain JavaScript number holds about 15 correct digits, so a score above roughly 9 quadrillion is already approximate before this function sees it. Pass a `BigInt` when the exact digits matter, such as in an idle game where scores grow without limit. Scaling then uses whole number math and keeps every digit.
+
+```js
+prettyNumber(9007199254740993n, 6) // '9.007199 quadrillion'
+prettyNumber(10n ** 63n)           // '1 vigintillion'
+```
+
+Both kinds of number follow the same rules for decimals, rounding, and scale names.
+
 ## `stringDistance(a, b)`
 
 Returns the number of edits needed to change string `a` into string `b`. An insertion, deletion, substitution, or swap of two adjacent characters counts as one edit.

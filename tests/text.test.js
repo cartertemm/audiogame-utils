@@ -125,6 +125,38 @@ describe('prettyNumber', () => {
 	test('stays at the largest scale for anything above it', () => {
 		expect(prettyNumber(1e66, 2)).toBe('1000 vigintillion');
 	});
+
+	test('names the scale of a BigInt', () => {
+		expect(prettyNumber(1271334251n, 2)).toBe('1.27 billion');
+		expect(prettyNumber(1500000n)).toBe('1.5 million');
+	});
+
+	test('leaves a small BigInt alone', () => {
+		expect(prettyNumber(999n)).toBe('999');
+		expect(prettyNumber(0n)).toBe('0');
+		expect(prettyNumber(-5n)).toBe('-5');
+	});
+
+	test('keeps every digit of a BigInt that a float would lose', () => {
+		expect(prettyNumber(9007199254740993n, 6)).toBe('9.007199 quadrillion');
+		expect(prettyNumber(123456789012345678901n, 3)).toBe('123.457 quintillion');
+	});
+
+	test('rounds a BigInt half away from zero', () => {
+		expect(prettyNumber(1005n, 2)).toBe('1.01 thousand');
+		expect(prettyNumber(1004n, 2)).toBe('1 thousand');
+		expect(prettyNumber(-1005n, 2)).toBe('-1.01 thousand');
+	});
+
+	test('moves a BigInt up a scale when rounding reaches it', () => {
+		expect(prettyNumber(999999n, 2)).toBe('1 million');
+	});
+
+	test('counts a BigInt past vigintillion exactly', () => {
+		expect(prettyNumber(10n ** 63n)).toBe('1 vigintillion');
+		expect(prettyNumber(10n ** 66n)).toBe('1000 vigintillion');
+		expect(prettyNumber(10n ** 100n)).toBe('10000000000000000000000000000000000000 vigintillion');
+	});
 });
 
 describe('stringDistance', () => {
