@@ -1,4 +1,6 @@
 // Tracks numeric and string stats, formatted output, sorting, and serialization.
+// Originally part of the NVGT scripting language (https://nvgt.dev).
+// Ported to Javascript for use in the audiogame-utils library by Quin Gillespie and Carter Temm
 
 export const STAT_SORT_MODE = {
 	NONE: 'none',
