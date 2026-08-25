@@ -52,6 +52,7 @@ See [examples/](examples/) for more of what you can do.
 | [Audio pool](src/audio/pool.js) | `audiogame-utils/audio/pool` | Reusable spatial sound sources and listener updates. |
 | [Audio coordinates](src/audio/coords.js) | `audiogame-utils/audio/coords` | Game coordinate and listener relative audio positions. |
 | [Audio units](src/audio/units.js) | `audiogame-utils/audio/units` | Volume, pan, pitch, playback rate, and distance conversions. |
+| [Clock](docs/clock.md) | `audiogame-utils/clock` | 60 FPS game loop timing, delta time calculations, and countdown timers. |
 | [Events](docs/events.md) | `audiogame-utils/events` | A small event emitter. |
 | [Focus](docs/focus.md) | `audiogame-utils/focus` | Keyboard trapping for gameplay using a virtual cursor. |
 | [Input](docs/input.md) | `audiogame-utils/input` | Keyboard, mouse, touch gesture, and named action input. |
