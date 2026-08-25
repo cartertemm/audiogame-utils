@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { prettySequence, formatTime, stringDistance, closestMatch } from '../src/text.js';
+import { prettySequence, formatTime, prettyNumber, stringDistance, closestMatch } from '../src/text.js';
 
 describe('prettySequence', () => {
 	test('returns an empty string for an empty list', () => {
@@ -73,6 +73,57 @@ describe('formatTime', () => {
 
 	test('ignores fractional milliseconds', () => {
 		expect(formatTime(1999.9)).toBe('1 second');
+	});
+});
+
+describe('prettyNumber', () => {
+	test('names the scale of a large number', () => {
+		expect(prettyNumber(1271334251, 2)).toBe('1.27 billion');
+	});
+
+	test('leaves small numbers alone', () => {
+		expect(prettyNumber(999)).toBe('999');
+		expect(prettyNumber(0)).toBe('0');
+	});
+
+	test('rounds away the decimals of a small number', () => {
+		expect(prettyNumber(12.7)).toBe('13');
+	});
+
+	test('starts a scale at its exact value', () => {
+		expect(prettyNumber(1000)).toBe('1 thousand');
+		expect(prettyNumber(1000000)).toBe('1 million');
+	});
+
+	test('drops trailing zeros', () => {
+		expect(prettyNumber(1500000, 2)).toBe('1.5 million');
+		expect(prettyNumber(2000000, 2)).toBe('2 million');
+	});
+
+	test('honors a request for whole numbers', () => {
+		expect(prettyNumber(1271334251, 0)).toBe('1 billion');
+	});
+
+	test('defaults to two decimal places', () => {
+		expect(prettyNumber(1271334251)).toBe('1.27 billion');
+	});
+
+	test('moves up a scale when rounding reaches it', () => {
+		expect(prettyNumber(999999, 2)).toBe('1 million');
+		expect(prettyNumber(999.6)).toBe('1 thousand');
+	});
+
+	test('keeps the sign of a negative number', () => {
+		expect(prettyNumber(-1500000, 2)).toBe('-1.5 million');
+		expect(prettyNumber(-5)).toBe('-5');
+	});
+
+	test('reaches the largest scale it knows', () => {
+		expect(prettyNumber(1e63, 2)).toBe('1 vigintillion');
+	});
+
+	test('stays at the largest scale for anything above it', () => {
+		expect(prettyNumber(1e66, 2)).toBe('1000 vigintillion');
 	});
 });
 

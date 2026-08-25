@@ -79,7 +79,29 @@ formatTime(-61_000) // "1 minute and 1 second"
 
 ## Measuring string distance
 
-### `stringDistance(a, b)`
+### `prettyNumber(number, decimals)`
+
+Names the scale of a large number instead of reading every digit. A score of 1271334251 is hard to hear, but "1.27 billion" is not. Use it in summaries, where the exact quantity does not matter.
+
+`decimals` sets how many decimal places to keep, and defaults to 2. Trailing zeros are removed, so a round number stays short.
+
+```js
+prettyNumber(1271334251)    // '1.27 billion'
+prettyNumber(1271334251, 0) // '1 billion'
+prettyNumber(1500000)       // '1.5 million'
+prettyNumber(2000000)       // '2 million'
+```
+
+Numbers below 1000 have no scale name and are rounded to whole numbers, because `decimals` applies only to a scaled value.
+
+```js
+prettyNumber(999)  // '999'
+prettyNumber(12.7) // '13'
+```
+
+Scale names go from thousand up to vigintillion (1 followed by 63 zeros). A number larger than that keeps the vigintillion name, so `prettyNumber(1e66)` gives `'1000 vigintillion'`. Negative numbers keep their sign.
+
+## `stringDistance(a, b)`
 
 Returns the number of edits needed to change string `a` into string `b`. An insertion, deletion, substitution, or swap of two adjacent characters counts as one edit.
 

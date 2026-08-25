@@ -26,6 +26,32 @@ export function formatTime(ms, pretty = true) {
 	return pretty ? prettySequence(parts, 'and') : parts.join(' ');
 }
 
+const SCALES = [
+	'thousand', 'million', 'billion', 'trillion', 'quadrillion', 'quintillion',
+	'sextillion', 'septillion', 'octillion', 'nonillion', 'decillion', 'undecillion',
+	'duodecillion', 'tredecillion', 'quattuordecillion', 'quindecillion', 'sexdecillion',
+	'septendecillion', 'octodecillion', 'novemdecillion', 'vigintillion',
+];
+
+// Names the scale of a large number instead of reading every digit. Rounding can
+// push a value up a scale, such as 999999 becoming a million, so the result is
+// checked once more afterward.
+export function prettyNumber(number, decimals = 2) {
+	let value = number;
+	let index = 0;
+	while (Math.abs(value) >= 1000 && index < SCALES.length) {
+		value /= 1000;
+		index++;
+	}
+	let rounded = Number(value.toFixed(index === 0 ? 0 : decimals));
+	if (Math.abs(rounded) >= 1000 && index < SCALES.length) {
+		rounded = Number((rounded / 1000).toFixed(decimals));
+		index++;
+	}
+	if (index === 0) return String(rounded);
+	return `${rounded} ${SCALES[index - 1]}`;
+}
+
 // Optimal string alignment distance: the edit count to turn one string into
 // another, counting an adjacent swap as a single typo. Splitting by code point
 // keeps accented letters and emoji from counting twice.
