@@ -1,6 +1,6 @@
 export class EventEmitter {
 	constructor() {
-		this._handlers = {};
+		this._handlers = Object.create(null);
 	}
 
 	on(event, handler) {
