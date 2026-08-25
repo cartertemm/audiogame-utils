@@ -210,7 +210,7 @@ const slot = surfaces.playStep('wood', 5, 10, 0)
 
 ### `clear()`
 
-Removes every registered surface and clears the manager's cached sound handles. With the `audio` backend, it calls `stop()` on every cached handle, stopping current playback and preventing pending playback from starting. It does not dispose the audio instance. With the pool backend, it does not stop allocated slots or call `pool.clear()`.
+Removes every registered surface and clears the manager's cached sound handles. With the `audio` backend, it calls `stop()` on every cached handle, stopping current playback and preventing pending playback from starting. It does not dispose the audio instance. With the pool backend, it does not stop allocated slots or call `pool.destroy_all()`.
 
 ```js
 surfaces.clear()
