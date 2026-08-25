@@ -62,6 +62,7 @@ See [examples/](examples/) for more of what you can do.
 | [Platform detection](docs/platform.md) | `audiogame-utils/platform` | iOS and installed web app detection. |
 | [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and spatial math helpers. |
 | [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
+| [Stats](docs/stats.md) | `audiogame-utils/stats` | Stat tracking, formatted output, list sorting, set operations, and linear/JSON serialization. |
 | [Storage](docs/storage.md) | `audiogame-utils/storage` | Namespaced JSON storage. Saves to the browser session by default. |
 | [UI](docs/ui.md) | `audiogame-utils/ui` | Helpers for quickly creating accessible fields, screens, and menus. With the exception of menu (which is my take on the dynamic menu commonly found in audio games), these should not be used with a focus trap but games where you want an interactive visible UI. |
 
