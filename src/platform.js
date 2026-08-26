@@ -1,3 +1,4 @@
+// @ts-self-types="./platform.d.ts"
 export function isIOS() {
 	const ua = navigator.userAgent || '';
 	if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) return true;

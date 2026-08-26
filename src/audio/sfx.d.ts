@@ -1,4 +1,4 @@
-import type { CacophonyEngine, PlaybackHandle, SfxOptions } from './engine.d.ts';
+import type { CacophonyEngine, PlaybackHandle, SfxOptions } from './engine.js';
 
 // A URL string, or a function returning one, or a function returning a module
 // object with a `default` URL (the shape a bundler gives `import('./x.ogg?url')`).
@@ -10,6 +10,11 @@ export type SfxSource =
 export interface LoadedSfx {
 	engine: CacophonyEngine;
 	handle: any;
+}
+
+export interface SfxCreateOptions {
+	// Chosen when the asset loads and fixed for the life of the handle.
+	panType?: 'stereo' | 'HRTF';
 }
 
 export interface RampPitchOptions {
@@ -38,6 +43,6 @@ export interface SfxHandle {
 	load(): Promise<LoadedSfx | null>;
 }
 
-export function createSfx(getEngine: () => Promise<CacophonyEngine | null>, source: SfxSource): SfxHandle;
+export function createSfx(getEngine: () => Promise<CacophonyEngine | null>, source: SfxSource, options?: SfxCreateOptions): SfxHandle;
 
 export type { PlaybackHandle, SfxOptions };

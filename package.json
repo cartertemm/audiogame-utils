@@ -4,93 +4,92 @@
 	"description": "Building blocks for audiogames in the browser including accessible speech output, multi-finger gesture input, spatial sound, networking, UI management, menus, and more.",
 	"type": "module",
 	"license": "MIT",
-	"types": "./types/index.d.ts",
+	"types": "./src/index.d.ts",
 	"files": [
 		"src",
 		"dist",
-		"types",
 		"README.md",
 		"LICENSE"
 	],
 	"exports": {
 		".": {
-			"types": "./types/index.d.ts",
+			"types": "./src/index.d.ts",
 			"default": "./src/index.js"
 		},
 		"./input": {
-			"types": "./types/input.d.ts",
+			"types": "./src/input/index.d.ts",
 			"default": "./src/input/index.js"
 		},
 		"./speech": {
-			"types": "./types/speech.d.ts",
+			"types": "./src/speech/index.d.ts",
 			"default": "./src/speech/index.js"
 		},
 		"./audio": {
-			"types": "./types/audio/index.d.ts",
+			"types": "./src/audio/index.d.ts",
 			"default": "./src/audio/index.js"
 		},
 		"./audio/pool": {
-			"types": "./types/audio/pool.d.ts",
+			"types": "./src/audio/pool.d.ts",
 			"default": "./src/audio/pool.js"
 		},
 		"./audio/coords": {
-			"types": "./types/audio/coords.d.ts",
+			"types": "./src/audio/coords.d.ts",
 			"default": "./src/audio/coords.js"
 		},
 		"./audio/units": {
-			"types": "./types/audio/units.d.ts",
+			"types": "./src/audio/units.d.ts",
 			"default": "./src/audio/units.js"
 		},
 		"./net": {
-			"types": "./types/net.d.ts",
+			"types": "./src/net/index.d.ts",
 			"default": "./src/net/index.js"
 		},
 		"./storage": {
-			"types": "./types/storage.d.ts",
+			"types": "./src/storage.d.ts",
 			"default": "./src/storage.js"
 		},
 		"./platform": {
-			"types": "./types/platform.d.ts",
+			"types": "./src/platform.d.ts",
 			"default": "./src/platform.js"
 		},
 		"./events": {
-			"types": "./types/events.d.ts",
+			"types": "./src/events.d.ts",
 			"default": "./src/events.js"
 		},
 		"./ui": {
-			"types": "./types/ui.d.ts",
+			"types": "./src/ui/index.d.ts",
 			"default": "./src/ui/index.js"
 		},
 		"./focus": {
-			"types": "./types/focus.d.ts",
+			"types": "./src/focus.d.ts",
 			"default": "./src/focus.js"
 		},
 		"./rotation": {
-			"types": "./types/rotation.d.ts",
+			"types": "./src/rotation.d.ts",
 			"default": "./src/rotation.js"
 		},
 		"./math": {
-			"types": "./types/math.d.ts",
+			"types": "./src/math.d.ts",
 			"default": "./src/math.js"
 		},
 		"./map": {
-			"types": "./types/map.d.ts",
+			"types": "./src/map/index.d.ts",
 			"default": "./src/map/index.js"
 		},
 		"./physics": {
-			"types": "./types/physics.d.ts",
+			"types": "./src/physics/index.d.ts",
 			"default": "./src/physics/index.js"
 		},
 		"./clock": {
-			"types": "./types/clock.d.ts",
+			"types": "./src/clock.d.ts",
 			"default": "./src/clock.js"
 		},
 		"./stats": {
-			"types": "./types/stats.d.ts",
+			"types": "./src/stats.d.ts",
 			"default": "./src/stats.js"
 		},
 		"./text": {
-			"types": "./types/text.d.ts",
+			"types": "./src/text.d.ts",
 			"default": "./src/text.js"
 		}
 	},

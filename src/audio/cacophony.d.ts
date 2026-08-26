@@ -1,3 +1,3 @@
-import type { CacophonyEngine } from './engine.d.ts';
+import type { CacophonyEngine } from './engine.js';
 
 export function createCacophonyEngine(): CacophonyEngine;

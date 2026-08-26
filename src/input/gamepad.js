@@ -1,3 +1,4 @@
+// @ts-self-types="./gamepad.d.ts"
 // Tracks gamepad button presses, analog stick axes, and haptic feedback.
 
 import { resolveButtonIndex } from './buttons.js';

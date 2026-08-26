@@ -1,3 +1,4 @@
+// @ts-self-types="./pool.d.ts"
 // Ported from sound_pool.nvgt, originally from BGT (Copyright 2010-2014 Blastbay
 // Studios, zlib like license). Method and property names are kept identical to
 // the original so NVGT code and documentation translate directly.

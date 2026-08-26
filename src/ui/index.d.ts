@@ -1,6 +1,6 @@
-import type { SpeechInstance, SpeechMode } from './speech.d.ts';
-import type { AudioInstance } from './audio/index.d.ts';
-import type { StorageInstance } from './storage.d.ts';
+import type { SpeechInstance, SpeechMode } from '../speech/index.js';
+import type { AudioInstance } from '../audio/index.js';
+import type { StorageInstance } from '../storage.js';
 
 export interface ElementAttributes {
 	id?: string;

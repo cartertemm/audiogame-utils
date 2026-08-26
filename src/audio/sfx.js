@@ -1,3 +1,4 @@
+// @ts-self-types="./sfx.d.ts"
 // Manages one audio asset through the play, stop, and update methods.
 //
 // Load the asset and initialize audio when `play()` or `load()` first runs. This

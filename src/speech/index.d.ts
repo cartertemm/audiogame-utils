@@ -1,4 +1,4 @@
-import type { StorageInstance } from './storage.d.ts';
+import type { StorageInstance } from '../storage.js';
 
 export const MODE_ARIA: 'aria';
 export const MODE_TTS: 'tts';

@@ -1,15 +1,15 @@
 // Exercises each signature from the PR review the way a consumer would.
-import type { StorageInstance } from '../types/storage.d.ts';
+import type { StorageInstance } from '../src/storage.js';
 
 import {
 	textField, passwordField, textAreaField, numberField, rangeField,
 	percentRangeField, selectField, checkboxField, radioGroup, checkboxGroup,
 	keyField, confirmButton, createFields, renderScreen, createMenu, MenuItem,
-} from '../types/ui.d.ts';
+} from '../src/ui/index.js';
 
 import {
 	create_sound_pool, sound_pool, sound_pool_item,
-} from '../types/audio/pool.d.ts';
+} from '../src/audio/pool.js';
 
 declare const root: HTMLElement;
 declare const storage: StorageInstance;

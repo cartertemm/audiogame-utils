@@ -1,4 +1,4 @@
-import type { StorageInstance } from './storage.d.ts';
+import type { StorageInstance } from '../storage.js';
 
 export interface Codec<T = any> {
 	encode(msg: T): string;

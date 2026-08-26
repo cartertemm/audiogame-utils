@@ -1,3 +1,4 @@
+// @ts-self-types="./index.d.ts"
 export { createKeyboard } from './keyboard.js';
 export { createMouse } from './mouse.js';
 export { createTouch } from './touch.js';

@@ -1,5 +1,5 @@
-import type { SfxHandle, SfxSource } from './sfx.d.ts';
-import type { CacophonyEngine } from './engine.d.ts';
+import type { SfxHandle, SfxSource, SfxCreateOptions } from './sfx.js';
+import type { CacophonyEngine } from './engine.js';
 
 export interface AudioOptions {
 	// Lets tests inject a fake. Not a public backend API.
@@ -7,7 +7,7 @@ export interface AudioOptions {
 }
 
 export interface AudioInstance {
-	sfx(source: SfxSource): SfxHandle;
+	sfx(source: SfxSource, options?: SfxCreateOptions): SfxHandle;
 	// Fetch and decode handles before playback. Defaults to every handle this
 	// instance created.
 	preload(list?: SfxHandle[] | null): Promise<void>;
@@ -16,9 +16,10 @@ export interface AudioInstance {
 
 export function createAudio(options?: AudioOptions): AudioInstance;
 
-export * from './engine.d.ts';
-export * from './cacophony.d.ts';
-export * from './sfx.d.ts';
-export * from './coords.d.ts';
-export * from './units.d.ts';
-export * from './pool.d.ts';
+export * from './engine.js';
+export * from './cacophony.js';
+export * from './sfx.js';
+export * from './coords.js';
+export * from './units.js';
+export * from './pool.js';
+export * from './surface.js';

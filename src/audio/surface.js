@@ -1,3 +1,4 @@
+// @ts-self-types="./surface.d.ts"
 // Manages surface footstep sound banks and spatial step sound playback.
 
 import { random_choice } from '../math.js';

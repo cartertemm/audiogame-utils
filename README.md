@@ -41,6 +41,17 @@ import { createStorage, createSpeech } from 'npm:audiogame-utils'
 import { createAudio } from 'npm:audiogame-utils/audio'
 ```
 
+### TypeScript
+
+The package ships hand written declaration files next to the sources, so no separate `@types` install is needed. Node and bundler tools read them through the `types` condition in the package.json `exports` map. Deno reads the same files through a `@ts-self-types` comment on each module, which covers both the `npm:` specifier and a direct source import.
+
+```ts
+import { createClock } from 'audiogame-utils/clock'
+
+const clock = createClock({ fps: 60 })
+clock.on((dt: number) => { /* dt is a number of seconds */ })
+```
+
 See [examples/](examples/) for more of what you can do.
 
 ## Modules
@@ -84,6 +95,8 @@ deno task test:deno
 ```
 
 The tests use Vitest with happy-dom. Run `npm run test:watch` while developing to rerun tests when files change.
+
+Type declarations have their own checks. `npm run test:types` runs `tsc` over the declaration files and the type usage tests. `deno task check` runs the same files through Deno, which also proves each `@ts-self-types` comment resolves.
 
 ## Contributing
 

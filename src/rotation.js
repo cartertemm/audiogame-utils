@@ -1,3 +1,4 @@
+// @ts-self-types="./rotation.d.ts"
 // Ported from rotation.nvgt, part of the NVGT scripting language (https://nvgt.dev).
 // Function names and behavior are kept identical to the original so NVGT code and
 // documentation translate directly.

@@ -1,3 +1,4 @@
+// @ts-self-types="./index.d.ts"
 import { isIOS } from '../platform.js';
 
 // Provides ARIA live region and text to speech output through one interface.

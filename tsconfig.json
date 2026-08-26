@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"strict": true,
+		"skipLibCheck": false,
+		"noEmit": true,
+		
+		"types": []
+	},
+	"include": ["src/**/*.d.ts", "tests/types.usage.ts", "tests/types.exports.ts", "tests/types.deno.ts"]
+}

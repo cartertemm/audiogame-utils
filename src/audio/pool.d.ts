@@ -1,5 +1,5 @@
-import type { Vector3 } from '../rotation.d.ts';
-import type { CacophonyEngine, PlaybackHandle } from './engine.d.ts';
+import type { Vector3 } from '../rotation.js';
+import type { CacophonyEngine, PlaybackHandle } from './engine.js';
 
 // Method and property names match sound_pool.nvgt, so NVGT code and
 // documentation translate directly.
