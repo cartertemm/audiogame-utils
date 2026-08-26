@@ -7,8 +7,8 @@ import {
 	east,
 	move,
 	turnright,
-	vector,
 } from 'audiogame-utils/rotation'
+import { vector } from 'audiogame-utils/physics'
 
 let position = vector(4, 8, 0)
 let facing = east
@@ -50,16 +50,9 @@ The vertical direction constants are `half_up` at 45, `straight_up` at 90, `half
 
 The module also exports `pi`, `rotation_directions`, and `detailed_rotation_directions`. The first direction array contains the eight compass names. The detailed array contains 16 names at intervals of 22.5 degrees.
 
-## Vectors and movement
+## Movement
 
-### `vector(x = 0, y = 0, z = 0)`
-
-Creates a plain object with `x`, `y`, and `z` properties.
-
-```js
-const origin = vector()
-const listener = vector(10, 5, 2)
-```
+Movement functions return `Vector3` objects. Import `vector` and the `Vector3` type from `audiogame-utils/physics` when you need to construct or type coordinates yourself.
 
 ### `move(x, y, deg, dir = 0)`
 

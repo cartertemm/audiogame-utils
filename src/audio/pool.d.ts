@@ -5,7 +5,7 @@
  *
  * @module
  */
-import type { Vector3 } from '../rotation.js';
+import type { Vector3 } from '../physics/vector.js';
 import type { CacophonyEngine, PlaybackHandle } from './engine.js';
 
 /** Pool slot index, `-1` when full, or `-2` for an inaudible one shot sound. */

@@ -3,6 +3,8 @@
 // Function names and behavior are kept identical to the original so NVGT code and
 // documentation translate directly.
 
+import { vector } from './physics/vector.js';
+
 export const pi = 3.1415926535897932384626433832795;
 export const north = 0;
 export const northeast = 45;
@@ -18,10 +20,6 @@ export const half_down = 135;
 export const straight_down = 180;
 export const detailed_rotation_directions = ["north", "north - northeast", "northeast", "east - northeast", "east", "east - southeast", "southeast", "south - southeast", "south", "south - southwest", "southwest", "west - southwest", "west", "west - northwest", "northwest", "north - northwest"];
 export const rotation_directions = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"];
-
-export function vector(x = 0, y = 0, z = 0) {
-	return { x, y, z };
-}
 
 // move(x, y, deg, dir = 0.0)
 // move(x, y, z, deg, dir)

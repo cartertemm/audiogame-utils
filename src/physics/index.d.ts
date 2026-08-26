@@ -5,6 +5,8 @@
  *
  * @module
  */
+export { vector, type Vector3 } from './vector.js';
+
 /** An immutable two dimensional R tree over packed integer bounds. */
 export interface RTree {
 	/** Returns indexes whose bounds overlap the inclusive query rectangle. */

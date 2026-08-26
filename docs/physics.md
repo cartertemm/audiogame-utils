@@ -1,8 +1,26 @@
-# Physics and spatial indexing
+# Physics, vectors, and spatial indexing
 
-The `audiogame-utils/physics` module is under active development, and more features will be added as time goes on.
+The `audiogame-utils/physics` module provides three dimensional coordinate vectors and static spatial indexing.
 
-Currently, it only exports `createRTree`, which helps a game find objects inside or near a rectangular area. Common uses include finding walls near a player, collecting possible collision targets, and locating objects inside an audible region.
+## Vectors
+
+### `vector(x = 0, y = 0, z = 0)`
+
+Creates a plain object with `x`, `y`, and `z` properties. Positive X points east, positive Y points north, and positive Z points up. TypeScript users can import the returned object's `Vector3` interface from the same module.
+
+```js
+import { vector } from 'audiogame-utils/physics'
+
+const origin = vector()
+// { x: 0, y: 0, z: 0 }
+
+const listener = vector(10, 5, 2)
+// { x: 10, y: 5, z: 2 }
+```
+
+## Spatial indexing
+
+`createRTree` helps a game find objects inside or near a rectangular area. Common uses include finding walls near a player, collecting possible collision targets, and locating objects inside an audible region.
 
 Checking every object on a large map for every search becomes expensive. A spatial index groups nearby areas so a search can skip most objects. An R tree is one kind of spatial index. It stores a bounding box for each object, which is a rectangle that encloses the object. The rectangle is axis aligned, meaning its sides follow the X and Y axes and cannot be rotated.
 
@@ -32,10 +50,11 @@ You can also import the module as a namespace from the package root:
 ```js
 import { physics } from 'audiogame-utils'
 
+const origin = physics.vector()
 const tree = physics.createRTree(bounds, wallBoxes.length)
 ```
 
-## Functions
+## R tree functions
 
 ### `createRTree(bounds, count, node_size = 16)`
 

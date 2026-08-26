@@ -10,10 +10,10 @@ import { isIOS } from '../src/platform.js';
 import { EventEmitter } from '../src/events.js';
 import { createMenu, textField } from '../src/ui/index.js';
 import { createFocusTrap } from '../src/focus.js';
-import { move } from '../src/rotation.js';
+import * as rotation from '../src/rotation.js';
 import { clamp } from '../src/math.js';
 import { createMap } from '../src/map/index.js';
-import { createRTree } from '../src/physics/index.js';
+import { createRTree, vector, type Vector3 } from '../src/physics/index.js';
 import { createTimer } from '../src/clock.js';
 import { STAT_SORT_MODE } from '../src/stats.js';
 import { formatTime } from '../src/text.js';
@@ -61,9 +61,12 @@ const gameMap = createMap();
 
 const spoken: string = formatTime(90_000);
 const scaled: string = prettyNumber(1234567);
-const stepped = move(0, 0, 0, 90);
+const origin: Vector3 = vector();
+const stepped: Vector3 = rotation.move(origin.x, origin.y, origin.z, 90);
+// @ts-expect-error vectors are owned by physics
+rotation.vector();
 const clamped: number = clamp(5, 0, 1);
 const ios: boolean = isIOS();
 
 step; ordered; label; slot; gain; rel; unbind; identity; socket; menu; field;
-trap; tree; gameMap; speech; spoken; scaled; stepped; clamped; ios;
+trap; tree; gameMap; speech; spoken; scaled; origin; stepped; clamped; ios;

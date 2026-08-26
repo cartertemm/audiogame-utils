@@ -5,15 +5,7 @@
  *
  * @module
  */
-/** Three dimensional coordinates using positive X east, positive Y north, and positive Z up. */
-export interface Vector3 {
-	/** East or west coordinate. */
-	x: number;
-	/** North or south coordinate. */
-	y: number;
-	/** Elevation coordinate. */
-	z: number;
-}
+import type { Vector3 } from './physics/vector.js';
 
 /** Approximation of pi retained for NVGT compatibility. */
 export const pi: number;
@@ -47,9 +39,6 @@ export const straight_down: number;
 export const detailed_rotation_directions: string[];
 /** Eight compass direction labels at 45 degree intervals. */
 export const rotation_directions: string[];
-
-/** Creates a coordinate vector, defaulting each component to zero. */
-export function vector(x?: number, y?: number, z?: number): Vector3;
 
 /** Returns a new vector one unit from a position at horizontal and optional vertical angles. */
 export function move(x: number, y: number, deg: number, dir?: number): Vector3;

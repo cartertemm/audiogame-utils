@@ -8,7 +8,7 @@ import type { StorageInstance } from '../src/storage.js';
 import type { SpeechInstance } from '../src/speech/index.js';
 import type { MapInstance } from '../src/map/index.js';
 import type { FocusTrap } from '../src/focus.js';
-import type { RTree } from '../src/physics/index.js';
+import type { RTree, Vector3 } from '../src/physics/index.js';
 import type { ReconnectingClient, WrappedSocket } from '../src/net/index.js';
 
 import * as root from '../src/index.js';
@@ -27,8 +27,9 @@ const _prettyNumber: typeof root.prettyNumber = root.prettyNumber;
 const _rotation: typeof root.rotation = root.rotation;
 const _math: typeof root.math = root.math;
 const _physics: typeof root.physics = root.physics;
+const _origin: Vector3 = root.physics.vector();
 _createAudio; _createSurfaceManager; _createClock; _createTimer;
-_createStatSet; _createGamepad; _prettyNumber; _rotation; _math; _physics;
+_createStatSet; _createGamepad; _prettyNumber; _rotation; _math; _physics; _origin;
 
 const iosStandalone: boolean = platform.isIOSStandalone();
 iosStandalone;

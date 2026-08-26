@@ -8,7 +8,8 @@
 // when it arrives. Out of earshot sounds release their audio nodes instead of
 // closing a file handle, because the decoded buffer stays in the engine cache.
 
-import { vector, calculate_theta } from '../rotation.js';
+import { vector } from '../physics/vector.js';
+import { calculate_theta } from '../rotation.js';
 import { to_audio_position, orientation_from_rotation, listener_relative } from './coords.js';
 import { db_to_volume, pan_to_stereo, pitch_to_rate, inverse_gain } from './units.js';
 import { get_shared_engine } from './engine.js';
