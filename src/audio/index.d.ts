@@ -2,7 +2,6 @@ import type { SfxHandle, SfxSource, SfxCreateOptions } from './sfx.js';
 import type { CacophonyEngine } from './engine.js';
 
 export interface AudioOptions {
-	// Lets tests inject a fake. Not a public backend API.
 	engine?: CacophonyEngine | null;
 }
 

@@ -1,4 +1,5 @@
-// Exercises each signature from the PR review the way a consumer would.
+import type { AudioInstance } from '../src/audio/index.js';
+import type { SerializedMap } from '../src/map/index.js';
 import type { StorageInstance } from '../src/storage.js';
 
 import {
@@ -10,11 +11,13 @@ import {
 import {
 	create_sound_pool, sound_pool, sound_pool_item,
 } from '../src/audio/pool.js';
+import { createSurfaceManager } from '../src/audio/surface.js';
+import { createMap } from '../src/map/index.js';
 
 declare const root: HTMLElement;
 declare const storage: StorageInstance;
+declare const audio: AudioInstance;
 
-// 1. Field builders take (label, options).
 let volume = 0.5;
 const f1: HTMLElement = textField('Name', { get: () => 'a', set: (v) => { v.length; } });
 passwordField('Password', { get: () => '', set: () => {} });
@@ -33,11 +36,9 @@ checkboxGroup('Flags', { get: () => ['a'], set: (vals) => { vals.length; }, choi
 keyField('Jump', { get: () => ' ', set: (k) => { k.length; } });
 confirmButton('Delete save', { confirmLabel: 'Really delete?', onConfirm: () => {} });
 
-// A one-argument call must fail.
 // @ts-expect-error label is required
 textField({ get: () => '', set: () => {} });
 
-// 2. createFields takes { storage, defaults, onChange } and returns bound builders.
 const fields = createFields({
 	storage,
 	defaults: { volume: 0.8 },
@@ -60,7 +61,6 @@ createFields({});
 // @ts-expect-error the old (container, fields) form is gone
 createFields(root, [volumeNode]);
 
-// 3. renderScreen returns { dispose() }.
 const screen = renderScreen(root, (r) => {
 	r.textContent = '';
 	return () => {};
@@ -69,7 +69,6 @@ screen.dispose();
 // @ts-expect-error the handle is not callable
 screen();
 
-// 4/5/6/7. Sound pool.
 const pool = create_sound_pool(64);
 const pool2 = create_sound_pool(64, { engine: null });
 const pool3 = new sound_pool(64);
@@ -86,7 +85,8 @@ const slot8: number = pool.play_extended_3d('s.ogg', 0, 0, 0, 5, 5, 5, 0, 0, 0, 
 const slot9: number = pool.play_stationary('music.ogg', true, true);
 slot2; slot3; slot4; slot5; slot6; slot7; slot8; slot9;
 
-if (slot === -1) { /* pool full */ }
+const poolFull: boolean = slot === -1;
+poolFull;
 pool.update_listener_1d(0);
 pool.update_listener_2d(0, 0, 90);
 pool.update_listener_3d(0, 0, 0, 90);
@@ -111,14 +111,12 @@ const active: boolean = item.active;
 const dist: number = item.get_total_distance(0, 0, 0);
 active; dist;
 
-// The old invented surface must be gone.
 // @ts-expect-error updateListener was never a method
 pool.updateListener(0, 0);
 // @ts-expect-error the pool takes a size, not an audio instance
 const bad = create_sound_pool({ engine: null });
 bad;
 
-// 8. MenuItem is a class with types.
 declare const menu: ReturnType<typeof createMenu>;
 const mi: MenuItem | null = menu.item('volume');
 if (mi !== null) {
@@ -132,3 +130,33 @@ if (mi !== null) {
 }
 const chosen: Promise<MenuItem | null> = menu.run();
 chosen;
+
+const map = createMap();
+const mapData: SerializedMap = {
+	name: 'arena',
+	maxx: 10,
+	maxy: 10,
+	maxz: 0,
+	entries: [],
+};
+map.registerType('spawn', { fields: ['item', 'count'] });
+await map.loadMap({ data: mapData });
+await map.loadMap({ from: async () => mapData });
+const serializedMap: SerializedMap = map.serialize();
+await map.loadMap({ data: serializedMap });
+
+createSurfaceManager({ audio });
+const pooledSurfaces = createSurfaceManager({ pool });
+pooledSurfaces.registerSurface('grass', 'grass.ogg');
+// @ts-expect-error pool backed managers only accept string sources
+pooledSurfaces.registerSurface('grass', () => 'grass.ogg');
+// @ts-expect-error an audio instance or sound pool is required
+createSurfaceManager();
+
+// @ts-expect-error a missing value can be undefined without a fallback
+const missingValue: string = storage.get<string>('missing');
+const inferredMissingValue = storage.get('missing');
+// @ts-expect-error an untyped missing value must be narrowed before use
+inferredMissingValue.toString();
+const storedValue: string = storage.get('name', 'fallback');
+missingValue; inferredMissingValue; storedValue;

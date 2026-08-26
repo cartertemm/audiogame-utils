@@ -34,9 +34,7 @@ export interface SfxHandle {
 	play(options?: SfxOptions): Promise<void>;
 	isLooping(): boolean;
 	stop(): Promise<void>;
-	// Slides `playbackRate` from `from` to `to`, which moves pitch and speed together.
 	rampPitch(options: RampPitchOptions): void;
-	// Adjusts a playback already running, such as one tracking a moving object.
 	update(options?: SfxUpdateOptions): void;
 	setPosition(position: [number, number, number]): Promise<void>;
 	// Null when the page has no audio engine.

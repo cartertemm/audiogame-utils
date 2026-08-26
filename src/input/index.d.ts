@@ -151,7 +151,6 @@ export interface InputHandlerInstance {
 	wasTriggered(name: string): boolean;
 	on(name: string, handler: (event: ActionEvent) => void): void;
 	off(name: string, handler: (event: ActionEvent) => void): void;
-	// Null when the named action has no binding.
 	describe(name: string): DescribedAction | null;
 	describe(): DescribedAction[];
 	attach(): void;
@@ -163,5 +162,4 @@ export function createKeyboard(options?: KeyboardOptions): KeyboardInstance;
 export function createMouse(options?: MouseOptions): MouseInstance;
 export function createTouch(options?: TouchOptions): TouchInstance;
 export function createInputHandler(options?: InputHandlerOptions): InputHandlerInstance;
-// Renders one entry from `describe()` as display text, such as "Gamepad A".
 export function formatBinding(binding: DescribedBinding): string;

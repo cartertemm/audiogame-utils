@@ -16,19 +16,25 @@ export interface MapEntry {
 	[key: string]: any;
 }
 
+export interface SerializedMap extends MapHeader {
+	entries: MapEntry[];
+}
+
 export interface TypeDefinition {
 	overlap?: 'allow' | 'error';
-	fields?: Record<string, string>;
+	fields?: string[];
 }
+
+export type MapSource = string | SerializedMap;
 
 export interface LoadMapSource {
 	url?: string;
-	data?: string;
-	from?: () => Promise<string> | string;
+	data?: MapSource;
+	from?: () => Promise<MapSource> | MapSource;
 }
 
 export interface MapOptions {
-	parser?: (raw: string) => { name?: string; maxx: number; maxy: number; maxz: number; entries: MapEntry[] };
+	parser?: (raw: MapSource) => SerializedMap;
 }
 
 export interface MapInstance {
@@ -38,7 +44,7 @@ export interface MapInstance {
 	setDataAt(entry: MapEntry): number;
 	removeDataAt(type: string, minx: number, maxx: number, miny: number, maxy: number, minz: number, maxz: number): void;
 	registerType(name: string, def?: TypeDefinition): void;
-	serialize(): string;
+	serialize(): SerializedMap;
 	clear(): void;
 	header(): MapHeader | null;
 	memoryBytes(): number;

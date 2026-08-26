@@ -10,8 +10,6 @@ export interface SfxOptions {
 	threeDOptions?: any;
 }
 
-// A single running playback, as returned by the engine. This mirrors the
-// Cacophony `Playback` surface the rest of the library touches.
 export interface PlaybackHandle {
 	readonly isPlaying?: boolean;
 	readonly panType?: 'stereo' | 'HRTF';

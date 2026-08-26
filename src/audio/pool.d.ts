@@ -1,9 +1,6 @@
 import type { Vector3 } from '../rotation.js';
 import type { CacophonyEngine, PlaybackHandle } from './engine.js';
 
-// Method and property names match sound_pool.nvgt, so NVGT code and
-// documentation translate directly.
-
 // Slot index into `sound_pool.items`, or -1 when no slot was free and -2 when a
 // non-looping sound started out of earshot.
 export type SoundPoolSlot = number;
@@ -210,7 +207,6 @@ export class sound_pool {
 	update_sound_positioning_values(slot: SoundPoolSlot, pan_step?: number, volume_step?: number, update_sound?: boolean): boolean;
 	destroy_sound(slot: SoundPoolSlot): boolean;
 
-	// Internal methods.
 	find_highest_slot(limit: number): void;
 	clean_unused(): void;
 	verify_slot(slot: SoundPoolSlot): boolean;

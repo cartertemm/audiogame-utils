@@ -1,5 +1,3 @@
-// Exercises every subpath declaration the npm `exports` map points at, the way
-// a TypeScript consumer would. Type only: nothing here runs.
 import type { AudioInstance, SurfaceManager } from '../src/audio/index.js';
 import type { sound_pool } from '../src/audio/pool.js';
 import type { DescribedAction, GamepadInstance, InputHandlerInstance, KeyboardInstance, TouchInstance } from '../src/input/index.js';
@@ -19,7 +17,6 @@ import * as units from '../src/audio/units.js';
 import * as coords from '../src/audio/coords.js';
 import * as platform from '../src/platform.js';
 
-// Root barrel re-exports every public entry point.
 const _createAudio: typeof root.createAudio = root.createAudio;
 const _createSurfaceManager: typeof root.createSurfaceManager = root.createSurfaceManager;
 const _createClock: typeof root.createClock = root.createClock;
@@ -36,7 +33,6 @@ _createStatSet; _createGamepad; _prettyNumber; _rotation; _math; _physics;
 const iosStandalone: boolean = platform.isIOSStandalone();
 iosStandalone;
 
-// clock
 declare const clock: Clock;
 const dt: number = clock.dt;
 const ticks: number = clock.tickCount;
@@ -53,14 +49,12 @@ progress;
 // @ts-expect-error duration is read only
 timer.duration = 5;
 
-// stats
 declare const stats: StatSet;
 const stat: Stat | null = stats.get('score');
 const names: string[] = stats.list('add_order', ['score'], ['deaths']);
 const added: boolean = stats.deserialize(stats.serialize());
 stat; names; added;
 
-// text
 const spoken: string = text.prettySequence(['red', 'green', 'blue'], 'and');
 const big: string = text.prettyNumber(1_500_000n);
 const clock12: string = text.formatTime(125_000, false);
@@ -75,7 +69,6 @@ spoken; big; clock12; one;
 // @ts-expect-error candidates must be iterable, not a single value
 text.closestMatch('a', 3);
 
-// audio
 declare const audio: AudioInstance;
 const sfx = audio.sfx('step.ogg', { panType: 'HRTF' });
 sfx.rampPitch({ from: 1, to: 2, durationMs: 500 });
@@ -99,7 +92,6 @@ const rel = coords.listener_relative(1, 2, 3, 0, 0, 0, 90);
 const forward: number = rel.forward;
 gain; forward;
 
-// input
 declare const keyboard: KeyboardInstance;
 declare const touch: TouchInstance;
 declare const gamepad: GamepadInstance;
@@ -124,14 +116,12 @@ all;
 // @ts-expect-error hold takes key names, not gamepad indexes
 input.bind('crouch', { hold: [4] });
 
-// events
 declare const emitter: EventEmitter;
 const unbind: () => void = emitter.on('score', (data?: number) => { data; });
 emitter.once('score', () => {});
 const listeners: number = emitter.listenerCount('score');
 unbind(); listeners;
 
-// storage, speech, map, focus, physics, net
 declare const storage: StorageInstance;
 declare const speech: SpeechInstance;
 declare const gameMap: MapInstance;

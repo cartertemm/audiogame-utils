@@ -1,7 +1,5 @@
 /// <reference lib="dom" />
 
-// Buttons accept either a raw index or one of the layout aliases in
-// `BUTTON_ALIASES`, such as 'a', 'start', or 'dpad_up'.
 export type GamepadButtonAlias =
 	| 'a' | 'south' | 'b' | 'east' | 'x' | 'west' | 'y' | 'north'
 	| 'lb' | 'l1' | 'rb' | 'r1' | 'lt' | 'l2' | 'rt' | 'r2'

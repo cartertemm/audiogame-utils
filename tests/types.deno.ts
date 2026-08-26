@@ -1,6 +1,3 @@
-// Checks that Deno picks up a declaration for every entry point in deno.json.
-// Each module is imported by its runtime specifier, so this only passes when the
-// `@ts-self-types` directive on the JavaScript file resolves.
 import { createAudio, createSurfaceManager, createClock, createStatSet, createGamepad, prettyNumber } from '../src/index.js';
 import { createInputHandler, createKeyboard, createTouch, formatBinding } from '../src/input/index.js';
 import { createSpeech } from '../src/speech/index.js';

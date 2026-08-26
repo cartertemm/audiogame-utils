@@ -9,7 +9,8 @@ export interface StorageOptions {
 }
 
 export interface StorageInstance {
-	get<T = any>(key: string, defaultValue?: T): T;
+	get<T = unknown>(key: string): T | undefined;
+	get<T>(key: string, defaultValue: T): T;
 	set(key: string, value: any): void;
 	remove(key: string): void;
 }
