@@ -1,4 +1,4 @@
-name: Publish to JSR
+name: Publish to npm
 
 on:
   push:
@@ -18,12 +18,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm test
       - run: npm run test:types
-      - run: deno task test:deno
-      - run: deno task check
-      - run: deno publish
+      - run: npm publish --access public
