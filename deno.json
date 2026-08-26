@@ -4,6 +4,7 @@
 	"license": "MIT",
 	"publish": {
 		"exclude": [
+			".github",
 			"tests",
 			"examples",
 			"docs",

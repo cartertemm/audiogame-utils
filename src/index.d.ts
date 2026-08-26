@@ -1,3 +1,10 @@
+/**
+ * Browser building blocks for accessible audio games.
+ *
+ * See the {@link https://github.com/cartertemm/audiogame-utils#readme | package guide}.
+ *
+ * @module
+ */
 export { createStorage } from './storage.js';
 export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
@@ -8,8 +15,11 @@ export {
 	rangeField, percentRangeField, selectField, checkboxField,
 	radioGroup, checkboxGroup, keyField, keyName, confirmButton,
 } from './ui/index.js';
+/** Direction, movement, distance, and spatial angle helpers. */
 export * as rotation from './rotation.js';
+/** Range, interpolation, angle, and randomization helpers. */
 export * as math from './math.js';
+/** Spatial indexing and physics helpers. */
 export * as physics from './physics/index.js';
 
 export { createKeyboard, createMouse, createTouch, createGamepad, createInputHandler, formatBinding } from './input/index.js';
