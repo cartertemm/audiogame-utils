@@ -19,6 +19,7 @@
 		"./math": "./src/math.js",
 		"./map": "./src/map/index.js",
 		"./physics": "./src/physics/index.js",
+		"./clock": "./src/clock.js",
 		"./stats": "./src/stats.js"
 	},
 	"compilerOptions": {
