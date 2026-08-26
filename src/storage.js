@@ -1,3 +1,4 @@
+// @ts-self-types="./storage.d.ts"
 // Stores namespaced values as JSON. Passing a storage instance to each stateful
 // module lets the caller choose where preferences are stored and simplifies
 // testing.

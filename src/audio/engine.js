@@ -1,3 +1,4 @@
+// @ts-self-types="./engine.d.ts"
 import { createCacophonyEngine } from './cacophony.js';
 
 let shared = null;

@@ -1,3 +1,4 @@
+// @ts-self-types="./coords.d.ts"
 // Converts between game coordinates and Web Audio coordinates.
 //
 // Games in the NVGT tradition use x for east, y for north, and z for elevation.

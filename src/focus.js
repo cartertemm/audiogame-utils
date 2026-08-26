@@ -1,3 +1,4 @@
+// @ts-self-types="./focus.d.ts"
 // `createFocusTrap` hands every keypress to the game.
 // It does this by applying `role="application"` to keep screen readers out of browse mode.
 // It also traps focus within the container, so tab and shift+tab do not go to the browser.

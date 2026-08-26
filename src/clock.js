@@ -1,3 +1,4 @@
+// @ts-self-types="./clock.d.ts"
 // Manages 60 FPS game loop timing, delta time, and countdown timers.
 
 const FRAME_INTERVAL_TOLERANCE_MS = 0.01;

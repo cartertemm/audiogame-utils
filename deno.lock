@@ -756,6 +756,7 @@
         "npm:cacophony@~0.18.3",
         "npm:esbuild@~0.21.5",
         "npm:happy-dom@13",
+        "npm:typescript@^5.4.0",
         "npm:vitest@1"
       ]
     }

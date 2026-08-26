@@ -1,3 +1,4 @@
+// @ts-self-types="./cacophony.d.ts"
 // Cacophony caches decoded audio in the Cache API, which only exists in a secure
 // context. A page served over plain http from a LAN address is not one, so the
 // default cache throws `caches is not defined` before a single sound decodes.

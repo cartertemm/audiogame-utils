@@ -1,3 +1,4 @@
+// @ts-self-types="./text.d.ts"
 const UNITS = [
 	{ name: 'week', ms: 604800000 },
 	{ name: 'day', ms: 86400000 },

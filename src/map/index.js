@@ -1,3 +1,4 @@
+// @ts-self-types="./index.d.ts"
 import { createTypes } from './types.js';
 import { createStore } from './store.js';
 import { parseJSON, serializeJSON } from './format.js';

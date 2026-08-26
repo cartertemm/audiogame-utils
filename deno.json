@@ -1,6 +1,14 @@
 {
 	"name": "audiogame-utils",
 	"version": "0.1.0",
+	"compilerOptions": {
+		"lib": [
+			"dom",
+			"dom.iterable",
+			"deno.ns",
+			"esnext"
+		]
+	},
 	"exports": {
 		".": "./src/index.js",
 		"./input": "./src/input/index.js",
@@ -20,15 +28,13 @@
 		"./map": "./src/map/index.js",
 		"./physics": "./src/physics/index.js",
 		"./clock": "./src/clock.js",
-		"./stats": "./src/stats.js"
-	},
-	"compilerOptions": {
-		"lib": ["dom", "dom.iterable", "deno.ns", "esnext"]
+		"./stats": "./src/stats.js",
+		"./text": "./src/text.js"
 	},
 	"tasks": {
 		"test": "vitest run",
 		"test:deno": "deno run -A npm:vitest run",
-		"check": "deno check types/*.d.ts",
+		"check": "deno check src/index.d.ts tests/types.usage.ts tests/types.exports.ts tests/types.deno.ts",
 		"build": "npm run build"
 	},
 	"fmt": {

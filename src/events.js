@@ -1,3 +1,4 @@
+// @ts-self-types="./events.d.ts"
 export class EventEmitter {
 	constructor() {
 		this._handlers = Object.create(null);

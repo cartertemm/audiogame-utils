@@ -1,3 +1,4 @@
+// @ts-self-types="./units.d.ts"
 // Conversions between NVGT audio units and Web Audio units.
 // NVGT volume is decibels (0 is full, -100 is silence), pan is -100 to 100, and
 // pitch is a percentage where 100 is normal speed.

@@ -1,15 +1,13 @@
-// @ts-self-types="./index.d.ts"
 export { createStorage } from './storage.js';
 export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
 export { createFocusTrap } from './focus.js';
-export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, createMenu, MenuItem } from './ui/index.js';
 export {
-	createFields,
-	textField, passwordField, textAreaField, numberField,
+	el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, createMenu, MenuItem,
+	createFields, textField, passwordField, textAreaField, numberField,
 	rangeField, percentRangeField, selectField, checkboxField,
 	radioGroup, checkboxGroup, keyField, keyName, confirmButton,
-} from './ui/fields.js';
+} from './ui/index.js';
 export * as rotation from './rotation.js';
 export * as math from './math.js';
 export * as physics from './physics/index.js';

@@ -1,3 +1,4 @@
+// @ts-self-types="./index.d.ts"
 // Pre-game screens built from the DOM helpers and field builders.
 
 import { isIOS } from '../platform.js';

@@ -4,6 +4,7 @@
 	"description": "Building blocks for audiogames in the browser including accessible speech output, multi-finger gesture input, spatial sound, networking, UI management, menus, and more.",
 	"type": "module",
 	"license": "MIT",
+	"types": "./src/index.d.ts",
 	"files": [
 		"src",
 		"dist",
@@ -11,26 +12,86 @@
 		"LICENSE"
 	],
 	"exports": {
-		".": "./src/index.js",
-		"./input": "./src/input/index.js",
-		"./speech": "./src/speech/index.js",
-		"./audio": "./src/audio/index.js",
-		"./audio/pool": "./src/audio/pool.js",
-		"./audio/coords": "./src/audio/coords.js",
-		"./audio/units": "./src/audio/units.js",
-		"./net": "./src/net/index.js",
-		"./storage": "./src/storage.js",
-		"./platform": "./src/platform.js",
-		"./events": "./src/events.js",
-		"./ui": "./src/ui/index.js",
-		"./focus": "./src/focus.js",
-		"./rotation": "./src/rotation.js",
-		"./math": "./src/math.js",
-		"./map": "./src/map/index.js",
-		"./physics": "./src/physics/index.js",
-		"./clock": "./src/clock.js",
-		"./stats": "./src/stats.js",
-		"./text": "./src/text.js"
+		".": {
+			"types": "./src/index.d.ts",
+			"default": "./src/index.js"
+		},
+		"./input": {
+			"types": "./src/input/index.d.ts",
+			"default": "./src/input/index.js"
+		},
+		"./speech": {
+			"types": "./src/speech/index.d.ts",
+			"default": "./src/speech/index.js"
+		},
+		"./audio": {
+			"types": "./src/audio/index.d.ts",
+			"default": "./src/audio/index.js"
+		},
+		"./audio/pool": {
+			"types": "./src/audio/pool.d.ts",
+			"default": "./src/audio/pool.js"
+		},
+		"./audio/coords": {
+			"types": "./src/audio/coords.d.ts",
+			"default": "./src/audio/coords.js"
+		},
+		"./audio/units": {
+			"types": "./src/audio/units.d.ts",
+			"default": "./src/audio/units.js"
+		},
+		"./net": {
+			"types": "./src/net/index.d.ts",
+			"default": "./src/net/index.js"
+		},
+		"./storage": {
+			"types": "./src/storage.d.ts",
+			"default": "./src/storage.js"
+		},
+		"./platform": {
+			"types": "./src/platform.d.ts",
+			"default": "./src/platform.js"
+		},
+		"./events": {
+			"types": "./src/events.d.ts",
+			"default": "./src/events.js"
+		},
+		"./ui": {
+			"types": "./src/ui/index.d.ts",
+			"default": "./src/ui/index.js"
+		},
+		"./focus": {
+			"types": "./src/focus.d.ts",
+			"default": "./src/focus.js"
+		},
+		"./rotation": {
+			"types": "./src/rotation.d.ts",
+			"default": "./src/rotation.js"
+		},
+		"./math": {
+			"types": "./src/math.d.ts",
+			"default": "./src/math.js"
+		},
+		"./map": {
+			"types": "./src/map/index.d.ts",
+			"default": "./src/map/index.js"
+		},
+		"./physics": {
+			"types": "./src/physics/index.d.ts",
+			"default": "./src/physics/index.js"
+		},
+		"./clock": {
+			"types": "./src/clock.d.ts",
+			"default": "./src/clock.js"
+		},
+		"./stats": {
+			"types": "./src/stats.d.ts",
+			"default": "./src/stats.js"
+		},
+		"./text": {
+			"types": "./src/text.d.ts",
+			"default": "./src/text.js"
+		}
 	},
 	"scripts": {
 		"build": "npm run build:iife && npm run build:esm",
@@ -38,7 +99,8 @@
 		"build:esm": "esbuild src/index.js --bundle --format=esm --minify --sourcemap --outfile=dist/audiogame-utils.esm.js",
 		"examples": "echo Open http://localhost:3000 && npx --yes serve . -l 3000",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"test:types": "tsc --noEmit -p tsconfig.json"
 	},
 	"dependencies": {
 		"cacophony": "^0.18.3"
@@ -46,6 +108,7 @@
 	"devDependencies": {
 		"esbuild": "^0.21.5",
 		"happy-dom": "^13.0.0",
+		"typescript": "^5.4.0",
 		"vitest": "^1.0.0"
 	}
 }

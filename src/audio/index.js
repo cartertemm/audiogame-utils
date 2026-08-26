@@ -1,3 +1,4 @@
+// @ts-self-types="./index.d.ts"
 import { createSfx } from './sfx.js';
 import { get_shared_engine } from './engine.js';
 
