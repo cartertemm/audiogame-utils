@@ -1,6 +1,22 @@
 {
-	"name": "audiogame-utils",
+	"name": "@cartertemm/audiogame-utils",
 	"version": "0.1.0",
+	"license": "MIT",
+	"publish": {
+		"exclude": [
+			"tests",
+			"examples",
+			"docs",
+			"dist",
+			"node_modules",
+			"index.html",
+			"package-lock.json",
+			"vitest.config.js"
+		]
+	},
+	"imports": {
+		"cacophony": "npm:cacophony@^0.18.3"
+	},
 	"compilerOptions": {
 		"lib": [
 			"dom",

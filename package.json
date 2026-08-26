@@ -4,6 +4,29 @@
 	"description": "Building blocks for audiogames in the browser including accessible speech output, multi-finger gesture input, spatial sound, networking, UI management, menus, and more.",
 	"type": "module",
 	"license": "MIT",
+	"author": "Carter Temm",
+	"homepage": "https://github.com/cartertemm/audiogame-utils#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cartertemm/audiogame-utils.git"
+	},
+	"bugs": {
+		"url": "https://github.com/cartertemm/audiogame-utils/issues"
+	},
+	"keywords": [
+		"audiogame",
+		"accessibility",
+		"a11y",
+		"screen-reader",
+		"speech",
+		"tts",
+		"spatial-audio",
+		"web-audio",
+		"gamedev",
+		"blind"
+	],
+	"sideEffects": false,
+	"main": "./src/index.js",
 	"types": "./src/index.d.ts",
 	"files": [
 		"src",
@@ -94,6 +117,7 @@
 		}
 	},
 	"scripts": {
+		"prepack": "npm run build",
 		"build": "npm run build:iife && npm run build:esm",
 		"build:iife": "esbuild src/index.js --bundle --format=iife --global-name=audiogameUtils --minify --sourcemap --outfile=dist/audiogame-utils.min.js",
 		"build:esm": "esbuild src/index.js --bundle --format=esm --minify --sourcemap --outfile=dist/audiogame-utils.esm.js",

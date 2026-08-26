@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 
 import type { GamepadButtonRef, GamepadInstance } from './gamepad.js';
 

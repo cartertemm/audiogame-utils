@@ -10,10 +10,16 @@ Local development requires Node.js (and npm) or Deno 2+.
 
 ## Installation
 
-Install the package directly from GitHub:
+Install from npm:
 
 ```sh
-npm install github:cartertemm/audiogame-utils
+npm install audiogame-utils
+```
+
+Or from [JSR](https://jsr.io/@cartertemm/audiogame-utils):
+
+```sh
+deno add jsr:@cartertemm/audiogame-utils
 ```
 
 ## Usage
@@ -34,7 +40,14 @@ const startSound = audio.sfx('/sounds/start.ogg')
 
 ### Deno
 
-In Deno 2 or later, import directly using the `npm:` specifier. Deno resolves the subpaths from the package.json `exports` map:
+In Deno 2 or later, import from JSR:
+
+```js
+import { createStorage, createSpeech } from 'jsr:@cartertemm/audiogame-utils'
+import { createAudio } from 'jsr:@cartertemm/audiogame-utils/audio'
+```
+
+The `npm:` specifier also works. Deno resolves the subpaths from the package.json `exports` map:
 
 ```js
 import { createStorage, createSpeech } from 'npm:audiogame-utils'

@@ -1,4 +1,3 @@
-/// <reference lib="dom" />
 
 export type GamepadButtonAlias =
 	| 'a' | 'south' | 'b' | 'east' | 'x' | 'west' | 'y' | 'north'

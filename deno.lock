@@ -751,6 +751,9 @@
     }
   },
   "workspace": {
+    "dependencies": [
+      "npm:cacophony@~0.18.3"
+    ],
     "packageJson": {
       "dependencies": [
         "npm:cacophony@~0.18.3",
