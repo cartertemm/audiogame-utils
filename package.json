@@ -80,6 +80,18 @@
 		"./physics": {
 			"types": "./types/physics.d.ts",
 			"default": "./src/physics/index.js"
+		},
+		"./clock": {
+			"types": "./types/clock.d.ts",
+			"default": "./src/clock.js"
+		},
+		"./stats": {
+			"types": "./types/stats.d.ts",
+			"default": "./src/stats.js"
+		},
+		"./text": {
+			"types": "./types/text.d.ts",
+			"default": "./src/text.js"
 		}
 	},
 	"scripts": {
@@ -88,7 +100,8 @@
 		"build:esm": "esbuild src/index.js --bundle --format=esm --minify --sourcemap --outfile=dist/audiogame-utils.esm.js",
 		"examples": "echo Open http://localhost:3000 && npx --yes serve . -l 3000",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"test:types": "tsc --noEmit -p tsconfig.json"
 	},
 	"dependencies": {
 		"cacophony": "^0.18.3"
@@ -96,6 +109,7 @@
 	"devDependencies": {
 		"esbuild": "^0.21.5",
 		"happy-dom": "^13.0.0",
+		"typescript": "^5.4.0",
 		"vitest": "^1.0.0"
 	}
 }

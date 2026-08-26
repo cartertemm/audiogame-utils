@@ -52,6 +52,7 @@ See [examples/](examples/) for more of what you can do.
 | [Audio pool](src/audio/pool.js) | `audiogame-utils/audio/pool` | Reusable spatial sound sources and listener updates. |
 | [Audio coordinates](src/audio/coords.js) | `audiogame-utils/audio/coords` | Game coordinate and listener relative audio positions. |
 | [Audio units](src/audio/units.js) | `audiogame-utils/audio/units` | Volume, pan, pitch, playback rate, and distance conversions. |
+| [Clock](docs/clock.md) | `audiogame-utils/clock` | 60 FPS game loop timing, delta time calculations, and countdown timers. |
 | [Events](docs/events.md) | `audiogame-utils/events` | A small event emitter. |
 | [Focus](docs/focus.md) | `audiogame-utils/focus` | Keyboard trapping for gameplay using a virtual cursor. |
 | [Input](docs/input.md) | `audiogame-utils/input` | Keyboard, mouse, touch gesture, and named action input. |
@@ -62,7 +63,9 @@ See [examples/](examples/) for more of what you can do.
 | [Platform detection](docs/platform.md) | `audiogame-utils/platform` | iOS and installed web app detection. |
 | [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and spatial math helpers. |
 | [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
+| [Stats](docs/stats.md) | `audiogame-utils/stats` | Stat tracking, formatted output, list sorting, set operations, and linear/JSON serialization. |
 | [Storage](docs/storage.md) | `audiogame-utils/storage` | Namespaced JSON storage. Saves to the browser session by default. |
+| [Text](docs/text.md) | `audiogame-utils/text` | sequence to string conversion, time formatting, string distance, and closestMatch helpers. |
 | [UI](docs/ui.md) | `audiogame-utils/ui` | Helpers for quickly creating accessible fields, screens, and menus. With the exception of menu (which is my take on the dynamic menu commonly found in audio games), these should not be used with a focus trap but games where you want an interactive visible UI. |
 
 ## Local development

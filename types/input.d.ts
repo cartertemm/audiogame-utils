@@ -1,3 +1,9 @@
+/// <reference lib="dom" />
+
+import type { GamepadInstance, GamepadOptions } from './gamepad.d.ts';
+
+export * from './gamepad.d.ts';
+
 export interface KeyboardOptions {
 	target?: HTMLElement | Window;
 }
@@ -55,6 +61,7 @@ export interface InputHandlerOptions {
 	keyboard?: KeyboardInstance;
 	mouse?: MouseInstance;
 	touch?: TouchInstance;
+	gamepad?: GamepadInstance;
 	bindings?: Record<string, string[]>;
 }
 
@@ -71,5 +78,6 @@ export interface InputHandlerInstance {
 export function createKeyboard(options?: KeyboardOptions): KeyboardInstance;
 export function createMouse(options?: MouseOptions): MouseInstance;
 export function createTouch(options?: TouchOptions): TouchInstance;
+export function createGamepad(options?: GamepadOptions): GamepadInstance;
 export function createInputHandler(options?: InputHandlerOptions): InputHandlerInstance;
-export function formatBinding(binding: string): string;
+export function formatBinding(binding: any): string;
