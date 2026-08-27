@@ -10,6 +10,8 @@ import type { MapInstance } from '../src/map/index.js';
 import type { FocusTrap } from '../src/focus.js';
 import type { RTree, Vector3 } from '../src/physics/index.js';
 import type { ReconnectingClient, WrappedSocket } from '../src/net/index.js';
+import type { NetServer, NetClient, Group } from '../src/net/server.js';
+import type { FakeSocket } from '../src/net/testing.js';
 
 import * as root from '../src/index.js';
 import * as text from '../src/text.js';
@@ -131,3 +133,15 @@ declare const tree: RTree;
 declare const socket: WrappedSocket;
 declare const client: ReconnectingClient;
 storage; speech; gameMap; trap; tree; socket; client;
+
+import { createServer } from '../src/net/server.js';
+import { createSocketPair } from '../src/net/testing.js';
+
+const _server: NetServer = createServer({ sessionTtl: 1000 });
+const _lobby: Group = _server.group('lobby');
+const _members: NetClient[] = _lobby.clients;
+const _pair: [FakeSocket, FakeSocket] = createSocketPair();
+_server.accept(_pair[0]);
+_server.on('message', (client: NetClient, msg: any) => {
+	client.send(msg);
+});

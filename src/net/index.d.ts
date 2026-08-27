@@ -45,6 +45,10 @@ export interface ReconnectingClientOptions<T = any> {
 	codec?: Codec<T>;
 	/** Reconnection delays in milliseconds. */
 	backoffs?: number[];
+	/** Speaks the framing and handshake that `createServer` expects. Defaults to false. */
+	protocol?: boolean;
+	/** Persists the session across a page reload. Only used when `protocol` is true. */
+	identity?: Identity | null;
 	/** Called after a connection opens. */
 	onOpen?: (socket: WrappedSocket<T>) => void;
 	/** Receives decoded messages. */

@@ -67,6 +67,14 @@
 			"types": "./src/net/index.d.ts",
 			"default": "./src/net/index.js"
 		},
+		"./net/server": {
+			"types": "./src/net/server.d.ts",
+			"default": "./src/net/server.js"
+		},
+		"./net/testing": {
+			"types": "./src/net/testing.d.ts",
+			"default": "./src/net/testing.js"
+		},
 		"./storage": {
 			"types": "./src/storage.d.ts",
 			"default": "./src/storage.js"
@@ -122,6 +130,7 @@
 		"build:iife": "esbuild src/index.js --bundle --format=iife --global-name=audiogameUtils --minify --sourcemap --outfile=dist/audiogame-utils.min.js",
 		"build:esm": "esbuild src/index.js --bundle --format=esm --minify --sourcemap --outfile=dist/audiogame-utils.esm.js",
 		"examples": "echo Open http://localhost:3000 && npx --yes serve . -l 3000",
+		"examples:server": "node examples/net-server.js",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:types": "tsc --noEmit -p tsconfig.json"
@@ -133,6 +142,7 @@
 		"esbuild": "^0.21.5",
 		"happy-dom": "^13.0.0",
 		"typescript": "^5.4.0",
-		"vitest": "^1.0.0"
+		"vitest": "^1.0.0",
+		"ws": "^8.17.0"
 	}
 }
