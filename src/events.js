@@ -20,9 +20,9 @@ export class EventEmitter {
 	}
 
 	once(event, handler) {
-		const wrapper = (data) => {
+		const wrapper = (...args) => {
 			this.off(event, wrapper);
-			handler(data);
+			handler(...args);
 		};
 		wrapper.originalHandler = handler;
 		return this.on(event, wrapper);
@@ -41,14 +41,14 @@ export class EventEmitter {
 		}
 	}
 
-	emit(event, data) {
+	emit(event, ...args) {
 		const list = this._handlers[event];
 		if (!list || list.length === 0) return;
 		const copy = [...list];
 		let firstError = null;
 		for (const handler of copy) {
 			try {
-				handler(data);
+				handler(...args);
 			} catch (err) {
 				if (firstError) {
 					console.error(err);

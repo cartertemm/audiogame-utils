@@ -15,13 +15,13 @@ export class EventEmitter {
 	/** Creates an emitter with no registered handlers. */
 	constructor();
 	/** Registers a handler and returns a function that removes it. */
-	on<T = any>(event: string, handler: EventHandler<T>): UnsubscribeFunction;
-	/** Registers a handler that removes itself after its first call. */
-	once<T = any>(event: string, handler: EventHandler<T>): UnsubscribeFunction;
-	/** Removes one handler, or every handler when `handler` is omitted. */
-	off<T = any>(event: string, handler?: EventHandler<T>): void;
-	/** Calls the handlers registered for `event` in registration order. */
-	emit<T = any>(event: string, data?: T): void;
-	/** Returns the number of handlers registered for `event`. */
+	on(event: string, handler: (...args: any[]) => void): () => void;
+	/** Registers a handler that removes itself after the first call. */
+	once(event: string, handler: (...args: any[]) => void): () => void;
+	/** Removes one handler, or every handler for the event when omitted. */
+	off(event: string, handler?: (...args: any[]) => void): void;
+	/** Calls every handler for the event with the given arguments. */
+	emit(event: string, ...args: any[]): void;
+	/** Number of handlers registered for the event. */
 	listenerCount(event: string): number;
 }

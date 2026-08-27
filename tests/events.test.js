@@ -126,4 +126,29 @@ describe('EventEmitter', () => {
 		expect(() => ee.emit('foo')).toThrow('handler failed');
 		expect(calls).toEqual(['first', 'second']);
 	});
+
+	test('emit forwards every argument to handlers', () => {
+		const emitter = new EventEmitter();
+		const seen = [];
+		emitter.on('message', (client, msg) => seen.push([client, msg]));
+		emitter.emit('message', 'client-a', { type: 'shot' });
+		expect(seen).toEqual([['client-a', { type: 'shot' }]]);
+	});
+
+	test('once forwards every argument to handlers', () => {
+		const emitter = new EventEmitter();
+		const seen = [];
+		emitter.once('ready', (a, b, c) => seen.push([a, b, c]));
+		emitter.emit('ready', 1, 2, 3);
+		emitter.emit('ready', 4, 5, 6);
+		expect(seen).toEqual([[1, 2, 3]]);
+	});
+
+	test('a single argument emit still passes that argument', () => {
+		const emitter = new EventEmitter();
+		const seen = [];
+		emitter.on('tick', data => seen.push(data));
+		emitter.emit('tick', 42);
+		expect(seen).toEqual([42]);
+	});
 });
