@@ -258,3 +258,165 @@ describe('createServer fan out', () => {
 		expect(b.game()).toEqual([]);
 	});
 });
+
+describe('createServer sessions', () => {
+	test('a socket close emits disconnect and keeps the client', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		const events = [];
+		server.on('disconnect', client => events.push(['disconnect', client.id]));
+		server.on('end', client => events.push(['end', client.id]));
+		const peer = connect(server).hello();
+		peer.socket.close();
+		expect(events).toEqual([['disconnect', 'id-1']]);
+		expect(server.clients).toHaveLength(1);
+		expect(server.clients[0].connected).toBe(false);
+	});
+
+	test('the grace period expiring emits end and drops the client', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		const events = [];
+		server.on('end', client => events.push(client.id));
+		const peer = connect(server).hello();
+		peer.socket.close();
+		vi.advanceTimersByTime(29999);
+		expect(events).toEqual([]);
+		vi.advanceTimersByTime(1);
+		expect(events).toEqual(['id-1']);
+		expect(server.clients).toEqual([]);
+	});
+
+	test('a resume inside the window keeps data and group membership', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		let client = null;
+		const events = [];
+		server.on('connection', c => { client = c; c.data.score = 7; c.join('lobby'); });
+		server.on('resume', c => events.push(['resume', c.id]));
+		server.on('connection', c => events.push(['connection', c.id]));
+
+		const first = connect(server).hello();
+		const welcome = first.welcome();
+		first.socket.close();
+		vi.advanceTimersByTime(10000);
+
+		const second = connect(server, {
+			clientId: welcome.clientId,
+			sessionToken: welcome.sessionToken,
+		}).hello();
+
+		expect(events).toEqual([['connection', 'id-1'], ['resume', 'id-1']]);
+		expect(second.welcome()).toEqual(welcome);
+		expect(client.data.score).toBe(7);
+		expect(client.connected).toBe(true);
+		expect(server.group('lobby').clients).toEqual([client]);
+		expect(server.clients).toHaveLength(1);
+	});
+
+	test('a resume after the window is a new session with a new id', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		const events = [];
+		server.on('connection', c => events.push(['connection', c.id]));
+		server.on('resume', c => events.push(['resume', c.id]));
+		server.on('end', c => events.push(['end', c.id]));
+
+		const first = connect(server).hello();
+		const welcome = first.welcome();
+		first.socket.close();
+		vi.advanceTimersByTime(30000);
+
+		connect(server, {
+			clientId: welcome.clientId,
+			sessionToken: welcome.sessionToken,
+		}).hello();
+
+		expect(events).toEqual([
+			['connection', 'id-1'],
+			['end', 'id-1'],
+			['connection', 'id-3'],
+		]);
+	});
+
+	test('the client is out of every group before end fires', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 1000 });
+		let membersAtEnd = null;
+		server.on('connection', c => c.join('lobby'));
+		server.on('end', client => {
+			membersAtEnd = {
+				group: server.group('lobby').clients.length,
+				client: client.groups.size,
+			};
+		});
+		const peer = connect(server).hello();
+		peer.socket.close();
+		vi.advanceTimersByTime(1000);
+		expect(membersAtEnd).toEqual({ group: 0, client: 0 });
+	});
+
+	test('a second connection with a live token takes over and closes the old socket', () => {
+		const server = newServer();
+		const events = [];
+		server.on('connection', c => events.push(['connection', c.id]));
+		server.on('resume', c => events.push(['resume', c.id]));
+		server.on('disconnect', c => events.push(['disconnect', c.id]));
+		server.on('end', c => events.push(['end', c.id]));
+
+		const first = connect(server).hello();
+		const welcome = first.welcome();
+		const second = connect(server, {
+			clientId: welcome.clientId,
+			sessionToken: welcome.sessionToken,
+		}).hello();
+
+		expect(first.closes[0].code).toBe(CLOSE_REPLACED);
+		expect(second.welcome()).toEqual(welcome);
+		// The session never ended, so only the original connection is reported.
+		expect(events).toEqual([['connection', 'id-1']]);
+		expect(server.clients).toHaveLength(1);
+		expect(server.clients[0].connected).toBe(true);
+	});
+
+	test('a send to a dropped client returns false and is discarded', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		let client = null;
+		server.on('connection', c => { client = c; });
+		const peer = connect(server).hello();
+		peer.socket.close();
+		expect(client.send({ type: 'late' })).toBe(false);
+		expect(peer.game()).toEqual([]);
+	});
+
+	test('client.close ends the session immediately, with no grace period', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		let client = null;
+		const events = [];
+		server.on('connection', c => { client = c; });
+		server.on('disconnect', c => events.push(['disconnect', c.id]));
+		server.on('end', c => events.push(['end', c.id]));
+		const peer = connect(server).hello();
+		client.close(4000, 'kicked');
+		expect(events).toEqual([['end', 'id-1']]);
+		expect(peer.closes[0].code).toBe(4000);
+		expect(server.clients).toEqual([]);
+	});
+
+	test('server.close ends every session and clears every timer', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		const ends = [];
+		server.on('end', c => ends.push(c.id));
+		server.on('connection', c => c.join('lobby'));
+		connect(server).hello();
+		connect(server).hello();
+		server.close();
+		expect(ends).toEqual(['id-1', 'id-3']);
+		expect(server.clients).toEqual([]);
+		expect(server.groups).toEqual([]);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+});
