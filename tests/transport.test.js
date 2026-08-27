@@ -217,3 +217,133 @@ describe('createReconnectingClient', () => {
 		expect(sent).toEqual([JSON.stringify({ type: 'ping' })]);
 	});
 });
+
+describe('createReconnectingClient with protocol', () => {
+	let sockets;
+
+	beforeEach(() => {
+		sockets = [];
+		vi.stubGlobal('WebSocket', function FakeWebSocket() {
+			const sock = makeFakeSocket();
+			sockets.push(sock);
+			return sock;
+		});
+		vi.stubGlobal('WebSocket', Object.assign(globalThis.WebSocket, { CLOSED: 3 }));
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	function readFrames(sock) {
+		return sock.sent.map(raw => JSON.parse(raw));
+	}
+
+	test('sends a hello with null ids on a first connection', () => {
+		createReconnectingClient({ url: 'ws://x', protocol: true });
+		sockets[0].emit('open', {});
+		expect(readFrames(sockets[0])).toEqual([
+			[0, { type: 'hello', version: 1, clientId: null, sessionToken: null }],
+		]);
+	});
+
+	test('frames outgoing game messages on channel 1', () => {
+		const client = createReconnectingClient({ url: 'ws://x', protocol: true });
+		sockets[0].emit('open', {});
+		client.send({ type: 'shot' });
+		expect(readFrames(sockets[0])[1]).toEqual([1, { type: 'shot' }]);
+	});
+
+	test('passes only channel 1 payloads to onMessage', () => {
+		const seen = [];
+		createReconnectingClient({ url: 'ws://x', protocol: true, onMessage: msg => seen.push(msg) });
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', { data: JSON.stringify([1, { type: 'shot' }]) });
+		sockets[0].emit('message', { data: JSON.stringify([0, { type: 'ping', t: 5 }]) });
+		sockets[0].emit('message', { data: JSON.stringify([9, { type: 'future' }]) });
+		expect(seen).toEqual([{ type: 'shot' }]);
+	});
+
+	test('answers a ping with a pong carrying the same timestamp', () => {
+		createReconnectingClient({ url: 'ws://x', protocol: true });
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', { data: JSON.stringify([0, { type: 'ping', t: 4242 }]) });
+		expect(readFrames(sockets[0])[1]).toEqual([0, { type: 'pong', t: 4242 }]);
+	});
+
+	test('stores the welcome ids in the identity', () => {
+		const stored = {};
+		const identity = {
+			get: () => ({ clientId: null, sessionToken: null, name: null, ...stored }),
+			set: fields => Object.assign(stored, fields),
+			clear: () => {},
+		};
+		createReconnectingClient({ url: 'ws://x', protocol: true, identity });
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-1', sessionToken: 't-1' }]),
+		});
+		expect(stored).toEqual({ clientId: 'c-1', sessionToken: 't-1' });
+	});
+
+	test('sends the stored ids in the hello on a reconnect', () => {
+		const stored = { clientId: 'c-1', sessionToken: 't-1' };
+		const identity = {
+			get: () => ({ name: null, ...stored }),
+			set: fields => Object.assign(stored, fields),
+			clear: () => {},
+		};
+		createReconnectingClient({ url: 'ws://x', protocol: true, identity });
+		sockets[0].emit('open', {});
+		expect(readFrames(sockets[0])[0]).toEqual([
+			0,
+			{ type: 'hello', version: 1, clientId: 'c-1', sessionToken: 't-1' },
+		]);
+	});
+
+	test('remembers the ids within the page when no identity is given', () => {
+		vi.useFakeTimers();
+		const client = createReconnectingClient({ url: 'ws://x', protocol: true, backoffs: [10] });
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-9', sessionToken: 't-9' }]),
+		});
+		sockets[0].close();
+		vi.advanceTimersByTime(10);
+		sockets[1].emit('open', {});
+		expect(readFrames(sockets[1])[0]).toEqual([
+			0,
+			{ type: 'hello', version: 1, clientId: 'c-9', sessionToken: 't-9' },
+		]);
+		vi.useRealTimers();
+	});
+
+	test('the socket handed to onOpen frames on the game channel', () => {
+		createReconnectingClient({
+			url: 'ws://x',
+			protocol: true,
+			onOpen: sock => sock.send({ type: 'ready' }),
+		});
+		sockets[0].emit('open', {});
+		expect(readFrames(sockets[0])[1]).toEqual([1, { type: 'ready' }]);
+	});
+
+	test('a malformed frame reaches onError without closing the socket', () => {
+		const errors = [];
+		createReconnectingClient({ url: 'ws://x', protocol: true, onError: err => errors.push(err) });
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', { data: JSON.stringify({ not: 'a frame' }) });
+		expect(errors).toHaveLength(1);
+		expect(sockets[0].readyState).toBe(1);
+	});
+
+	test('without protocol the client sends and receives raw, as it does today', () => {
+		const seen = [];
+		const client = createReconnectingClient({ url: 'ws://x', onMessage: msg => seen.push(msg) });
+		sockets[0].emit('open', {});
+		client.send({ type: 'shot' });
+		sockets[0].emit('message', { data: JSON.stringify({ type: 'welcome' }) });
+		expect(readFrames(sockets[0])).toEqual([{ type: 'shot' }]);
+		expect(seen).toEqual([{ type: 'welcome' }]);
+	});
+});

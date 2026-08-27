@@ -1,5 +1,17 @@
 // Encodes WebSocket messages and reconnects the client after a disconnection.
 
+import {
+	PROTOCOL_VERSION,
+	CHANNEL_PROTOCOL,
+	CHANNEL_GAME,
+	HELLO,
+	WELCOME,
+	PING,
+	PONG,
+	frame,
+	readFrame,
+} from './protocol.js';
+
 const JSON_CODEC = {
 	encode: msg => JSON.stringify(msg),
 	decode: raw => JSON.parse(raw),
@@ -38,11 +50,19 @@ export function wrapSocket(socket, { codec = JSON_CODEC, onMessage, onClose, onE
 // successful connection.
 //
 // `onOpen` receives the wrapped socket for the initial connection and every
-// reconnection. Use it to send the resume handshake.
+// reconnection.
+//
+// With `protocol: true` the client speaks the framing and the handshake that
+// `createServer` expects: it sends `hello` on every connection, answers the
+// heartbeat, and keeps protocol traffic out of `onMessage`. Passing an
+// `identity` persists the session across a page reload. Without one the
+// session still resumes within the page.
 export function createReconnectingClient({
 	url,
 	codec = JSON_CODEC,
 	backoffs = DEFAULT_BACKOFFS_MS,
+	protocol = false,
+	identity = null,
 	onOpen,
 	onMessage,
 	onClose,
@@ -53,13 +73,63 @@ export function createReconnectingClient({
 	let attempt = 0;
 	let closedByUser = false;
 	let reconnectTimer = null;
+	let session = { clientId: null, sessionToken: null };
+
+	function sendGame(msg) {
+		wrapped?.send(protocol ? frame(CHANNEL_GAME, msg) : msg);
+	}
+
+	// Handed to `onOpen` so a handler cannot send an unframed message by
+	// reaching past the client.
+	function facade() {
+		return {
+			send: sendGame,
+			close(code, reason) { wrapped?.close(code, reason); },
+			get readyState() { return wrapped?.readyState ?? WebSocket.CLOSED; },
+		};
+	}
+
+	function handleProtocol(payload) {
+		if (payload?.type === PING) {
+			wrapped?.send(frame(CHANNEL_PROTOCOL, { type: PONG, t: payload.t }));
+			return;
+		}
+		if (payload?.type === WELCOME) {
+			session = { clientId: payload.clientId, sessionToken: payload.sessionToken };
+			identity?.set(session);
+		}
+	}
+
+	function handleFrame(value) {
+		const parsed = readFrame(value);
+		if (!parsed) {
+			onError?.(new Error('malformed frame'));
+			return;
+		}
+		if (parsed.channel === CHANNEL_PROTOCOL) {
+			handleProtocol(parsed.payload);
+			return;
+		}
+		if (parsed.channel !== CHANNEL_GAME) return;
+		onMessage?.(parsed.payload);
+	}
+
+	function sendHello() {
+		const stored = identity ? identity.get() : session;
+		wrapped.send(frame(CHANNEL_PROTOCOL, {
+			type: HELLO,
+			version: PROTOCOL_VERSION,
+			clientId: stored?.clientId ?? null,
+			sessionToken: stored?.sessionToken ?? null,
+		}));
+	}
 
 	function connect() {
 		reconnectTimer = null;
 		socket = new WebSocket(url);
 		wrapped = wrapSocket(socket, {
 			codec,
-			onMessage,
+			onMessage: protocol ? handleFrame : onMessage,
 			onClose: event => {
 				onClose?.(event);
 				if (!closedByUser) scheduleReconnect();
@@ -68,7 +138,8 @@ export function createReconnectingClient({
 		});
 		socket.addEventListener('open', () => {
 			attempt = 0;
-			onOpen?.(wrapped);
+			if (protocol) sendHello();
+			onOpen?.(protocol ? facade() : wrapped);
 		});
 	}
 
@@ -81,7 +152,7 @@ export function createReconnectingClient({
 	connect();
 
 	return {
-		send(msg) { wrapped?.send(msg); },
+		send: sendGame,
 
 		// Cancel the pending reconnection before closing the active socket so
 		// `close()` keeps the client closed during a reconnect delay.
