@@ -420,3 +420,87 @@ describe('createServer sessions', () => {
 		expect(vi.getTimerCount()).toBe(0);
 	});
 });
+
+describe('createServer heartbeat', () => {
+	test('a ping goes out on every interval', () => {
+		vi.useFakeTimers();
+		const server = newServer({ heartbeatInterval: 5000 });
+		const peer = connect(server).hello();
+		vi.advanceTimersByTime(5000);
+		vi.advanceTimersByTime(5000);
+		const pings = peer.protocol().filter(p => p.type === PING);
+		expect(pings).toHaveLength(2);
+		expect(typeof pings[0].t).toBe('number');
+	});
+
+	test('a pong sets latency', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1000);
+		const server = newServer({ heartbeatInterval: 5000 });
+		let client = null;
+		server.on('connection', c => { client = c; });
+		const peer = connect(server).hello();
+		expect(client.latency).toBeNull();
+
+		vi.advanceTimersByTime(5000);
+		const ping = peer.protocol().find(p => p.type === PING);
+		vi.setSystemTime(6120);
+		peer.sendProtocol({ type: PONG, t: ping.t });
+		expect(client.latency).toBe(120);
+	});
+
+	test('no pong within the timeout closes the socket and starts the grace period', () => {
+		vi.useFakeTimers();
+		const server = newServer({
+			heartbeatInterval: 5000,
+			heartbeatTimeout: 15000,
+			sessionTtl: 30000,
+		});
+		const events = [];
+		server.on('disconnect', c => events.push(['disconnect', c.id]));
+		server.on('end', c => events.push(['end', c.id]));
+		const peer = connect(server).hello();
+
+		vi.advanceTimersByTime(15000);
+		expect(peer.socket.readyState).toBe(3);
+		expect(events).toEqual([['disconnect', 'id-1']]);
+
+		vi.advanceTimersByTime(30000);
+		expect(events).toEqual([['disconnect', 'id-1'], ['end', 'id-1']]);
+	});
+
+	test('answering the pings keeps the connection alive', () => {
+		vi.useFakeTimers();
+		const server = newServer({ heartbeatInterval: 5000, heartbeatTimeout: 15000 });
+		const events = [];
+		server.on('disconnect', c => events.push(c.id));
+		const peer = connect(server).hello();
+
+		for (let i = 0; i < 10; i += 1) {
+			vi.advanceTimersByTime(5000);
+			const pings = peer.protocol().filter(p => p.type === PING);
+			peer.sendProtocol({ type: PONG, t: pings[pings.length - 1].t });
+		}
+
+		expect(events).toEqual([]);
+		expect(peer.socket.readyState).toBe(1);
+	});
+
+	test('the heartbeat stops while a client is dropped and restarts on resume', () => {
+		vi.useFakeTimers();
+		const server = newServer({ heartbeatInterval: 5000, sessionTtl: 60000 });
+		const first = connect(server).hello();
+		const welcome = first.welcome();
+		first.socket.close();
+
+		// One grace timer, no ping timer.
+		expect(vi.getTimerCount()).toBe(1);
+
+		const second = connect(server, {
+			clientId: welcome.clientId,
+			sessionToken: welcome.sessionToken,
+		}).hello();
+		vi.advanceTimersByTime(5000);
+		expect(second.protocol().filter(p => p.type === PING)).toHaveLength(1);
+	});
+});
