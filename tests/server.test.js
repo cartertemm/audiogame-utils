@@ -59,7 +59,26 @@ describe('createServer handshake', () => {
 		const server = newServer();
 		const peer = connect(server).hello();
 		const welcome = peer.welcome();
-		expect(welcome).toEqual({ type: WELCOME, clientId: 'id-1', sessionToken: 'id-2' });
+		expect(welcome).toEqual({
+			type: WELCOME,
+			clientId: 'id-1',
+			sessionToken: expect.any(String),
+		});
+		// The token is a secret, so it never comes from the caller's idFactory.
+		expect(welcome.sessionToken).not.toMatch(/^id-/);
+		expect(welcome.sessionToken.length).toBeGreaterThan(20);
+	});
+
+	test('the session token is unguessable even with a readable idFactory', () => {
+		const server = newServer();
+		const first = connect(server).hello().welcome();
+		const second = connect(server).hello().welcome();
+		// Counted ids advance one per client, so nothing about the id leaks the
+		// token of this client or the next one.
+		expect(first.clientId).toBe('id-1');
+		expect(second.clientId).toBe('id-2');
+		expect(first.sessionToken).not.toBe(second.sessionToken);
+		expect([first.clientId, second.clientId, 'id-3']).not.toContain(first.sessionToken);
 	});
 
 	test('a hello emits connection with a client', () => {
@@ -111,6 +130,24 @@ describe('createServer handshake', () => {
 		expect(errors).toHaveLength(1);
 		expect(errors[0][0]).toBeInstanceOf(Error);
 		expect(peer.closes[0].code).toBe(CLOSE_MALFORMED);
+	});
+
+	test('a codec that fails to decode reaches the error event', () => {
+		const codec = {
+			encode: JSON.stringify,
+			decode: () => { throw new RangeError('unsupported version'); },
+		};
+		const server = createServer({ idFactory: counter('id-'), codec });
+		const errors = [];
+		server.on('error', (err, client) => errors.push([err, client]));
+		const [serverSocket, clientSocket] = createSocketPair();
+		server.accept(serverSocket);
+		clientSocket.send('anything');
+		expect(errors).toHaveLength(1);
+		expect(errors[0][0]).toBeInstanceOf(RangeError);
+		expect(errors[0][1]).toBeNull();
+		// A decoding failure leaves the socket open, as the transport promises.
+		expect(clientSocket.readyState).toBe(1);
 	});
 
 	test('an unknown channel is ignored and the socket stays open', () => {
@@ -194,6 +231,19 @@ describe('createServer fan out', () => {
 		server.broadcast({ type: 'bell' }, { except: clients[0] });
 		expect(a.game()).toEqual([]);
 		expect(b.game()).toEqual([{ type: 'bell' }]);
+	});
+
+	test('broadcast skips an array of excluded clients', () => {
+		const server = newServer();
+		const clients = [];
+		server.on('connection', c => clients.push(c));
+		const a = connect(server).hello();
+		const b = connect(server).hello();
+		const c = connect(server).hello();
+		server.broadcast({ type: 'bell' }, { except: [clients[0], clients[2]] });
+		expect(a.game()).toEqual([]);
+		expect(b.game()).toEqual([{ type: 'bell' }]);
+		expect(c.game()).toEqual([]);
 	});
 
 	test('send reaches an ad hoc list', () => {
@@ -335,7 +385,7 @@ describe('createServer sessions', () => {
 		expect(events).toEqual([
 			['connection', 'id-1'],
 			['end', 'id-1'],
-			['connection', 'id-3'],
+			['connection', 'id-2'],
 		]);
 	});
 
@@ -414,10 +464,72 @@ describe('createServer sessions', () => {
 		connect(server).hello();
 		connect(server).hello();
 		server.close();
-		expect(ends).toEqual(['id-1', 'id-3']);
+		expect(ends).toEqual(['id-1', 'id-2']);
 		expect(server.clients).toEqual([]);
 		expect(server.groups).toEqual([]);
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('server.close clears the grace timer of a client mid grace period', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		const ends = [];
+		server.on('end', c => ends.push(c.id));
+		const peer = connect(server).hello();
+		peer.socket.close();
+		// One grace timer, no ping timer.
+		expect(vi.getTimerCount()).toBe(1);
+
+		server.close();
+		expect(ends).toEqual(['id-1']);
+		expect(server.clients).toEqual([]);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('client.close inside a disconnect handler leaves no grace timer', () => {
+		vi.useFakeTimers();
+		const server = newServer({ sessionTtl: 30000 });
+		const events = [];
+		server.on('disconnect', c => { events.push(['disconnect', c.id]); c.close(); });
+		server.on('end', c => events.push(['end', c.id]));
+		const peer = connect(server).hello();
+		peer.socket.close();
+		expect(events).toEqual([['disconnect', 'id-1'], ['end', 'id-1']]);
+		expect(server.clients).toEqual([]);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('a hello after server.close starts no session and no heartbeat', () => {
+		vi.useFakeTimers();
+		const server = newServer();
+		const seen = [];
+		server.on('connection', c => seen.push(c.id));
+		const peer = connect(server);
+		server.close();
+		expect(() => peer.hello()).not.toThrow();
+		expect(seen).toEqual([]);
+		expect(server.clients).toEqual([]);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('accept after server.close closes the socket', () => {
+		const server = newServer();
+		server.close();
+		const peer = connect(server);
+		expect(peer.socket.readyState).toBe(3);
+		expect(server.clients).toEqual([]);
+	});
+
+	test('the default idFactory gives every client a distinct id', () => {
+		const server = createServer();
+		const ids = [];
+		server.on('connection', c => ids.push(c.id));
+		connect(server).hello();
+		connect(server).hello();
+		expect(ids).toHaveLength(2);
+		expect(typeof ids[0]).toBe('string');
+		expect(ids[0]).not.toBe(ids[1]);
+		server.close();
 	});
 });
 
@@ -447,6 +559,63 @@ describe('createServer heartbeat', () => {
 		vi.setSystemTime(6120);
 		peer.sendProtocol({ type: PONG, t: ping.t });
 		expect(client.latency).toBe(120);
+	});
+
+	test('a malformed pong leaves latency alone and never makes it NaN', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1000);
+		const server = newServer({ heartbeatInterval: 5000 });
+		let client = null;
+		server.on('connection', c => { client = c; });
+		const peer = connect(server).hello();
+
+		vi.advanceTimersByTime(5000);
+		const ping = peer.protocol().find(p => p.type === PING);
+		vi.setSystemTime(6120);
+		peer.sendProtocol({ type: PONG, t: ping.t });
+		expect(client.latency).toBe(120);
+
+		peer.sendProtocol({ type: PONG });
+		expect(client.latency).toBe(120);
+		peer.sendProtocol({ type: PONG, t: 'soon' });
+		expect(client.latency).toBe(120);
+		peer.sendProtocol({ type: PONG, t: null });
+		expect(client.latency).toBe(120);
+	});
+
+	test('a malformed pong still counts as a heartbeat reply', () => {
+		vi.useFakeTimers();
+		const server = newServer({ heartbeatInterval: 5000, heartbeatTimeout: 15000 });
+		const events = [];
+		server.on('disconnect', c => events.push(c.id));
+		const peer = connect(server).hello();
+
+		for (let i = 0; i < 5; i += 1) {
+			vi.advanceTimersByTime(5000);
+			peer.sendProtocol({ type: PONG });
+		}
+
+		expect(events).toEqual([]);
+		expect(peer.socket.readyState).toBe(1);
+	});
+
+	test('a dropped socket clears the last measured latency', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1000);
+		const server = newServer({ heartbeatInterval: 5000, sessionTtl: 30000 });
+		let client = null;
+		server.on('connection', c => { client = c; });
+		const peer = connect(server).hello();
+
+		vi.advanceTimersByTime(5000);
+		const ping = peer.protocol().find(p => p.type === PING);
+		vi.setSystemTime(6120);
+		peer.sendProtocol({ type: PONG, t: ping.t });
+		expect(client.latency).toBe(120);
+
+		peer.socket.close();
+		// A reconnected client must not report the round trip of its old socket.
+		expect(client.latency).toBeNull();
 	});
 
 	test('no pong within the timeout closes the socket and starts the grace period', () => {

@@ -39,6 +39,7 @@ export function createServer({
 	const groupsByName = new Map();
 	const clientsById = new Map();
 	const clientsByToken = new Map();
+	let closed = false;
 
 	// A handler that throws must not take the socket down with it, so every
 	// emit goes through here. An `error` handler that throws is dropped rather
@@ -99,7 +100,9 @@ export function createServer({
 
 	function createClient() {
 		const id = idFactory();
-		const token = idFactory();
+		// Never from `idFactory`. A readable factory for nicer logs would make
+		// every session token guessable, and a guessed token hijacks a session.
+		const token = crypto.randomUUID();
 		const client = {
 			id,
 			data: {},
@@ -156,6 +159,7 @@ export function createServer({
 		client._raw = null;
 		client._wrapped = null;
 		client.connected = false;
+		client.latency = null;
 		stopHeartbeat(client);
 	}
 
@@ -179,6 +183,9 @@ export function createServer({
 		if (client._raw !== socket) return;
 		detach(client);
 		emit('disconnect', client);
+		// A handler is free to end the session itself. Installing a grace timer
+		// afterwards would hold the ended client for the whole window.
+		if (client._ended) return;
 		client._graceTimer = setTimeout(() => {
 			client._graceTimer = null;
 			endSession(client);
@@ -226,6 +233,11 @@ export function createServer({
 		wrapped = wrapSocket(socket, {
 			codec,
 			onMessage: value => {
+				if (closed) {
+					socket.close(1001, 'server closed');
+					return;
+				}
+
 				const parsed = readFrame(value);
 				if (!parsed) {
 					emit('error', new Error('malformed frame'), client);
@@ -244,14 +256,20 @@ export function createServer({
 					}
 					if (payload?.type === PONG && client) {
 						client._lastPong = Date.now();
-						client.latency = Date.now() - payload.t;
+						// The timestamp comes from the peer, so anything that is
+						// not a real number leaves the last measurement alone.
+						if (typeof payload.t === 'number' && Number.isFinite(payload.t)) {
+							client.latency = Date.now() - payload.t;
+						}
 					}
 					return;
 				}
 
 				if (parsed.channel !== CHANNEL_GAME) return;
 
-				if (!client) {
+				// A frame already in flight when the session ended must not reach
+				// the game for a client the server has dropped.
+				if (!client || client._ended) {
 					socket.close(CLOSE_UNGREETED, 'handshake required');
 					return;
 				}
@@ -262,6 +280,9 @@ export function createServer({
 			},
 			onError: err => emit('error', err, client),
 		});
+
+		// A socket handed over after the shutdown never gets a session.
+		if (closed) socket.close(1001, 'server closed');
 
 		return wrapped;
 	}
@@ -278,7 +299,10 @@ export function createServer({
 		}
 	}
 
+	// Terminal. A socket already handed to `accept` cannot complete a handshake
+	// afterwards, so nothing re-registers a client or starts a fresh heartbeat.
 	function close() {
+		closed = true;
 		for (const client of [...clientsById.values()]) client.close(1001, 'server closing');
 		for (const found of [...groupsByName.values()]) found.close();
 		groupsByName.clear();

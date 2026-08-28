@@ -20,7 +20,7 @@ export interface ServerOptions<T = any> {
 	heartbeatInterval?: number;
 	/** Milliseconds without a pong before the socket is closed. Defaults to 15000. */
 	heartbeatTimeout?: number;
-	/** Generates client ids and session tokens. Defaults to `crypto.randomUUID`. */
+	/** Generates public client ids. Session tokens always come from `crypto.randomUUID`. Defaults to `crypto.randomUUID`. */
 	idFactory?: () => string;
 }
 
