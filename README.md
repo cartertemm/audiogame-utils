@@ -84,13 +84,38 @@ See [examples/](examples/) for more of what you can do.
 | [Math](docs/math.md) | `audiogame-utils/math` | Range, angle, interpolation, and randomization helpers. |
 | [Networking](docs/net.md) | `audiogame-utils/net` | WebSocket messaging, reconnection, and player identity. |
 | [Physics](docs/physics.md) | `audiogame-utils/physics` | Three dimensional coordinate vectors and static R tree spatial indexing. |
-| [Platform detection](docs/platform.md) | `audiogame-utils/platform` | iOS and installed web app detection. |
+| [Platform detection](docs/platform.md) | `audiogame-utils/platform` | Runtime, operating system, and installed web app detection. |
+| [Runtime](docs/tauri.md) | `audiogame-utils/runtime` | Loads native adapters when the game runs under Tauri. |
+| [Window](docs/tauri.md) | `audiogame-utils/window` | Title, fullscreen, quit, close guard, keep awake, and external links. |
 | [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and relative position helpers. |
 | [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
 | [Stats](docs/stats.md) | `audiogame-utils/stats` | Stat tracking, formatted output, list sorting, set operations, and linear/JSON serialization. |
 | [Storage](docs/storage.md) | `audiogame-utils/storage` | Namespaced JSON storage. Saves to the browser session by default. |
 | [Text](docs/text.md) | `audiogame-utils/text` | sequence to string conversion, time formatting, string distance, and closestMatch helpers. |
 | [UI](docs/ui.md) | `audiogame-utils/ui` | Helpers for quickly creating accessible fields, screens, and menus. With the exception of menu (which is my take on the dynamic menu commonly found in audio games), these should not be used with a focus trap but games where you want an interactive visible UI. |
+
+## Desktop and mobile
+
+A game written with this library can run seamlessly as a Windows, macOS, Linux, iOS, or
+Android application through [Tauri](https://tauri.app), using the same code as
+the browser version.
+
+```sh
+npm create tauri-app@latest
+cd my-game
+npx audiogame-utils create
+```
+
+Then await `initRuntime()` at the top of the game entry:
+
+```js
+import { initRuntime } from 'audiogame-utils/runtime'
+
+await initRuntime()
+```
+
+Initializing the runtime makes sure that saves are written to disk, window control becomes available, and the paths to audio and map files resolve correctly based on the platform and environment configuration.
+Everything else stays exactly the same. See the [Tauri guide](docs/tauri.md) for a full tutorial.
 
 ## Local development
 

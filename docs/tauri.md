@@ -2,7 +2,7 @@
 
 Tauri turns a web application into an installable application for Windows, macOS, Linux, Android, or iOS. An audiogame can keep its HTML, CSS, and JavaScript while gaining a native application window, saves stored in files, desktop installers, and other operating system features.
 
-This guide assumes that you know JavaScript. It explains Tauri and the native application concepts needed to package a game. The main path covers desktop development and distribution. A shorter mobile section provides the starting commands and links to Tauri's full mobile documentation.
+This guide assumes that you know JavaScript, and that you want to write a game which runs everywhere. It explains Tauri and the native application concepts needed to package a game. The main path covers desktop development and distribution. A shorter mobile section provides the starting commands and links to Tauri's full mobile documentation.
 
 ## What is Tauri?
 
@@ -25,7 +25,7 @@ See [Tauri's architecture guide](https://v2.tauri.app/concept/architecture/) for
 
 Tauri compiles a native program on your computer. This requires Rust and the build tools for your operating system. Windows uses the Microsoft C++ Build Tools and WebView2. macOS uses Xcode or its command line tools. Linux requires packages supplied by the distribution.
 
-Follow [Tauri's prerequisites guide](https://v2.tauri.app/start/prerequisites/) for the current instructions for your operating system. Those requirements change more often than this library.
+Follow [Tauri's prerequisites guide](https://v2.tauri.app/start/prerequisites/) for the current instructions for your operating system.
 
 After installing Rust, open a new terminal and check both commands:
 
@@ -76,6 +76,8 @@ The exact prompts may change between Tauri releases. For a plain JavaScript game
 3. Choose Vanilla as the interface template.
 4. Choose JavaScript as the interface flavor.
 
+You may also prefer the typescript flavor, because Typescript is amazing and will help you catch a bunch of bugs that you wouldn't have otherwise.
+
 Enter the created directory and install its dependencies. Replace `my-game` with the project name you selected.
 
 With npm:
@@ -114,7 +116,7 @@ deno add -D npm:@tauri-apps/cli@latest
 deno task tauri init
 ```
 
-`tauri init` asks how to find, run, and build the existing frontend. Provide:
+`tauri init` will ask how to find, run, and build the existing frontend. Provide:
 
 1. The application name and window title.
 2. Leave the development server URL and command empty for a plain static game. For Vite, these might be `http://localhost:5173` and `npm run dev` or `deno task dev`.
@@ -141,12 +143,12 @@ deno run -A jsr:@cartertemm/audiogame-utils/create
 
 The patcher detects the project's package manager and makes these changes:
 
-1. It installs audiogame utils and the Tauri API, store, and opener packages.
-2. It runs Tauri's plugin setup for the store and opener plugins. This updates the Rust project and grants their default capability permissions.
-3. It adds a content security policy that permits bundled audio and approved asset protocol URLs when the project does not already have a policy.
-4. It enables Tauri's asset protocol with an empty path scope when the project does not already configure it.
-5. It writes a small `src/game.js` example when that file does not already exist.
-6. It can add a GitHub Actions workflow that builds Windows, macOS, and Linux artifacts when a version tag is pushed.
+1. Installs audiogame utils and the Tauri API, store, and opener packages.
+2. Runs Tauri's plugin setup for the store and opener plugins. This updates the Rust project and grants their default capability permissions.
+3. Adds a content security policy that permits bundled audio and approved asset protocol URLs when the project does not already have a policy.
+4. Enables Tauri's asset protocol with an empty path scope when the project does not already configure it.
+5. Writes a small `src/game.js` example when that file does not already exist.
+6. Optionally adds a GitHub Actions workflow that builds Windows, macOS, and Linux artifacts when a version tag is pushed.
 
 Existing `src/game.js` and workflow files are kept, along with any preexisting content security policy and asset protocol settings.
 
@@ -207,9 +209,11 @@ await setTitle('My game')
 speech.speak('Ready')
 ```
 
-In a browser, `initRuntime()` resolves immediately with `'web'`, which tells audiogame-utils to use normal web storage, window, and file routines. In Tauri, it loads saved values into memory, then registers adapters for storage, window control, and file path conversion before resolving with `'tauri'`. Loading the values first lets later `storage.get()` calls remain synchronous even though Tauri reads the store from disk asynchronously.
+In a browser, `initRuntime()` simply tells audiogame-utils to use normal web storage, window, and file routines.
 
-Calls made while initialization is in progress share the same promise. If initialization rejects, the cached promise is cleared so a later call can retry. If the call is skipped, the first module that requests a missing native capability writes a warning to the console and reminds you to call `initRuntime()` to fix it.
+In Tauri, irrespective of the operating system,, `initRuntime()` registers adapters for storage using on-disk I/O, native window control, and file path conversion for assets like sounds and maps.
+
+If you forget to call `initRuntime()`, the first module that requests a missing native capability will write a warning to the console and remind you to call `initRuntime()` to fix it.
 
 ## Step 6: Save data to disk
 
@@ -224,11 +228,13 @@ storage.set('difficulty', 'hard')
 console.log(storage.get('difficulty'))
 ```
 
-In a browser, this uses `localStorage`. In Tauri, the store plugin saves the same namespaced JSON values in `audiogame-utils.json` under the application's data location for the operating system.
+In a browser, this uses `localStorage`.
 
-Tauri disk operations are asynchronous, while `storage.get()` is synchronous. The adapter solves this by keeping the store in memory. A change updates memory immediately and schedules one disk write 200 milliseconds later. Several changes inside that interval produce one save.
+In Tauri, the store plugin saves the same namespaced JSON values in `audiogame-utils.json` under the application's data location for the operating system.
 
-The delay means an immediate crash may lose the most recent change. Call `flush()` after an important event, such as saving progress or changing settings.
+Tauri disk operations are asynchronous, while `storage.get()` is synchronous. The adapter solves this by keeping the store in memory. A change updates memory immediately and schedules one disk write 200 milliseconds later.
+
+This delay means that an immediate crash may lose the most recent change. Call the `flush()` function after an important event, such as saving progress or changing settings.
 
 ```js
 storage.set('checkpoint', 12)
@@ -274,7 +280,11 @@ The browser fallbacks use `false` when an operation is unavailable or refused. F
 
 Native title, fullscreen, state, and quit calls resolve successfully when Tauri accepts them. Their promises reject if the underlying Tauri operation fails, so handle a rejection when the game needs to recover or explain the failure.
 
-Use `openUrl()` for documentation, community pages, purchases, and other external sites. Under Tauri, the opener plugin sends the URL to the user's default browser. A normal link can replace the page inside the game webview, ending the running game session and disorienting the player. On the web, `openUrl()` opens a new browser tab.
+Use `openUrl()` for documentation, community pages, purchases, and other external sites.
+
+Under Tauri, the opener plugin sends the URL to the user's default browser. This is needed because a normal link can replace the page inside the game webview, ending the running game session and disorienting the player.
+
+On the web, `openUrl()` opens a new browser tab.
 
 When the game is ready to close itself, use:
 
@@ -337,7 +347,10 @@ Tauri builds the frontend, compiles an optimized native executable, and creates 
 
 A normal local build targets the operating system running the command. Build on Windows for Windows, macOS for macOS, and Linux for Linux. The optional workflow created by the patcher runs all three builds in GitHub Actions. It uses npm for npm based projects and Deno for Deno based projects. It runs when a tag beginning with `v` is pushed and creates a draft GitHub release.
 
-The generated artifacts are unsigned. Signing proves who published an application and prevents common operating system warnings. Certificates, notarization, and store requirements differ by platform and are not included by the patcher.
+The generated artifacts are unsigned.
+when it comes time to release a project to the world, you will want to sign your executables. Signing proves who published an application, prevents common operating system warnings, and is less likely to trigger antivirus scans.
+
+Certificates, notarization, and store requirements differ by platform and are not included by the patcher.
 
 Continue with Tauri's maintained [distribution and signing guide](https://v2.tauri.app/distribute/#signing) before giving installers to players.
 
@@ -401,7 +414,17 @@ if (!gamepad.supported) {
 }
 ```
 
-Webview support can change as operating systems update. Test input, speech, audio, fullscreen, wake locks, and external links on every target release.
+Webview support can change as operating systems update. It is important to test input, speech, audio, fullscreen, wake locks, and external links on every targeted operating system.
+
+## Future plans
+
+### Reliable screen reader output
+
+ARIA live regions work in Tauri, but they are not as reliable as direct calls to the operating system's screen reader APIs. We plan to build a Tauri plugin backed by the Platform-agnostic Reader Interface for Speech and Messages (PRISM). It will give audiogames screen reader output with the reliability players expect from native applications.
+
+### iOS accessibility integration
+
+We also plan to build a Tauri plugin for iOS accessibility features. Planned capabilities include direct touch areas, which let game gestures work without VoiceOver interfering or needing to be disabled, opening the accessibility settings, checking whether accessibility settings are enabled, presenting audio graphs, and more.
 
 ## Troubleshooting
 
