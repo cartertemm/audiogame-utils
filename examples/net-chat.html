@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Network chat | audiogame-utils</title>
+	<style>
+		body {
+			margin: 0 auto;
+			padding: 1rem;
+			max-width: 40rem;
+			font-family: system-ui, sans-serif;
+			line-height: 1.5;
+		}
+
+		form.row {
+			display: flex;
+			gap: 0.5rem;
+			align-items: end;
+		}
+
+		.field {
+			flex: 1;
+		}
+
+		.field label {
+			display: block;
+		}
+
+		.field input[type="text"] {
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		input,
+		button {
+			font: inherit;
+		}
+
+		.hint {
+			margin: 0.25rem 0 0;
+			font-size: 0.9rem;
+		}
+
+		.events {
+			min-height: 8rem;
+			padding-left: 1.5rem;
+		}
+	</style>
+</head>
+<body>
+	<div id="app"></div>
+	<script type="module" src="./net-chat.js"></script>
+</body>
+</html>
