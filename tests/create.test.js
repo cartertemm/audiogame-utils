@@ -29,5 +29,9 @@ describe('create command selection', () => {
 		);
 		expect(commands.addPlugin('store')).toBe('deno task tauri add store');
 		expect(commands.dev).toBe('deno task tauri dev');
+		expect(typeof commands.workflowSetup).toBe('string');
+		expect(commands.workflowSetup).toContain('uses: denoland/setup-deno@v2');
+		expect(commands.workflowSetup).toContain('run: deno install');
+		expect(commands.workflowSetup).not.toContain('npm ci');
 	});
 });

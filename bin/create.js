@@ -40,7 +40,7 @@ await storage.flush();
 speech.speak(\`Welcome back. This is run number \${plays}.\`);
 `;
 
-const WORKFLOW = `# Builds unsigned installers. Signing and notarization are per platform and
+const createWorkflow = workflowSetup => `# Builds unsigned installers. Signing and notarization are per platform and
 # need your own certificates: https://tauri.app/distribute/sign/
 name: build
 
@@ -73,11 +73,7 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - run: npm ci
+${workflowSetup}
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
@@ -174,7 +170,7 @@ patchConfig(configPath);
 writeIfAbsent(join(dir, 'src', 'game.js'), GAME_ENTRY);
 
 const addCi = ci ?? (yes ? true : await ask('Add a GitHub Actions workflow building Windows, macOS, and Linux?', true));
-if (addCi) writeIfAbsent(join(dir, '.github', 'workflows', 'build.yml'), WORKFLOW);
+if (addCi) writeIfAbsent(join(dir, '.github', 'workflows', 'build.yml'), createWorkflow(commands.workflowSetup));
 
 console.log('\nDone. Next:');
 console.log('  1. Load src/game.js from your index.html');

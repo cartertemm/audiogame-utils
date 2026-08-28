@@ -8,6 +8,18 @@ const DEPENDENCIES = [
 	'@tauri-apps/plugin-opener',
 ];
 
+const DENO_WORKFLOW_SETUP = `      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - run: deno install`;
+
+const NODE_WORKFLOW_SETUP = `      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci`;
+
 function packageManager(directory) {
 	if (existsSync(join(directory, 'pnpm-lock.yaml'))) return 'pnpm';
 	if (existsSync(join(directory, 'yarn.lock'))) return 'yarn';
@@ -26,13 +38,14 @@ export function getProjectCommands(directory) {
 			install: `deno add ${DEPENDENCIES.map(name => `npm:${name}`).join(' ')}`,
 			addPlugin: name => `deno task tauri add ${name}`,
 			dev: 'deno task tauri dev',
+			workflowSetup: DENO_WORKFLOW_SETUP,
 		};
 	}
-
 	const install = manager === 'npm' ? 'npm install' : `${manager} add`;
 	return {
 		install: `${install} ${DEPENDENCIES.join(' ')}`,
 		addPlugin: name => `npx --yes tauri add ${name}`,
 		dev: manager === 'npm' ? 'npm run tauri dev' : `${manager} tauri dev`,
+		workflowSetup: NODE_WORKFLOW_SETUP,
 	};
 }
