@@ -35,6 +35,8 @@
 		"./audio/coords": "./src/audio/coords.js",
 		"./audio/units": "./src/audio/units.js",
 		"./net": "./src/net/index.js",
+		"./net/server": "./src/net/server.js",
+		"./net/testing": "./src/net/testing.js",
 		"./storage": "./src/storage.js",
 		"./platform": "./src/platform.js",
 		"./events": "./src/events.js",
