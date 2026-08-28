@@ -33,5 +33,6 @@ describe('create command selection', () => {
 		expect(commands.workflowSetup).toContain('uses: denoland/setup-deno@v2');
 		expect(commands.workflowSetup).toContain('run: deno install');
 		expect(commands.workflowSetup).not.toContain('npm ci');
+		expect(commands.workflowTauriScript).toBe('deno task tauri');
 	});
 });

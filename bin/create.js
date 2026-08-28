@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 // Patches an existing Tauri project to use audiogame-utils.
 //
-// Tauri's own scaffolder stays the source of truth for `src-tauri`, so no icons,
-// no Cargo.toml, and no main.rs ship in this package.
-//
-//   npx audiogame-utils create [dir]
-//   deno run -A jsr:@cartertemm/audiogame-utils/create [dir]
+// Run it with
+// npx audiogame-utils create [dir]
+// deno run -A jsr:@cartertemm/audiogame-utils/create [dir]
 
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -40,7 +38,7 @@ await storage.flush();
 speech.speak(\`Welcome back. This is run number \${plays}.\`);
 `;
 
-const createWorkflow = workflowSetup => `# Builds unsigned installers. Signing and notarization are per platform and
+const createWorkflow = commands => `# Builds unsigned installers. Signing and notarization are per platform and
 # need your own certificates: https://tauri.app/distribute/sign/
 name: build
 
@@ -73,12 +71,12 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-${workflowSetup}
+${commands.workflowSetup}
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: \${{ github.ref_name }}
+${commands.workflowTauriScript ? `          tauriScript: ${commands.workflowTauriScript}\n` : ''}          tagName: \${{ github.ref_name }}
           releaseName: \${{ github.ref_name }}
           releaseDraft: true
 `;
@@ -121,16 +119,12 @@ function patchConfig(configPath) {
 	} catch (err) {
 		fail(`Could not read ${configPath}: ${err.message}`);
 	}
-
 	config.app ??= {};
 	config.app.security ??= {};
 	const security = config.app.security;
-
 	if (!security.csp) security.csp = CSP;
-	// An empty scope keeps the protocol available without granting access to any
-	// path. Add the directories a game reads from.
+	// An empty scope keeps the protocol available without granting access to any  path.
 	security.assetProtocol ??= { enable: true, scope: [] };
-
 	writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
 	console.log(`patched ${configPath}`);
 }
@@ -148,7 +142,6 @@ async function ask(question, fallback) {
 
 const { dir, yes, ci } = parseArgs(process.argv.slice(2));
 const configPath = join(dir, 'src-tauri', 'tauri.conf.json');
-
 if (!existsSync(configPath)) {
 	fail(
 		`No Tauri project found at ${configPath}.\n` +
@@ -156,22 +149,14 @@ if (!existsSync(configPath)) {
 		'  npm create tauri-app@latest'
 	);
 }
-
 const commands = getProjectCommands(dir);
-
 run(commands.install, dir);
-
-// `tauri add` edits Cargo.toml, registers the plugin in the Rust entry point, and
-// writes the capability permissions. Doing that by hand here would go stale.
 run(commands.addPlugin('store'), dir);
 run(commands.addPlugin('opener'), dir);
-
 patchConfig(configPath);
 writeIfAbsent(join(dir, 'src', 'game.js'), GAME_ENTRY);
-
 const addCi = ci ?? (yes ? true : await ask('Add a GitHub Actions workflow building Windows, macOS, and Linux?', true));
-if (addCi) writeIfAbsent(join(dir, '.github', 'workflows', 'build.yml'), createWorkflow(commands.workflowSetup));
-
+if (addCi) writeIfAbsent(join(dir, '.github', 'workflows', 'build.yml'), createWorkflow(commands));
 console.log('\nDone. Next:');
 console.log('  1. Load src/game.js from your index.html');
 console.log(`  2. ${commands.dev}`);

@@ -39,6 +39,7 @@ export function getProjectCommands(directory) {
 			addPlugin: name => `deno task tauri add ${name}`,
 			dev: 'deno task tauri dev',
 			workflowSetup: DENO_WORKFLOW_SETUP,
+			workflowTauriScript: 'deno task tauri',
 		};
 	}
 	const install = manager === 'npm' ? 'npm install' : `${manager} add`;
@@ -47,5 +48,6 @@ export function getProjectCommands(directory) {
 		addPlugin: name => `npx --yes tauri add ${name}`,
 		dev: manager === 'npm' ? 'npm run tauri dev' : `${manager} tauri dev`,
 		workflowSetup: NODE_WORKFLOW_SETUP,
+		workflowTauriScript: null,
 	};
 }
