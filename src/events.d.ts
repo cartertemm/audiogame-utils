@@ -5,11 +5,6 @@
  *
  * @module
  */
-/** Receives optional data emitted for an event. */
-export type EventHandler<T = any> = (data?: T) => void;
-/** Removes a previously registered event handler. */
-export type UnsubscribeFunction = () => void;
-
 /** Dispatches named synchronous events to registered handlers. */
 export class EventEmitter {
 	/** Creates an emitter with no registered handlers. */
