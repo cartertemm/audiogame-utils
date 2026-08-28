@@ -760,7 +760,8 @@
         "npm:esbuild@~0.21.5",
         "npm:happy-dom@13",
         "npm:typescript@^5.4.0",
-        "npm:vitest@1"
+        "npm:vitest@1",
+        "npm:ws@^8.17.0"
       ]
     }
   }

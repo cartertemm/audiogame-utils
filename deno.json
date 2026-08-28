@@ -5,13 +5,17 @@
 	"publish": {
 		"exclude": [
 			".github",
+			".gitignore",
+			".superpowers",
 			"tests",
 			"examples",
 			"docs",
 			"dist",
 			"node_modules",
 			"index.html",
+			"package.json",
 			"package-lock.json",
+			"tsconfig.json",
 			"vitest.config.js"
 		]
 	},
@@ -51,10 +55,16 @@
 		"./text": "./src/text.js"
 	},
 	"tasks": {
+		"build": "deno task build:iife && deno task build:esm",
+		"build:iife": "deno run -A npm:esbuild src/index.js --bundle --format=iife --global-name=audiogameUtils --minify --sourcemap --outfile=dist/audiogame-utils.min.js",
+		"build:esm": "deno run -A npm:esbuild src/index.js --bundle --format=esm --minify --sourcemap --outfile=dist/audiogame-utils.esm.js",
+		"examples": "echo Open http://localhost:3000 && deno run -A npm:serve . -l 3000",
+		"example:net-chat": "deno run -A examples/net-chat-server.js",
 		"test": "vitest run",
+		"test:watch": "vitest",
 		"test:deno": "deno run -A npm:vitest run",
-		"check": "deno check src/index.d.ts tests/types.usage.ts tests/types.exports.ts tests/types.deno.ts",
-		"build": "npm run build"
+		"test:types": "deno run -A npm:typescript/tsc --noEmit -p tsconfig.json",
+		"check": "deno check src/index.d.ts tests/types.usage.ts tests/types.exports.ts tests/types.deno.ts"
 	},
 	"fmt": {
 		"useTabs": true,
