@@ -19,6 +19,19 @@ export const CLOSE_REPLACED = 4002;
 export const CLOSE_UNGREETED = 4003;
 export const CLOSE_MALFORMED = 4004;
 
+// Every one of these is permanent for the connection that received it, so a
+// client that sees one must stop reconnecting instead of looping.
+export const PERMANENT_CLOSE_CODES = [
+	CLOSE_VERSION,
+	CLOSE_REPLACED,
+	CLOSE_UNGREETED,
+	CLOSE_MALFORMED,
+];
+
+export function isPermanentClose(code) {
+	return PERMANENT_CLOSE_CODES.includes(code);
+}
+
 export function frame(channel, payload) {
 	return [channel, payload];
 }

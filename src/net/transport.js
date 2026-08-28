@@ -10,6 +10,7 @@ import {
 	PONG,
 	frame,
 	readFrame,
+	isPermanentClose,
 } from './protocol.js';
 
 const JSON_CODEC = {
@@ -56,7 +57,8 @@ export function wrapSocket(socket, { codec = JSON_CODEC, onMessage, onClose, onE
 // `createServer` expects: it sends `hello` on every connection, answers the
 // heartbeat, and keeps protocol traffic out of `onMessage`. Passing an
 // `identity` persists the session across a page reload. Without one the
-// session still resumes within the page.
+// session still resumes within the page. A close code the protocol treats as
+// permanent stops the reconnection, after `onClose` has run.
 export function createReconnectingClient({
 	url,
 	codec = JSON_CODEC,
@@ -130,9 +132,13 @@ export function createReconnectingClient({
 		wrapped = wrapSocket(socket, {
 			codec,
 			onMessage: protocol ? handleFrame : onMessage,
+			// `onClose` runs first either way, so the game can tell the player
+			// why the connection went away before the client gives up.
 			onClose: event => {
 				onClose?.(event);
-				if (!closedByUser) scheduleReconnect();
+				if (closedByUser) return;
+				if (protocol && isPermanentClose(event?.code)) return;
+				scheduleReconnect();
 			},
 			onError,
 		});

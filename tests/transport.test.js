@@ -1,5 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { wrapSocket, createReconnectingClient } from '../src/net/transport.js';
+import { PERMANENT_CLOSE_CODES, CLOSE_VERSION } from '../src/net/protocol.js';
 
 // Provide the EventTarget methods used by browser WebSockets and the `ws`
 // library.
@@ -232,6 +233,7 @@ describe('createReconnectingClient with protocol', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		vi.unstubAllGlobals();
 	});
 
@@ -335,6 +337,44 @@ describe('createReconnectingClient with protocol', () => {
 		sockets[0].emit('message', { data: JSON.stringify({ not: 'a frame' }) });
 		expect(errors).toHaveLength(1);
 		expect(sockets[0].readyState).toBe(1);
+	});
+
+	test('a permanent protocol close code stops the reconnection', () => {
+		vi.useFakeTimers();
+		for (const code of PERMANENT_CLOSE_CODES) {
+			const closes = [];
+			createReconnectingClient({
+				url: 'ws://x',
+				protocol: true,
+				backoffs: [10],
+				onClose: event => closes.push(event.code),
+			});
+			const opened = sockets.length;
+			sockets.at(-1).emit('open', {});
+			sockets.at(-1).close(code, 'permanent');
+			vi.advanceTimersByTime(60_000);
+			// onClose still runs, so the game can tell the player what happened.
+			expect(closes).toEqual([code]);
+			expect(sockets).toHaveLength(opened);
+		}
+	});
+
+	test('an ordinary close still reconnects with protocol on', () => {
+		vi.useFakeTimers();
+		createReconnectingClient({ url: 'ws://x', protocol: true, backoffs: [10] });
+		sockets[0].emit('open', {});
+		sockets[0].close(1006, 'gone');
+		vi.advanceTimersByTime(10);
+		expect(sockets).toHaveLength(2);
+	});
+
+	test('without protocol a 4001 close still reconnects', () => {
+		vi.useFakeTimers();
+		createReconnectingClient({ url: 'ws://x', backoffs: [10] });
+		sockets[0].emit('open', {});
+		sockets[0].close(CLOSE_VERSION, 'permanent');
+		vi.advanceTimersByTime(10);
+		expect(sockets).toHaveLength(2);
 	});
 
 	test('without protocol the client sends and receives raw, as it does today', () => {

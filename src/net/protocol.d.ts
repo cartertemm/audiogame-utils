@@ -27,6 +27,11 @@ export const CLOSE_UNGREETED: 4003;
 /** Close code for a frame that could not be read. */
 export const CLOSE_MALFORMED: 4004;
 
+/** Close codes a client must not reconnect after. */
+export const PERMANENT_CLOSE_CODES: readonly number[];
+/** True when a close code is permanent for the connection that received it. */
+export function isPermanentClose(code: number | undefined | null): boolean;
+
 /** A decoded frame. */
 export interface Frame<T = any> {
 	/** Channel number. */
