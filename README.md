@@ -1,6 +1,6 @@
 # audiogame-utils
 
-Building blocks for audio games that run in a browser. It currently has helpers for accessible speech, keyboard, mouse and multifinger input, spatial audio, menus and forms, maps and spatial queries, storage, platform detection, and multiplayer connections. The multiplayer half includes a server that runs anywhere JavaScript does, including Node, Deno, and Bun.
+Building blocks for audio games that run in a browser. It currently has helpers for accessible speech, keyboard, mouse and multifinger input, spatial audio, menus and forms, maps and spatial queries, storage, platform detection, and multiplayer connections.
 
 The package publishes ECMAScript modules and requires no build step. Its only runtime dependency is [Cacophony](https://www.npmjs.com/package/cacophony) for sound playback.
 
@@ -66,47 +66,6 @@ clock.on((dt: number) => { /* dt is a number of seconds */ })
 ```
 
 See [examples/](examples/) for more of what you can do.
-
-### Multiplayer servers
-
-`audiogame-utils/net/server` tracks connections, holds a player's session
-through a dropped socket, and fans messages out to named groups. It opens no
-ports and has no dependencies, so you keep control of the socket layer:
-
-```js
-import { WebSocketServer } from 'ws'
-import { createServer } from 'audiogame-utils/net/server'
-
-const server = createServer({ sessionTtl: 30000 })
-new WebSocketServer({ port: 8080 }).on('connection', s => server.accept(s))
-
-server.on('connection', client => client.join('lobby'))
-server.on('message', (client, msg) => {
-	server.group('lobby').send(msg, { except: client })
-})
-server.on('resume', client => client.send({ type: 'welcome-back' }))
-```
-
-A `client` outlives its socket. When the connection drops you get `disconnect`,
-and the client keeps its `data` and its group membership until either the player
-reconnects, which fires `resume`, or the grace period runs out, which fires
-`end`.
-
-On the browser side, pass `protocol: true` to talk to it:
-
-```js
-import { createReconnectingClient, createIdentity } from 'audiogame-utils/net'
-
-const client = createReconnectingClient({
-	url: 'ws://localhost:8080',
-	protocol: true,
-	identity: createIdentity(storage),
-	onMessage: msg => console.log(msg),
-})
-```
-
-Deno and Bun ship their own WebSocket servers, so on those runtimes there is
-nothing to install at all.
 
 ## Modules
 
