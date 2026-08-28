@@ -10,3 +10,15 @@ npm run examples
 ```
 
 Then open <http://localhost:3000>, which lists every demo. Click on one, and you're off to the races.
+
+## The multiplayer demo
+
+`net.html` needs a server, which does not run in the browser. Start it in a
+second terminal:
+
+```sh
+npm run examples:server
+```
+
+Then open the page as usual. The server uses `ws`, which is a devDependency, so
+it is already installed.
