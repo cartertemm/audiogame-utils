@@ -12,6 +12,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import process from 'node:process';
 import { createInterface } from 'node:readline/promises';
+import { getProjectCommands } from './create-commands.js';
 
 const CSP = [
 	"default-src 'self'",
@@ -101,12 +102,6 @@ function parseArgs(argv) {
 	};
 }
 
-function packageManager(dir) {
-	if (existsSync(join(dir, 'pnpm-lock.yaml'))) return 'pnpm';
-	if (existsSync(join(dir, 'yarn.lock'))) return 'yarn';
-	return 'npm';
-}
-
 function run(command, dir) {
 	console.log(`> ${command}`);
 	execSync(command, { cwd: dir, stdio: 'inherit' });
@@ -166,15 +161,14 @@ if (!existsSync(configPath)) {
 	);
 }
 
-const pm = packageManager(dir);
-const install = pm === 'npm' ? 'npm install' : `${pm} add`;
+const commands = getProjectCommands(dir);
 
-run(`${install} audiogame-utils @tauri-apps/api @tauri-apps/plugin-store @tauri-apps/plugin-opener`, dir);
+run(commands.install, dir);
 
 // `tauri add` edits Cargo.toml, registers the plugin in the Rust entry point, and
 // writes the capability permissions. Doing that by hand here would go stale.
-run('npx --yes tauri add store', dir);
-run('npx --yes tauri add opener', dir);
+run(commands.addPlugin('store'), dir);
+run(commands.addPlugin('opener'), dir);
 
 patchConfig(configPath);
 writeIfAbsent(join(dir, 'src', 'game.js'), GAME_ENTRY);
@@ -184,4 +178,4 @@ if (addCi) writeIfAbsent(join(dir, '.github', 'workflows', 'build.yml'), WORKFLO
 
 console.log('\nDone. Next:');
 console.log('  1. Load src/game.js from your index.html');
-console.log('  2. npm run tauri dev');
+console.log(`  2. ${commands.dev}`);
