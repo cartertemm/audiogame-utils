@@ -88,6 +88,12 @@ export function createGamepad({ target = null, deadzone = 0.25, index = null } =
 	attach();
 
 	return {
+		// WebKitGTK, the webview on Linux desktop, does not implement the Gamepad
+		// API at all. Check this before telling a player to plug a controller in.
+		get supported() {
+			return typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function';
+		},
+
 		get attached() {
 			return attached;
 		},

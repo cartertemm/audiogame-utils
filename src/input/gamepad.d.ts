@@ -42,6 +42,8 @@ export interface GamepadButtonEvent {
 
 /** Polled gamepad state, button events, axes, and vibration controls. */
 export interface GamepadInstance {
+	/** Whether this runtime implements the Gamepad API. `false` on Linux desktop under Tauri. */
+	readonly supported: boolean;
 	/** Whether connection listeners are attached. */
 	readonly attached: boolean;
 	/** Selected gamepad index, or `null` while following available pads. */

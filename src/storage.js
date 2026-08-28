@@ -3,6 +3,8 @@
 // module lets the caller choose where preferences are stored and simplifies
 // testing.
 
+import { capability } from './platform.js';
+
 // `backend` can be any object that implements the Storage interface methods
 // `getItem`, `setItem`, and `removeItem`. Each operation resolves the backend so
 // tests can replace `globalThis.localStorage` after calling `createStorage()`.
@@ -11,7 +13,7 @@ export function createStorage(namespace, { backend = null } = {}) {
 		throw new Error('createStorage requires a namespace string');
 	}
 	const prefix = `${namespace}:`;
-	const store = () => backend ?? localStorage;
+	const store = () => backend ?? capability('storage') ?? localStorage;
 	return {
 		get(key, defaultValue = undefined) {
 			const raw = store().getItem(prefix + key);
@@ -29,6 +31,11 @@ export function createStorage(namespace, { backend = null } = {}) {
 
 		remove(key) {
 			store().removeItem(prefix + key);
+		},
+
+		// `localStorage` writes synchronously, so the web path has nothing to do.
+		async flush() {
+			await store().flush?.();
 		},
 	};
 }

@@ -31,6 +31,7 @@
 	"files": [
 		"src",
 		"dist",
+		"bin",
 		"README.md",
 		"LICENSE"
 	],
@@ -122,6 +123,21 @@
 		"./text": {
 			"types": "./src/text.d.ts",
 			"default": "./src/text.js"
+		},
+		"./runtime": {
+			"types": "./src/runtime.d.ts",
+			"default": "./src/runtime.js"
+		},
+		"./tauri": {
+			"types": "./src/tauri/index.d.ts",
+			"default": "./src/tauri/index.js"
+		},
+		"./window": {
+			"types": "./src/window.d.ts",
+			"default": "./src/window.js"
+		},
+		"./create": {
+			"default": "./bin/create.js"
 		}
 	},
 	"scripts": {
@@ -144,5 +160,20 @@
 		"typescript": "^5.4.0",
 		"vitest": "^1.0.0",
 		"ws": "^8.17.0"
+	},
+	"bin": {
+		"audiogame-utils": "./bin/create.js"
+	},
+	"peerDependencies": {
+		"@tauri-apps/api": "^2",
+		"@tauri-apps/plugin-store": "^2"
+	},
+	"peerDependenciesMeta": {
+		"@tauri-apps/api": {
+			"optional": true
+		},
+		"@tauri-apps/plugin-store": {
+			"optional": true
+		}
 	}
 }

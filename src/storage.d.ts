@@ -13,11 +13,16 @@ export interface StorageBackend {
 	setItem(key: string, value: string): void;
 	/** Removes a key and its value. */
 	removeItem(key: string): void;
+	/** Writes pending changes immediately. Absent on backends that write synchronously. */
+	flush?(): Promise<void>;
 }
 
 /** Configuration for {@link createStorage}. */
 export interface StorageOptions {
-	/** Storage backend. Operations resolve `localStorage` when omitted. */
+	/**
+	 * Storage backend. When omitted, operations resolve the registered native
+	 * backend if there is one, and `localStorage` otherwise.
+	 */
 	backend?: StorageBackend | null;
 }
 
@@ -31,6 +36,8 @@ export interface StorageInstance {
 	set(key: string, value: any): void;
 	/** Removes a namespaced key. */
 	remove(key: string): void;
+	/** Writes pending changes to disk. Resolves immediately on backends that write synchronously. */
+	flush(): Promise<void>;
 }
 
 /**

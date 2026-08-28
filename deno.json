@@ -52,7 +52,11 @@
 		"./physics": "./src/physics/index.js",
 		"./clock": "./src/clock.js",
 		"./stats": "./src/stats.js",
-		"./text": "./src/text.js"
+		"./text": "./src/text.js",
+		"./runtime": "./src/runtime.js",
+		"./tauri": "./src/tauri/index.js",
+		"./window": "./src/window.js",
+		"./create": "./bin/create.js"
 	},
 	"tasks": {
 		"build": "deno task build:iife && deno task build:esm",
@@ -64,7 +68,7 @@
 		"test:watch": "vitest",
 		"test:deno": "deno run -A npm:vitest run",
 		"test:types": "deno run -A npm:typescript/tsc --noEmit -p tsconfig.json",
-		"check": "deno check src/index.d.ts tests/types.usage.ts tests/types.exports.ts tests/types.deno.ts"
+		"check": "deno check src/index.d.ts src/runtime.d.ts src/window.d.ts src/tauri/index.d.ts tests/types.usage.ts tests/types.exports.ts tests/types.deno.ts"
 	},
 	"fmt": {
 		"useTabs": true,

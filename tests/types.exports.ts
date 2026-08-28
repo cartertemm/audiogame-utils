@@ -18,6 +18,11 @@ import * as text from '../src/text.js';
 import * as units from '../src/audio/units.js';
 import * as coords from '../src/audio/coords.js';
 import * as platform from '../src/platform.js';
+import * as windowControl from '../src/window.js';
+import type { OS, Runtime } from '../src/platform.js';
+import type { WindowControl } from '../src/window.js';
+import type { TauriStorageBackend } from '../src/tauri/index.js';
+import { initRuntime } from '../src/runtime.js';
 
 const _createAudio: typeof root.createAudio = root.createAudio;
 const _createSurfaceManager: typeof root.createSurfaceManager = root.createSurfaceManager;
@@ -34,6 +39,17 @@ _createAudio; _createSurfaceManager; _createClock; _createTimer;
 _createStatSet; _createGamepad; _prettyNumber; _rotation; _math; _physics; _origin;
 
 const iosStandalone: boolean = platform.isIOSStandalone();
+const _runtime: Runtime = platform.runtime();
+const _os: OS = platform.os();
+const _mobile: boolean = platform.isMobile();
+const _fileUrl: string = platform.fileUrl('/packs/step.ogg');
+const _initRuntime: Promise<Runtime> = initRuntime({ storeFile: 'game.json' });
+const _title = windowControl.setTitle('My game');
+const _quit: Promise<boolean> = windowControl.quit();
+const _unlisten: () => void = windowControl.onCloseRequest(() => false);
+const _webWindow: WindowControl = windowControl.webWindow;
+declare const _tauriStorage: TauriStorageBackend;
+const _flush: Promise<void> = _tauriStorage.flush();
 iosStandalone;
 
 declare const clock: Clock;
