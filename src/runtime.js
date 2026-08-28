@@ -23,7 +23,8 @@ export function initRuntime(options = {}) {
 			started = null;
 			throw new Error(
 				'audiogame-utils: running under Tauri but the native adapters failed to load. ' +
-				'Install the peer dependencies with: npm install @tauri-apps/api @tauri-apps/plugin-store. ' +
+				'Install the peer dependencies with npm: npm install @tauri-apps/api @tauri-apps/plugin-store. ' +
+				'Or with Deno: deno add npm:@tauri-apps/api npm:@tauri-apps/plugin-store. ' +
 				`Cause: ${err?.message ?? err}`
 			);
 		});

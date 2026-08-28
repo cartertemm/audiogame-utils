@@ -49,7 +49,9 @@ describe('initRuntime', () => {
 		});
 
 		const { initRuntime } = await import('../src/runtime.js');
-		await expect(initRuntime()).rejects.toThrow('@tauri-apps/api @tauri-apps/plugin-store');
+		const error = await initRuntime().catch(error => error);
+		expect(error.message).toContain('npm install @tauri-apps/api @tauri-apps/plugin-store');
+		expect(error.message).toContain('deno add npm:@tauri-apps/api npm:@tauri-apps/plugin-store');
 
 		vi.doUnmock('../src/tauri/index.js');
 		vi.resetModules();

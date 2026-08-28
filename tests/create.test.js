@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
@@ -20,6 +20,12 @@ afterEach(() => {
 });
 
 describe('create command selection', () => {
+	test('uses npx for an npm project without a package script', () => {
+		const directory = createProject([]);
+
+		expect(getProjectCommands(directory).dev).toBe('npx tauri dev');
+	});
+
 	test('uses Deno commands for a Deno project', () => {
 		const directory = createProject(['deno.json']);
 		const commands = getProjectCommands(directory);
@@ -34,5 +40,11 @@ describe('create command selection', () => {
 		expect(commands.workflowSetup).toContain('run: deno install');
 		expect(commands.workflowSetup).not.toContain('npm ci');
 		expect(commands.workflowTauriScript).toBe('deno task tauri');
+	});
+
+	test('generated workflows can create draft releases', () => {
+		const source = readFileSync(join(process.cwd(), 'bin', 'create.js'), 'utf8');
+
+		expect(source).toContain('permissions:\n  contents: write');
 	});
 });

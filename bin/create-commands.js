@@ -46,7 +46,7 @@ export function getProjectCommands(directory) {
 	return {
 		install: `${install} ${DEPENDENCIES.join(' ')}`,
 		addPlugin: name => `npx --yes tauri add ${name}`,
-		dev: manager === 'npm' ? 'npm run tauri dev' : `${manager} tauri dev`,
+		dev: manager === 'npm' ? 'npx tauri dev' : `${manager} tauri dev`,
 		workflowSetup: NODE_WORKFLOW_SETUP,
 		workflowTauriScript: null,
 	};
