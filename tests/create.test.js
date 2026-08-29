@@ -43,7 +43,9 @@ describe('create command selection', () => {
 	});
 
 	test('generated workflows can create draft releases', () => {
-		const source = readFileSync(join(process.cwd(), 'bin', 'create.js'), 'utf8');
+		// Normalized so the assertion holds on Windows checkouts, where git hands
+		// the file back with CRLF line endings.
+		const source = readFileSync(join(process.cwd(), 'bin', 'create.js'), 'utf8').replace(/\r\n/g, '\n');
 
 		expect(source).toContain('permissions:\n  contents: write');
 	});
