@@ -20,7 +20,10 @@
 		]
 	},
 	"imports": {
-		"cacophony": "npm:cacophony@^0.18.3"
+		"cacophony": "npm:cacophony@^0.18.3",
+		"@tauri-apps/api/core": "npm:@tauri-apps/api@^2/core",
+		"@tauri-apps/api/window": "npm:@tauri-apps/api@^2/window",
+		"@tauri-apps/plugin-store": "npm:@tauri-apps/plugin-store@^2"
 	},
 	"compilerOptions": {
 		"lib": [

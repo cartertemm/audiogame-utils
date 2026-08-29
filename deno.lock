@@ -752,10 +752,15 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@tauri-apps/api@2",
+      "npm:@tauri-apps/plugin-store@2",
       "npm:cacophony@~0.18.3"
     ],
     "packageJson": {
       "dependencies": [
+        "npm:@tauri-apps/api@^2.11.1",
+        "npm:@tauri-apps/plugin-store@^2.4.4",
+        "npm:@types/node@^26.4.0",
         "npm:cacophony@~0.18.3",
         "npm:esbuild@~0.21.5",
         "npm:happy-dom@13",
