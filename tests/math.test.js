@@ -11,6 +11,7 @@ import {
 	random_choice,
 	weighted_choice,
 	shuffle,
+	random_generator,
 } from '../src/math.js';
 
 // Feeds Math.random a fixed queue so the random helpers stay deterministic.
@@ -212,5 +213,112 @@ describe('math: shuffle', () => {
 	test('reorders the items', () => {
 		fakeRandom(0);
 		expect(shuffle([1, 2, 3])).toEqual([2, 3, 1]);
+	});
+});
+
+describe('math: random_generator', () => {
+	test('replays the same numbers for the same seed', () => {
+		const first = random_generator(1234);
+		const second = random_generator(1234);
+		const run = (rng) => [rng.next(), rng.next(), rng.next(), rng.next(), rng.next()];
+		expect(run(first)).toEqual(run(second));
+	});
+
+	test('produces different numbers for different seeds', () => {
+		expect(random_generator(1).next()).not.toBe(random_generator(2).next());
+	});
+
+	test('accepts a string seed', () => {
+		expect(random_generator('forest-level-3').next()).toBe(random_generator('forest-level-3').next());
+		expect(random_generator('a').next()).not.toBe(random_generator('b').next());
+	});
+
+	test('reports the seed it was given', () => {
+		expect(random_generator(99).seed).toBe(99);
+		expect(random_generator('cave').seed).toBe('cave');
+	});
+
+	test('picks its own seed when none is given', () => {
+		const rng = random_generator();
+		expect(typeof rng.seed).toBe('number');
+		expect(random_generator(rng.seed).next()).toBe(rng.next());
+	});
+
+	test('never calls Math.random', () => {
+		const spy = vi.spyOn(Math, 'random');
+		const rng = random_generator(7);
+		rng.next();
+		rng.int(1, 6);
+		rng.float();
+		rng.choice([1, 2, 3]);
+		rng.weighted_choice(['a', 'b'], [1, 1]);
+		rng.shuffle([1, 2, 3]);
+		expect(spy).not.toHaveBeenCalled();
+	});
+
+	test('keeps next inside zero up to one', () => {
+		const rng = random_generator('bounds');
+		for (let i = 0; i < 1000; i++) {
+			const value = rng.next();
+			expect(value).toBeGreaterThanOrEqual(0);
+			expect(value).toBeLessThan(1);
+		}
+	});
+
+	test('keeps int inside the inclusive range', () => {
+		const rng = random_generator('ints');
+		const seen = new Set();
+		for (let i = 0; i < 1000; i++) seen.add(rng.int(1, 6));
+		expect([...seen].sort()).toEqual([1, 2, 3, 4, 5, 6]);
+	});
+
+	test('keeps float inside the requested range', () => {
+		const rng = random_generator('floats');
+		for (let i = 0; i < 500; i++) {
+			const value = rng.float(10, 20);
+			expect(value).toBeGreaterThanOrEqual(10);
+			expect(value).toBeLessThan(20);
+		}
+	});
+
+	test('choice returns only list items', () => {
+		const rng = random_generator('choice');
+		const list = ['a', 'b', 'c'];
+		for (let i = 0; i < 100; i++) expect(list).toContain(rng.choice(list));
+	});
+
+	test('choice returns undefined for an empty list', () => {
+		expect(random_generator(1).choice([])).toBe(undefined);
+	});
+
+	test('weighted_choice honors a zero weight', () => {
+		const rng = random_generator('weights');
+		for (let i = 0; i < 100; i++) {
+			expect(rng.weighted_choice(['never', 'always'], [0, 1])).toBe('always');
+		}
+	});
+
+	test('weighted_choice returns undefined when every weight is zero', () => {
+		expect(random_generator(1).weighted_choice(['a', 'b'], [0, 0])).toBe(undefined);
+	});
+
+	test('shuffle keeps every item and leaves the original alone', () => {
+		const rng = random_generator('shuffle');
+		const list = [1, 2, 3, 4, 5];
+		expect(rng.shuffle(list).sort()).toEqual([1, 2, 3, 4, 5]);
+		expect(list).toEqual([1, 2, 3, 4, 5]);
+	});
+
+	test('shuffle replays the same order for the same seed', () => {
+		const deck = [1, 2, 3, 4, 5, 6, 7, 8];
+		expect(random_generator('deck').shuffle(deck)).toEqual(random_generator('deck').shuffle(deck));
+	});
+
+	test('two generators run independent streams', () => {
+		const world = random_generator(5);
+		const enemies = random_generator(5);
+		world.next();
+		world.next();
+		expect(world.next()).not.toBe(enemies.next());
 	});
 });

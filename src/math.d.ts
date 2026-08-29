@@ -17,6 +17,29 @@ export function range_convert(value: number, in_min: number, in_max: number, out
 export function angle_difference(from: number, to: number): number;
 /** Wraps a value into the range from `min` inclusive to `max` exclusive. */
 export function wrap(value: number, min: number, max: number): number;
+/** A reproducible source of random numbers, created by {@link random_generator}. */
+export interface RandomGenerator {
+	/** The seed this generator was created with. */
+	readonly seed: number | string;
+	/** Returns the next raw number between 0 inclusive and 1 exclusive. */
+	next(): number;
+	/** Returns a random integer in the inclusive range from `min` through `max`. */
+	int(min: number, max: number): number;
+	/** Returns a random floating point number between `min` inclusive and `max` exclusive. */
+	float(min?: number, max?: number): number;
+	/** Returns a uniformly selected list item, or `undefined` for an empty list. */
+	choice<T>(list: T[]): T | undefined;
+	/** Returns a list item selected according to its corresponding nonnegative weight. */
+	weighted_choice<T>(list: T[], weights: number[]): T | undefined;
+	/** Returns a shuffled copy of the list. */
+	shuffle<T>(list: T[]): T[];
+}
+/**
+ * Creates a seeded generator that replays the same sequence for the same seed.
+ *
+ * Without a seed, one is chosen at random and reported as `seed`.
+ */
+export function random_generator(seed?: number | string): RandomGenerator;
 /** Returns a random integer in the inclusive range from `min` through `max`. */
 export function random_int(min: number, max: number): number;
 /** Returns a random floating point number between `min` inclusive and `max` exclusive. */
@@ -25,5 +48,5 @@ export function random_float(min?: number, max?: number): number;
 export function random_choice<T>(list: T[]): T | undefined;
 /** Returns a list item selected according to its corresponding nonnegative weight. */
 export function weighted_choice<T>(list: T[], weights: number[]): T | undefined;
-/** Shuffles a list in place and returns the same list. */
+/** Returns a shuffled copy of the list. */
 export function shuffle<T>(list: T[]): T[];
