@@ -4,3 +4,4 @@ coverage/
 .DS_Store
 docs/superpowers/
 dist/
+tauri-test/
