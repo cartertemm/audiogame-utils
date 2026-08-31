@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createStorage } from '../src/storage.js';
 import { createSpeech, MODE_ARIA, MODE_TTS, MODE_BOTH } from '../src/speech/index.js';
 
@@ -143,6 +143,19 @@ describe('createSpeech: speak (aria)', () => {
 		s.speak('implicit');
 		expect(polite().textContent).toBe('implicit');
 	});
+
+	test('a rapid second announcement is not wiped by the first clear timer', () => {
+		vi.useFakeTimers();
+		try {
+			speech.speak('first');
+			vi.advanceTimersByTime(5);
+			speech.speak('second');
+			vi.advanceTimersByTime(6);
+			expect(polite().textContent).toBe('second');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });
 
 describe('createSpeech: speak (tts)', () => {
@@ -173,6 +186,19 @@ describe('createSpeech: speak (tts)', () => {
 		speech.speak('one');
 		speech.speak('two');
 		expect(globalThis.speechSynthesis.cancelCalls).toBe(0);
+	});
+
+	test('does not throw when the browser has no Web Speech support', () => {
+		const synthesis = globalThis.speechSynthesis;
+		const utterance = globalThis.SpeechSynthesisUtterance;
+		delete globalThis.speechSynthesis;
+		delete globalThis.SpeechSynthesisUtterance;
+		try {
+			expect(() => speech.speak('no engine')).not.toThrow();
+		} finally {
+			globalThis.speechSynthesis = synthesis;
+			globalThis.SpeechSynthesisUtterance = utterance;
+		}
 	});
 });
 

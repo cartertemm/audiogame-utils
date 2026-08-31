@@ -46,7 +46,7 @@ export function createSpeech({ storage, defaultMode = null, idPrefix = 'speech' 
 
 	let politeRegion = null;
 	let assertiveRegion = null;
-	const clearTimers = new Set();
+	const clearTimers = new Map();
 
 	function fallbackMode() {
 		return defaultMode ?? (isIOS() ? MODE_TTS : MODE_ARIA);
@@ -116,15 +116,15 @@ export function createSpeech({ storage, defaultMode = null, idPrefix = 'speech' 
 			if (useAria) {
 				init();
 				const region = interrupt ? assertiveRegion : politeRegion;
+				clearTimeout(clearTimers.get(region));
 				region.textContent = text;
-				const timer = setTimeout(() => {
+				clearTimers.set(region, setTimeout(() => {
 					region.textContent = '';
-					clearTimers.delete(timer);
-				}, CLEAR_DELAY_MS);
-				clearTimers.add(timer);
+					clearTimers.delete(region);
+				}, CLEAR_DELAY_MS));
 			}
 
-			if (useTTS) {
+			if (useTTS && typeof speechSynthesis !== 'undefined') {
 				if (interrupt) speechSynthesis.cancel();
 				const utterance = new SpeechSynthesisUtterance(text);
 				const voice = getVoice();
@@ -174,7 +174,7 @@ export function createSpeech({ storage, defaultMode = null, idPrefix = 'speech' 
 		},
 
 		dispose() {
-			for (const timer of clearTimers) clearTimeout(timer);
+			for (const timer of clearTimers.values()) clearTimeout(timer);
 			clearTimers.clear();
 			politeRegion?.remove();
 			assertiveRegion?.remove();
