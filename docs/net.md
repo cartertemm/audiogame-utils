@@ -221,11 +221,13 @@ const client = createReconnectingClient({
 
 After the handshake, the server gives the client a `clientId` and `sessionToken`. The identity stores them. If the connection returns before the server ends the session, the token reconnects the browser to the same player object.
 
-`onWelcome({ clientId, resumed })` runs when those values arrive. It runs again after each reconnect. `resumed` is `true` when the server kept the previous session. Read `client.clientId` for the same ID at any time. Use the ID to find your own player in a packet that describes several players.
+`onWelcome({ clientId, resumed })` runs when the `clientId` and `sessionToken` values arrive internally. It runs again after each reconnect. `resumed` is `true` when the server kept the previous session.
 
-The `name` field belongs to your game. The networking protocol does not send it automatically, which is why the example includes it in the `hello` packet.
+Most of the time a client doesn't need to worry about it's own internal id, but it can be useful if a packet is received that describes several players. Call `client.clientId` to retrieve it.
 
 Use `identity.clear()` when the player signs out. Never display or log a `sessionToken`. Anyone who has a valid token may be able to resume that session.
+
+Finally, the `name` field belongs entirely to your game. The networking protocol does not send it automatically because many games don't want or need it. The example includes it in the `hello` packet merely to demonstrate how easy it is to attach data to a player.
 
 ## Step 8: Store player state on the server
 
