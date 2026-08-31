@@ -332,7 +332,7 @@ export class sound_pool {
 	clean_unused(): void;
 	/** Returns whether a value identifies an existing active slot. */
 	verify_slot(slot: SoundPoolSlot): boolean;
-	/** Returns an available slot, growing the pool when needed. */
+	/** Returns an available slot without growing the pool, or `-1` when none is available. */
 	reserve_slot(): SoundPoolSlot;
 }
 

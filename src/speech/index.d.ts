@@ -53,7 +53,7 @@ export interface SpeechInstance {
 	getRate(): number;
 	/** Sets and persists synthesis rate. */
 	setRate(value: number): void;
-	/** Cancels synthesis and removes nodes and listeners created by the instance. */
+	/** Cancels pending live region timers and removes nodes created by the instance. */
 	dispose(): void;
 }
 

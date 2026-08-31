@@ -49,15 +49,15 @@ export function move(x: number, y: number, z: number, deg: number, zdeg: number,
 
 /** Converts degrees to radians using the module's NVGT compatible pi constant. */
 export function calculate_theta(deg: number): number;
-/** Returns the nearest eight way direction index for a facing angle. */
+/** Returns an eight way direction degree constant for a facing angle. */
 export function getdir(facing: number): number;
 /** Moves a direction left by an increment and wraps once around zero. */
 export function snapleft(deg: number, direction: number, inc?: number): number;
 /** Moves a direction right by an increment and wraps once around 360. */
 export function snapright(deg: number, direction: number, inc?: number): number;
-/** Subtracts an increment from an angle without wrapping. */
+/** Subtracts an increment and wraps the angle from zero inclusive to 360 exclusive. */
 export function turnleft(deg: number, inc: number): number;
-/** Adds an increment to an angle without wrapping. */
+/** Adds an increment and wraps the angle from zero inclusive to 360 exclusive. */
 export function turnright(deg: number, inc: number): number;
 /** Wraps an integer angle into the inclusive range from `0` through `359`. */
 export function degree_limit(deg: number): number;

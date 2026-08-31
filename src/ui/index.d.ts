@@ -162,9 +162,9 @@ export interface MenuOptions {
 	audio?: AudioInstance | null;
 	/** Text announced when the menu starts. */
 	introText?: string;
-	/** Source for item activation audio. */
-	clickSound?: string;
 	/** Source for focus movement audio. */
+	clickSound?: string;
+	/** Source for item activation audio. */
 	selectSound?: string;
 	/** Source played when navigation reaches an edge. */
 	edgeSound?: string;

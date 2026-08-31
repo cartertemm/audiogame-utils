@@ -83,9 +83,12 @@ See [examples/](examples/) for more of what you can do.
 | [Maps](docs/map.md) | `audiogame-utils/map` | Representation of spatial data, map loading, queries, and serialization. Able to load maps with hundreds of thousands of objects in less than a second. |
 | [Math](docs/math.md) | `audiogame-utils/math` | Range, angle, interpolation, and randomization helpers. |
 | [Networking](docs/net.md) | `audiogame-utils/net` | WebSocket messaging, reconnection, and player identity. |
+| [Networking server](docs/net.md) | `audiogame-utils/net/server` | Authoritative WebSocket server sessions, rooms, and messaging. |
+| [Networking testing](docs/net.md) | `audiogame-utils/net/testing` | In memory socket pairs for networking tests. |
 | [Physics](docs/physics.md) | `audiogame-utils/physics` | Three dimensional coordinate vectors and static R tree spatial indexing. |
 | [Platform detection](docs/platform.md) | `audiogame-utils/platform` | Runtime, operating system, and installed web app detection. |
 | [Runtime](docs/tauri.md) | `audiogame-utils/runtime` | Loads native adapters when the game runs under Tauri. |
+| [Tauri adapters](docs/tauri.md) | `audiogame-utils/tauri` | Direct setup and construction of native Tauri adapters. |
 | [Window](docs/tauri.md) | `audiogame-utils/window` | Title, fullscreen, quit, close guard, keep awake, and external links. |
 | [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and relative position helpers. |
 | [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |

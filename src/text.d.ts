@@ -21,7 +21,7 @@ export function pluralize(count: number | bigint, singular: string, plural?: str
 export function formatTime(ms: number, pretty?: boolean): string;
 /** Formats a number with grouping and optional decimal precision. */
 export function prettyNumber(number: number | bigint, decimals?: number): string;
-/** Returns the case insensitive Levenshtein distance between two strings. */
+/** Returns the case sensitive Levenshtein distance between two strings. */
 export function stringDistance(a: string, b: string): number;
 /** Returns the nearest stringified candidate within `maxDistance`, or `null`. */
 export function closestMatch<T = string>(input: unknown, candidates: Iterable<T>, maxDistance?: number): ClosestMatch<T> | null;

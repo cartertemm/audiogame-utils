@@ -97,7 +97,24 @@ wrap(-10, 0, 360) // 350
 
 ## Randomness
 
-Use these helpers for gameplay choices such as dice rolls, loot selection, or shuffling a deck. They use JavaScript's `Math.random()` and are intended for gameplay variety. They are not suitable for security sensitive randomness, however. cryptographically secure pseudo-random number generators fall out of the scope of this library.
+Use these helpers for gameplay choices such as dice rolls, loot selection, or shuffling a deck. The standalone helpers use JavaScript's `Math.random()` and are intended for gameplay variety. Use `random_generator` when a sequence needs to be reproducible. None of these APIs are suitable for security sensitive randomness. Cryptographically secure pseudo random number generators fall outside the scope of this library.
+
+### `random_generator(seed)`
+
+Creates an independent seeded random number generator. The same number or string seed produces the same sequence, which is useful for repeatable levels, simulations, and tests. When `seed` is omitted, `Math.random()` chooses one. The generator reports that value through its `seed` property so the sequence can be recreated later.
+
+```js
+const random = random_generator('forest-level-3')
+
+random.next()                // Raw value from 0 inclusive to 1 exclusive
+random.int(1, 6)             // Integer from 1 through 6
+random.float(5, 10)          // Float from 5 inclusive to 10 exclusive
+random.choice(['bow', 'axe'])
+random.weighted_choice(['common', 'rare'], [9, 1])
+random.shuffle(['north', 'east', 'south', 'west'])
+```
+
+Each generator maintains its own sequence. Supplying a seed does not call `Math.random()`.
 
 ### `random_int(min, max)`
 

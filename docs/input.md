@@ -1,6 +1,6 @@
 # Input
 
-The `audiogame-utils/input` module provides keyboard, mouse, touch gesture, and named action input. It exports `createKeyboard`, `createMouse`, `createTouch`, `createInputHandler`, and `formatBinding`.
+The `audiogame-utils/input` module provides keyboard, mouse, touch gesture, gamepad, and named action input. It exports `createKeyboard`, `createMouse`, `createTouch`, `createGamepad`, `createInputHandler`, and `formatBinding`.
 
 ## Keyboard
 
@@ -81,6 +81,7 @@ The instance provides `fingerCount()`, `getFinger(index)`, and `getAllFingers()`
 ```js
 import {
 	createInputHandler,
+	createGamepad,
 	createKeyboard,
 	createTouch,
 	formatBinding,
@@ -88,11 +89,13 @@ import {
 
 const keyboard = createKeyboard()
 const touch = createTouch()
-const input = createInputHandler({ keyboard, touch })
+const gamepad = createGamepad()
+const input = createInputHandler({ keyboard, touch, gamepad })
 
 input.bind('moveLeft', { hold: ['arrowleft', 'a'] })
 input.bind('pause', {
 	press: ['p'],
+	gamepad: ['start'],
 	tap: [{ fingerCount: 2, tapCount: 1 }],
 })
 input.bind('menu', {
@@ -100,7 +103,7 @@ input.bind('menu', {
 })
 ```
 
-`createInputHandler({ keyboard, touch, attach })` accepts keyboard and touch instances. It attaches to them by default. Pass `attach: false` to delay attachment.
+`createInputHandler({ keyboard, touch, gamepad, attach })` accepts keyboard, touch, and gamepad instances. It attaches to them by default. Pass `attach: false` to delay attachment.
 
 A binding can contain these arrays:
 
@@ -108,6 +111,7 @@ A binding can contain these arrays:
 | --- | --- |
 | `hold` | Keys that remain active while pressed. |
 | `press` | Keys that trigger once per physical press. |
+| `gamepad` | Gamepad buttons that trigger once per press and remain active while held. |
 | `tap` | Property sets matched against tap events. |
 | `swipe` | Property sets matched against swipe events. |
 

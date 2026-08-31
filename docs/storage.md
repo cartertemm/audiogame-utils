@@ -18,7 +18,7 @@ The optional `backend` property can provide an object with the same `getItem`, `
 const storage = createStorage('mygame', { backend: sessionStorage })
 ```
 
-If no backend is provided, the module resolves `localStorage` when each operation runs.
+If no backend is provided, the module resolves a registered native storage capability when available and uses `localStorage` otherwise. It resolves the backend when each operation runs.
 
 ## Methods
 
@@ -34,8 +34,13 @@ Serializes `value` as JSON and stores it under the namespaced key.
 
 Removes the namespaced key.
 
+### `flush()`
+
+Writes pending backend changes immediately and returns a promise. It resolves immediately for `localStorage` and other synchronous backends. Under Tauri, it cancels the scheduled write and saves pending changes now. If that write fails, the promise rejects and the pending changes remain available for another attempt.
+
 ```js
 storage.set('difficulty', 'hard')
 storage.get('difficulty', 'normal')
 storage.remove('difficulty')
+await storage.flush()
 ```
