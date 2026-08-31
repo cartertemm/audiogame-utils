@@ -37,6 +37,14 @@ export interface WrappedSocket<T = any> {
 	readonly readyState: number;
 }
 
+/** Session details from the server's handshake reply. */
+export interface Welcome {
+	/** Server assigned client identifier. */
+	clientId: string;
+	/** True when the server resumed the previous session. */
+	resumed: boolean;
+}
+
 /** Configuration for {@link createReconnectingClient}. */
 export interface ReconnectingClientOptions<T = any> {
 	/** WebSocket URL opened by each connection attempt. */
@@ -51,6 +59,8 @@ export interface ReconnectingClientOptions<T = any> {
 	identity?: Identity | null;
 	/** Called after a connection opens. */
 	onOpen?: (socket: WrappedSocket<T>) => void;
+	/** Called after the server answers the handshake. Only used when `protocol` is true. */
+	onWelcome?: (welcome: Welcome) => void;
 	/** Receives decoded messages. */
 	onMessage?: (msg: T) => void;
 	/** Receives close events before a possible reconnect. */
@@ -63,6 +73,8 @@ export interface ReconnectingClientOptions<T = any> {
 export interface ReconnectingClient<T = any> {
 	/** Sends a typed message through the active socket. */
 	send(msg: T): void;
+	/** Server assigned client identifier, or null before the first handshake. */
+	readonly clientId: string | null;
 	/** Permanently closes the client and cancels reconnection. */
 	close(): void;
 	/** Active socket ready state, or `WebSocket.CLOSED` while disconnected. */

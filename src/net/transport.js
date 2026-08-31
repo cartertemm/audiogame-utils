@@ -51,7 +51,8 @@ export function wrapSocket(socket, { codec = JSON_CODEC, onMessage, onClose, onE
 // successful connection.
 //
 // `onOpen` receives the wrapped socket for the initial connection and every
-// reconnection.
+// reconnection. With `protocol: true`, `onWelcome` runs after the server
+// answers the handshake and gives the client its ID.
 //
 // With `protocol: true` the client speaks the framing and the handshake that
 // `createServer` expects: it sends `hello` on every connection, answers the
@@ -66,6 +67,7 @@ export function createReconnectingClient({
 	protocol = false,
 	identity = null,
 	onOpen,
+	onWelcome,
 	onMessage,
 	onClose,
 	onError,
@@ -97,8 +99,11 @@ export function createReconnectingClient({
 			return;
 		}
 		if (payload?.type === WELCOME) {
+			const previous = identity ? identity.get() : session;
+			const resumed = previous?.clientId != null && previous.clientId === payload.clientId;
 			session = { clientId: payload.clientId, sessionToken: payload.sessionToken };
 			identity?.set(session);
+			onWelcome?.({ clientId: session.clientId, resumed });
 		}
 	}
 
@@ -159,6 +164,11 @@ export function createReconnectingClient({
 
 	return {
 		send: sendGame,
+
+		// Null until the server answers the first handshake.
+		get clientId() {
+			return session.clientId;
+		},
 
 		// Cancel the pending reconnection before closing the active socket so
 		// `close()` keeps the client closed during a reconnect delay.

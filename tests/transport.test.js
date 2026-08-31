@@ -273,6 +273,75 @@ describe('createReconnectingClient with protocol', () => {
 		expect(readFrames(sockets[0])[1]).toEqual([0, { type: 'pong', t: 4242 }]);
 	});
 
+	test('exposes the client id after the welcome', () => {
+		const client = createReconnectingClient({ url: 'ws://x', protocol: true });
+		sockets[0].emit('open', {});
+		expect(client.clientId).toBe(null);
+		sockets[0].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-1', sessionToken: 't-1' }]),
+		});
+		expect(client.clientId).toBe('c-1');
+	});
+
+	test('onWelcome runs with the client id and resumed false on a first connection', () => {
+		const seen = [];
+		createReconnectingClient({ url: 'ws://x', protocol: true, onWelcome: w => seen.push(w) });
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-1', sessionToken: 't-1' }]),
+		});
+		expect(seen).toEqual([{ clientId: 'c-1', resumed: false }]);
+	});
+
+	test('onWelcome reports resumed when the server keeps the same client id', () => {
+		vi.useFakeTimers();
+		const seen = [];
+		createReconnectingClient({
+			url: 'ws://x',
+			protocol: true,
+			backoffs: [10],
+			onWelcome: w => seen.push(w),
+		});
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-1', sessionToken: 't-1' }]),
+		});
+		sockets[0].close();
+		vi.advanceTimersByTime(10);
+		sockets[1].emit('open', {});
+		sockets[1].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-1', sessionToken: 't-1' }]),
+		});
+		expect(seen).toEqual([
+			{ clientId: 'c-1', resumed: false },
+			{ clientId: 'c-1', resumed: true },
+		]);
+		vi.useRealTimers();
+	});
+
+	test('onWelcome reports a new session when the server issues a different client id', () => {
+		vi.useFakeTimers();
+		const seen = [];
+		createReconnectingClient({
+			url: 'ws://x',
+			protocol: true,
+			backoffs: [10],
+			onWelcome: w => seen.push(w),
+		});
+		sockets[0].emit('open', {});
+		sockets[0].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-1', sessionToken: 't-1' }]),
+		});
+		sockets[0].close();
+		vi.advanceTimersByTime(10);
+		sockets[1].emit('open', {});
+		sockets[1].emit('message', {
+			data: JSON.stringify([0, { type: 'welcome', clientId: 'c-2', sessionToken: 't-2' }]),
+		});
+		expect(seen[1]).toEqual({ clientId: 'c-2', resumed: false });
+		vi.useRealTimers();
+	});
+
 	test('stores the welcome ids in the identity', () => {
 		const stored = {};
 		const identity = {

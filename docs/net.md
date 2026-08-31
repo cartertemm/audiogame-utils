@@ -221,6 +221,8 @@ const client = createReconnectingClient({
 
 After the handshake, the server gives the client a `clientId` and `sessionToken`. The identity stores them. If the connection returns before the server ends the session, the token reconnects the browser to the same player object.
 
+`onWelcome({ clientId, resumed })` runs when those values arrive. It runs again after each reconnect. `resumed` is `true` when the server kept the previous session. Read `client.clientId` for the same ID at any time. Use the ID to find your own player in a packet that describes several players.
+
 The `name` field belongs to your game. The networking protocol does not send it automatically, which is why the example includes it in the `hello` packet.
 
 Use `identity.clear()` when the player signs out. Never display or log a `sessionToken`. Anyone who has a valid token may be able to resume that session.
@@ -377,6 +379,7 @@ Creates a browser WebSocket immediately. It reconnects after unexpected closures
 | `protocol` | `false` | Enables the audiogame utils handshake, heartbeat, and session resume protocol. |
 | `identity` | `null` | Identity used to persist a session. Only used when `protocol` is `true`. |
 | `onOpen(socket)` | None | Runs after each connection opens. |
+| `onWelcome(welcome)` | None | Runs after the server answers the handshake. Only used when `protocol` is `true`. |
 | `onMessage(packet)` | None | Receives decoded game packets. |
 | `onClose(event)` | None | Receives the close event before a possible reconnect. |
 | `onError(error)` | None | Receives socket and decoding errors. |
@@ -388,10 +391,13 @@ The returned client has these members:
 | Member | Description |
 | --- | --- |
 | `send(packet)` | Sends through the current socket. It does not queue packets while disconnected. |
+| `clientId` | ID the server assigned to this client. It is `null` before the first handshake. |
 | `close()` | Permanently closes the client and cancels a scheduled reconnect. |
 | `readyState` | Current WebSocket ready state. It reports `WebSocket.CLOSED` while disconnected. |
 
 The socket passed to `onOpen` has `send(packet)`, `close(code, reason)`, and `readyState`.
+
+The object passed to `onWelcome` has `clientId` and `resumed`.
 
 #### `createIdentity(storage, options)`
 
