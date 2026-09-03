@@ -99,7 +99,7 @@ export class sound_pool_item {
 	persistent: boolean;
 	/** Panning algorithm fixed for this item. */
 	pan_type: 'stereo' | 'HRTF';
-	/** Custom audio graph destination. */
+	/** Custom audio graph destination, either a node or a mixer channel name. */
 	destination: any;
 	/** Application supplied string data. */
 	extra_data: string;
@@ -150,7 +150,7 @@ export class sound_pool {
 	hrtf: boolean;
 	/** Whether new sounds request occlusion when supported. */
 	occlude: boolean;
-	/** Default custom audio graph destination. */
+	/** Default audio graph destination, either a node or a mixer channel name. */
 	mixer: any;
 	/** Latest listener X coordinate. */
 	last_listener_x: number;

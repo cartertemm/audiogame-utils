@@ -52,6 +52,7 @@ function makeFakeEngine() {
 		spawn(handle, options = {}) {
 			const inst = makeFakePlayback(handle.panType);
 			inst.url = handle.url;
+			inst.destination = options.destination ?? null;
 			if (options.loop) inst.sourceLoop = true;
 			this.playbacks.push(inst);
 			return inst;
@@ -412,5 +413,21 @@ describe('sound_pool: transport', () => {
 		expect(pool.highest_slot).toBe(0);
 		expect(pool.verify_slot(0)).toBe(false);
 		expect(pool.verify_slot(1)).toBe(false);
+	});
+});
+
+describe('sound_pool: mixer channels', () => {
+	test('passes the pool mixer to every spawned sound', async () => {
+		const { pool, engine } = makePool(4, { mixer: 'sounds' });
+		pool.play_stationary('step.ogg', false);
+		await flush();
+		expect(engine.playbacks[0].destination).toBe('sounds');
+	});
+
+	test('lets one call override the pool mixer', async () => {
+		const { pool, engine } = makePool(4, { mixer: 'sounds' });
+		pool.play_stationary_extended('theme.ogg', true, 0, 0, 0, 100, false, 'music');
+		await flush();
+		expect(engine.playbacks[0].destination).toBe('music');
 	});
 });

@@ -4,6 +4,8 @@
 // default cache throws `caches is not defined` before a single sound decodes.
 // This stands in for it: same two methods, memory only, so the sounds reload on
 // the next visit instead of failing on this one.
+import { get_shared_mixer } from './mixer.js';
+
 function createMemoryCache() {
 	const buffers = new Map();
 	return {
@@ -28,7 +30,7 @@ function createMemoryCache() {
 	};
 }
 
-export function createCacophonyEngine() {
+export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 	let cacophony = null;
 	let initPromise = null;
 	const sounds = new Map();
@@ -40,10 +42,19 @@ export function createCacophonyEngine() {
 				cacophony = typeof caches === 'undefined'
 					? new Cacophony(undefined, createMemoryCache())
 					: new Cacophony();
+				// The audio context does not exist before now, so this is the first
+				// moment the mixer can turn its stored volumes into real nodes.
+				mixer.attach(cacophony.context, cacophony.globalGainNode);
 				return cacophony;
 			})();
 		}
 		return initPromise;
+	}
+
+	// A destination is either a node the caller built or the name of a mixer
+	// channel, resolved here because the context only exists after init.
+	function resolveDestination(destination) {
+		return typeof destination === 'string' ? mixer.node(destination) : destination;
 	}
 
 	// `position` and `threeDOptions` only exist on HRTF playbacks, `stereoPan`
@@ -57,9 +68,10 @@ export function createCacophonyEngine() {
 		}
 		if (inst.panType !== 'HRTF' && typeof options.pan === 'number') inst.stereoPan = options.pan;
 		if (options.offset > 0) inst.seek?.(options.offset);
-		if (options.destination && typeof inst.connect === 'function') {
+		const destination = resolveDestination(options.destination);
+		if (destination && typeof inst.connect === 'function') {
 			inst.disconnect();
-			inst.connect(options.destination);
+			inst.connect(destination);
 		}
 		return inst;
 	}
@@ -100,6 +112,7 @@ export function createCacophonyEngine() {
 	}
 
 	return {
+		mixer,
 		load,
 		spawn,
 		start,

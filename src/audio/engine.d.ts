@@ -1,3 +1,5 @@
+import type { Mixer } from './mixer.js';
+
 /** Playback properties accepted by an audio engine. */
 export interface SfxOptions {
 	/** Linear playback volume. */
@@ -12,7 +14,7 @@ export interface SfxOptions {
 	loop?: boolean;
 	/** Stereo or spatial panning algorithm. */
 	panType?: 'stereo' | 'HRTF';
-	/** Custom audio graph destination. */
+	/** Custom audio graph destination, either a node or a mixer channel name. */
 	destination?: any;
 	/** Web Audio source position. */
 	position?: [number, number, number];
@@ -62,6 +64,8 @@ export interface ListenerOptions {
 
 /** Audio engine contract used by higher level package helpers. */
 export interface CacophonyEngine {
+	/** Named volume channels this engine routes to. */
+	readonly mixer?: Mixer;
 	/** Loads and decodes an audio asset. */
 	load(url: string, options?: EngineLoadOptions): Promise<any>;
 	/** Allocates a playback voice without starting it. */

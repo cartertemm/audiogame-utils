@@ -1,6 +1,7 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAudio } from '../src/audio/index.js';
 import { createCacophonyEngine } from '../src/audio/cacophony.js';
+import { createMixer, get_shared_mixer } from '../src/audio/mixer.js';
 
 // Records what the engine passes to `new Cacophony()` so the fallback cache is
 // visible to the tests. The real library needs an audio context to construct.
@@ -9,9 +10,21 @@ vi.mock('cacophony', () => ({
 	Cacophony: class {
 		constructor(...args) {
 			constructorArgs.push(args);
+			this.context = {
+				createGain: () => ({ gain: { value: 1 }, connect() {}, disconnect() {} }),
+			};
+			this.globalGainNode = { connect() {}, disconnect() {} };
 		}
 	},
 }));
+
+function makeConnectablePlayback() {
+	const playback = makeFakePlayback();
+	playback.connectedTo = [];
+	playback.connect = function (target) { this.connectedTo.push(target); };
+	playback.disconnect = function () { this.connectedTo.length = 0; };
+	return playback;
+}
 
 function makeFakePlayback() {
 	return {
@@ -374,5 +387,51 @@ describe('createAudio: dispose', () => {
 		await a.play({ loop: true });
 		await audio.dispose();
 		expect(a.isLooping()).toBe(false);
+	});
+});
+
+describe('cacophony engine: mixer routing', () => {
+	test('routes a playback to a named channel', async () => {
+		const mixer = createMixer();
+		const engine = createCacophonyEngine({ mixer });
+		await engine.ready();
+		const playback = makeConnectablePlayback();
+		engine.play(makeFakeHandle(playback), { destination: 'music' });
+		expect(mixer.node('music')).not.toBe(null);
+		expect(playback.connectedTo).toEqual([mixer.node('music')]);
+	});
+
+	test('creates an unnamed channel at full volume rather than throwing', async () => {
+		const mixer = createMixer();
+		const engine = createCacophonyEngine({ mixer });
+		await engine.ready();
+		const playback = makeConnectablePlayback();
+		engine.play(makeFakeHandle(playback), { destination: 'msuic' });
+		expect(mixer.names()).toContain('msuic');
+		expect(mixer.channel('msuic').db).toBe(0);
+		expect(playback.connectedTo).toEqual([mixer.node('msuic')]);
+	});
+
+	test('still connects a raw node destination', () => {
+		const playback = makeConnectablePlayback();
+		const node = { id: 'raw' };
+		createCacophonyEngine().play(makeFakeHandle(playback), { destination: node });
+		expect(playback.connectedTo).toEqual([node]);
+	});
+
+	test('exposes the mixer it was given', () => {
+		const mixer = createMixer();
+		expect(createCacophonyEngine({ mixer }).mixer).toBe(mixer);
+	});
+});
+
+describe('createAudio: mixer', () => {
+	test('exposes the shared mixer', () => {
+		expect(createAudio().mixer).toBe(get_shared_mixer());
+	});
+
+	test('prefers the mixer of an injected engine', () => {
+		const mixer = createMixer();
+		expect(createAudio({ engine: { mixer } }).mixer).toBe(mixer);
 	});
 });

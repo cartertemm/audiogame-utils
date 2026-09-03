@@ -1,6 +1,7 @@
 // @ts-self-types="./index.d.ts"
 import { createSfx } from './sfx.js';
 import { get_shared_engine } from './engine.js';
+import { get_shared_mixer } from './mixer.js';
 
 // Creates audio handles that share one audio engine.
 //
@@ -22,6 +23,8 @@ export function createAudio({ engine = null } = {}) {
 	}
 
 	return {
+		mixer: engine?.mixer ?? get_shared_mixer(),
+
 		sfx(source, options) {
 			const handle = createSfx(getEngine, source, options);
 			handles.add(handle);
@@ -45,6 +48,7 @@ export function createAudio({ engine = null } = {}) {
 export { createSfx } from './sfx.js';
 export { createCacophonyEngine } from './cacophony.js';
 export { get_shared_engine, audio_available } from './engine.js';
+export { createMixer, get_shared_mixer, MASTER_CHANNEL } from './mixer.js';
 export { sound_pool, sound_pool_item, create_sound_pool, sound_pool_default_y_elevation, set_sound_pool_default_y_elevation } from './pool.js';
 export { createSurfaceManager } from './surface.js';
 export * from './coords.js';
