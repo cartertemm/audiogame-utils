@@ -244,12 +244,10 @@ export interface RenderInstallPwaIosOptions {
 /** Renders iOS installation instructions into a root element. */
 export function renderInstallPwaIos(root: HTMLElement, options?: RenderInstallPwaIosOptions): void;
 
-/** Labels, supported modes, and lifecycle hooks for speech settings. */
-export interface RenderSpeechSettingsOptions {
+/** Labels and supported modes for the speech controls. */
+export interface SpeechSettingsFieldsOptions {
 	/** Speech instance read and updated by the controls. */
 	speech: SpeechInstance;
-	/** Screen heading. */
-	title?: string;
 	/** Legend for output mode choices. */
 	modeLegend?: string;
 	/** Voice select label. */
@@ -264,12 +262,31 @@ export interface RenderSpeechSettingsOptions {
 	testLabel?: string;
 	/** Text spoken by the test button. */
 	testMessage?: string;
-	/** Back button label. */
-	backLabel?: string;
 	/** Display label overrides for speech modes. */
 	modeLabels?: Partial<Record<SpeechMode, string>>;
 	/** Modes shown in the settings form. */
 	modes?: SpeechMode[];
+	/** Focuses the first control once the section is mounted. Defaults to false. */
+	autoFocus?: boolean;
+}
+
+/** Lifecycle handle returned by {@link speechSettingsFields}. */
+export interface SpeechSettingsFieldsHandle {
+	/** Section element holding the speech controls. Mount it wherever you want. */
+	node: HTMLElement;
+	/** Stops listening for voice list changes. */
+	dispose(): void;
+}
+
+/** Builds the speech controls as one section for a larger settings page. */
+export function speechSettingsFields(options: SpeechSettingsFieldsOptions): SpeechSettingsFieldsHandle;
+
+/** Options for the whole screen form of the speech controls. */
+export interface RenderSpeechSettingsOptions extends Omit<SpeechSettingsFieldsOptions, 'autoFocus'> {
+	/** Screen heading. */
+	title?: string;
+	/** Back button label. */
+	backLabel?: string;
 	/** Called when the back button is activated. */
 	onBack?: () => void;
 }

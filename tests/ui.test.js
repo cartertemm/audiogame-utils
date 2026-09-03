@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings } from '../src/ui/index.js';
+import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields } from '../src/ui/index.js';
 import { MODE_ARIA, MODE_TTS, MODE_BOTH } from '../src/speech/index.js';
 
 function root() {
@@ -225,5 +225,54 @@ describe('ui: renderSpeechSettings', () => {
 		rendered.dispose();
 		speechSynthesis.dispatchEvent(new Event('voiceschanged'));
 		expect(node.innerHTML).toBe('');
+	});
+});
+
+describe('ui: speechSettingsFields', () => {
+	test('requires a speech instance', () => {
+		expect(() => speechSettingsFields({})).toThrow(/speech/);
+	});
+
+	test('leaves focus alone when autoFocus is not set', () => {
+		const node = root();
+		const fields = speechSettingsFields({ speech: fakeSpeech() });
+		const name = el('input', { id: 'player-name', type: 'text', autoFocus: true });
+		mount(node, [name, fields.node]);
+		expect(document.activeElement).toBe(name);
+	});
+
+	test('focuses its first control when autoFocus is set', () => {
+		const node = root();
+		const fields = speechSettingsFields({ speech: fakeSpeech(), autoFocus: true });
+		mount(node, [fields.node]);
+		expect(document.activeElement.id).toBe('speech-mode-aria');
+	});
+
+	test('redraws only its own section on a mode change', () => {
+		const node = root();
+		const speech = fakeSpeech({ mode: MODE_ARIA });
+		const fields = speechSettingsFields({ speech });
+		const after = el('p', { id: 'after', text: 'still here' });
+		mount(node, [fields.node, after]);
+		expect(node.querySelector('#speech-voice')).toBe(null);
+
+		const tts = node.querySelector('#speech-mode-tts');
+		tts.checked = true;
+		tts.dispatchEvent(new Event('change'));
+		expect(node.querySelector('#speech-voice')).not.toBe(null);
+		expect(node.querySelector('#after')).toBe(after);
+		expect(document.activeElement.id).toBe('speech-mode-tts');
+	});
+
+	test('stops listening for voice changes after dispose', () => {
+		const voices = [{ voiceURI: 'uri-a', name: 'Alex' }];
+		const fields = speechSettingsFields({ speech: fakeSpeech({ voices }) });
+		mount(root(), [fields.node]);
+		expect(fields.node.querySelectorAll('#speech-voice option').length).toBe(2);
+
+		voices.push({ voiceURI: 'uri-c', name: 'Cara' });
+		fields.dispose();
+		speechSynthesis.dispatchEvent(new Event('voiceschanged'));
+		expect(fields.node.querySelectorAll('#speech-voice option').length).toBe(2);
 	});
 });

@@ -4,6 +4,7 @@
 import { isIOS } from '../platform.js';
 import { MODE_ARIA, MODE_TTS, MODE_BOTH } from '../speech/index.js';
 import { el, mount } from './dom.js';
+import { radioGroup, selectField, rangeField } from './fields.js';
 
 export * from './dom.js';
 export * from './fields.js';
@@ -55,36 +56,51 @@ function usesTts(mode) {
 	return mode === MODE_TTS || mode === MODE_BOTH;
 }
 
-// Creates voice, rate, pitch controls, and an output mode setting.
+// Builds the speech controls as one section you can drop into a larger settings page.
 // Reads and writes through the instance, so the settings persist in whatever storage it was given, no callbacks needed.
 // The mode picker is hidden on iOS by default, because VoiceOver typically has to be off during interactive gameplay and text to speech is the only output left.
 // Pass `modes` to override, and an empty array to hide the picker anywhere.
-// Returns a cleanup function, so pass it to renderScreen and call dispose.
-export function renderSpeechSettings(root, options = {}) {
+// Returns the section element and a dispose function. Call dispose when the page goes away.
+export function speechSettingsFields(options = {}) {
 	const speech = options.speech;
-	if (!speech) throw new Error('renderSpeechSettings requires a speech instance');
+	if (!speech) throw new Error('speechSettingsFields requires a speech instance');
 	const text = { ...SPEECH_SETTINGS_TEXT, ...options };
 	const modeLabels = { ...MODE_LABELS, ...options.modeLabels };
 	const modes = options.modes ?? (isIOS() ? [] : [MODE_ARIA, MODE_TTS]);
-	let focusId = null;
+	const node = el('div', { class: 'speech-settings' });
+	// selectField reads this array again on every change, so the voice list is
+	// rewritten in place rather than replaced.
+	const voiceChoices = [];
 	let voiceSelect = null;
+	let focusId = null;
+	let initialFocus = options.autoFocus === true;
 
-	function populateVoices() {
-		const current = speech.getVoice()?.voiceURI ?? null;
+	function currentVoice() {
+		return speech.getVoice()?.voiceURI ?? '';
+	}
+
+	function refreshVoiceChoices() {
+		voiceChoices.length = 0;
+		if (!currentVoice()) voiceChoices.push({ value: '', label: text.defaultVoiceLabel });
+		for (const voice of speech.getVoices()) voiceChoices.push({ value: voice.voiceURI, label: voice.name });
+	}
+
+	// Rebuilding the option elements keeps the select itself, so focus stays put.
+	function repopulateVoices() {
+		if (!voiceSelect) return;
+		refreshVoiceChoices();
+		const current = currentVoice();
 		voiceSelect.innerHTML = '';
-		if (!current) {
-			voiceSelect.appendChild(el('option', { value: '', text: text.defaultVoiceLabel, selected: 'selected' }));
-		}
-		for (const voice of speech.getVoices()) {
+		for (const choice of voiceChoices) {
 			voiceSelect.appendChild(el('option', {
-				value: voice.voiceURI,
-				text: voice.name,
-				selected: voice.voiceURI === current ? 'selected' : undefined,
+				value: choice.value,
+				text: choice.label,
+				selected: choice.value === current ? 'selected' : undefined,
 			}));
 		}
 	}
 
-	// The mode picker changes which controls are visible, so we need to redraw the screen.
+	// The mode picker changes which controls are visible, so we need to redraw the section.
 	function redraw(id) {
 		focusId = id;
 		render();
@@ -93,75 +109,71 @@ export function renderSpeechSettings(root, options = {}) {
 	function render() {
 		const mode = speech.getMode();
 		const showVoice = usesTts(mode);
-		const ids = [
-			...modes.map(m => `speech-mode-${m}`),
-			...(showVoice ? ['speech-voice', 'speech-rate', 'speech-pitch'] : []),
-			options.onBack ? 'speech-back' : null,
-		].filter(Boolean);
-		const focus = ids.includes(focusId) ? focusId : ids[0];
-		const auto = (id) => (id === focus ? true : undefined);
-		let modeBlock = null;
+		const nodes = [];
 		if (modes.length > 0) {
-			modeBlock = el('fieldset', {},
-				el('legend', { text: text.modeLegend }),
-				...modes.map(m => el('label', { for: `speech-mode-${m}` },
-					el('input', {
-						type: 'radio', name: 'speech-mode', value: m, id: `speech-mode-${m}`,
-						checked: mode === m ? 'checked' : undefined,
-						autoFocus: auto(`speech-mode-${m}`),
-						onChange: (event) => {
-							if (!event.target.checked) return;
-							speech.setMode(m);
-							redraw(`speech-mode-${m}`);
-						},
-					}),
-					` ${modeLabels[m] ?? m}`,
-				)),
-			);
+			nodes.push(radioGroup(text.modeLegend, {
+				id: 'speech-mode',
+				choices: modes.map(m => ({ value: m, label: modeLabels[m] ?? m })),
+				get: () => mode,
+				set: (value) => { speech.setMode(value); redraw(`speech-mode-${value}`); },
+			}));
 		}
-		let voiceBlock = null;
 		if (showVoice) {
-			voiceSelect = el('select', {
-				id: 'speech-voice',
-				autoFocus: auto('speech-voice'),
-				onChange: (event) => {
-					if (event.target.value) speech.setVoice(event.target.value);
-				},
-			});
-			populateVoices();
-			voiceBlock = el('div', {},
-				el('label', { for: 'speech-voice', text: text.voiceLabel }),
-				voiceSelect,
-				el('label', { for: 'speech-rate', text: text.rateLabel }),
-				slider('speech-rate', speech.getRate(), RATE, auto('speech-rate'), v => speech.setRate(v)),
-				el('label', { for: 'speech-pitch', text: text.pitchLabel }),
-				slider('speech-pitch', speech.getPitch(), PITCH, auto('speech-pitch'), v => speech.setPitch(v)),
+			refreshVoiceChoices();
+			nodes.push(
+				selectField(text.voiceLabel, {
+					id: 'speech-voice',
+					choices: voiceChoices,
+					get: currentVoice,
+					set: (value) => { if (value) speech.setVoice(value); },
+				}),
+				// No format, because a range input already announces its own value.
+				rangeField(text.rateLabel, { id: 'speech-rate', ...RATE, get: () => speech.getRate(), set: (value) => speech.setRate(value) }),
+				rangeField(text.pitchLabel, { id: 'speech-pitch', ...PITCH, get: () => speech.getPitch(), set: (value) => speech.setPitch(value) }),
 				el('button', { type: 'button', text: text.testLabel, onClick: () => speech.speak(text.testMessage, true) }),
 			);
 		}
-		mount(root, [
-			el('h1', { text: text.title }),
-			modeBlock,
-			voiceBlock,
-			options.onBack
-				? el('button', { type: 'button', id: 'speech-back', text: text.backLabel, autoFocus: auto('speech-back'), onClick: options.onBack })
-				: null,
-		]);
+		mount(node, nodes);
+		voiceSelect = showVoice ? node.querySelector('#speech-voice') : null;
+		const ids = [
+			...modes.map(m => `speech-mode-${m}`),
+			...(showVoice ? ['speech-voice', 'speech-rate', 'speech-pitch'] : []),
+		];
+		const wanted = ids.includes(focusId) ? focusId : (initialFocus ? ids[0] : null);
+		initialFocus = false;
+		const target = wanted ? node.querySelector(`#${wanted}`) : null;
+		if (!target) return;
+		// On the first render the section is still detached, so focus() does
+		// nothing and the marker is what the caller's mount acts on.
+		target.dataset.autofocus = 'true';
+		target.focus();
 	}
+
 	render();
 	// Voices load asynchronously in most browsers, and the list can change again later.
 	const synth = typeof speechSynthesis === 'undefined' ? null : speechSynthesis;
-	const onVoicesChanged = () => { if (voiceSelect) populateVoices(); };
+	const onVoicesChanged = () => repopulateVoices();
 	synth?.addEventListener('voiceschanged', onVoicesChanged);
-	return () => synth?.removeEventListener('voiceschanged', onVoicesChanged);
+	return {
+		node,
+		dispose: () => synth?.removeEventListener('voiceschanged', onVoicesChanged),
+	};
 }
 
-function slider(id, value, range, autoFocus, onCommit) {
-	return el('input', {
-		id, type: 'range',
-		min: range.min, max: range.max, step: range.step,
-		value: String(value),
-		autoFocus,
-		onChange: (event) => onCommit(parseFloat(event.target.value)),
-	});
+// Renders the speech controls as a whole screen, with a heading and an optional back button.
+// Use speechSettingsFields instead to put the same controls inside a bigger page.
+// Returns a cleanup function, so pass it to renderScreen and call dispose.
+export function renderSpeechSettings(root, options = {}) {
+	const text = { ...SPEECH_SETTINGS_TEXT, ...options };
+	const fields = speechSettingsFields({ ...options, autoFocus: true });
+	// Back is marked for focus too. mount takes the first marker in document
+	// order, so back only wins when the section has no controls of its own.
+	mount(root, [
+		el('h1', { text: text.title }),
+		fields.node,
+		options.onBack
+			? el('button', { type: 'button', id: 'speech-back', text: text.backLabel, autoFocus: true, onClick: options.onBack })
+			: null,
+	]);
+	return fields.dispose;
 }
