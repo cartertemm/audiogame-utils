@@ -1,9 +1,6 @@
 // @ts-self-types="./cacophony.d.ts"
-// Cacophony caches decoded audio in the Cache API, which only exists in a secure
-// context. A page served over plain http from a LAN address is not one, so the
-// default cache throws `caches is not defined` before a single sound decodes.
-// This stands in for it: same two methods, memory only, so the sounds reload on
-// the next visit instead of failing on this one.
+// Initializes the Cacophony engine and sets up the interfaces that we use.
+
 import { get_shared_mixer } from './mixer.js';
 
 function createMemoryCache() {
@@ -51,8 +48,7 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 		return initPromise;
 	}
 
-	// A channel name resolves here rather than at the call site, because the
-	// context only exists after init.
+	// A channel name must resolve here, because the context only exists after init.
 	function resolveDestination(destination) {
 		return typeof destination === 'string' ? mixer.node(destination) : destination;
 	}
