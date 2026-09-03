@@ -10,7 +10,9 @@ import {
 	createFields,
 	confirmButton,
 	renderInstallPwaIos,
+	speechSettingsFields,
 	renderSpeechSettings,
+	createRouter,
 } from 'audiogame-utils/ui'
 ```
 
@@ -289,6 +291,75 @@ function connectionStatus(root, props) {
 }
 ```
 
+## Routing screens
+
+`createRouter({ root, escape })` manages a stack of screen functions rendered
+into one root element. It uses `renderScreen()` for every transition, so leaving
+a screen runs that screen's cleanup function before the next one is rendered.
+
+```js
+const router = createRouter({ root: document.getElementById('app') })
+
+function mainMenu(root) {
+	mount(root, [
+		el('h1', { text: 'Main menu' }),
+		el('button', {
+			type: 'button',
+			text: 'Settings',
+			autoFocus: true,
+			onClick: () => router.go(settings),
+		}),
+	])
+}
+
+function settings(root) {
+	mount(root, [
+		el('h1', { text: 'Settings' }),
+		el('button', {
+			type: 'button',
+			text: 'Back',
+			autoFocus: true,
+			onClick: () => router.back(),
+		}),
+	])
+}
+
+router.go(mainMenu)
+```
+
+`go(screen, props, options)` saves the current focus, pushes the new screen,
+and renders it. `back()` removes the current screen and re-renders the previous
+one with its original props. It restores focus by element ID when possible, then
+by the element's position among the root's tabbable controls. It returns `true`
+when it navigates and `false` when the current screen is the root of the stack.
+
+`replace(screen, props, options)` replaces the current entry without increasing
+the stack depth. This is useful for transitions that should not become a Back
+destination, such as replacing a loading screen after a connection completes.
+
+Escape calls `back()` by default. It prevents the key's default behavior only
+when navigation succeeds. Set `escape: false` on the router to disable this
+everywhere, or pass `{ escape: false }` to `go()` or `replace()` for one screen.
+
+```js
+router.go(keyBindingScreen, {}, { escape: false })
+router.replace(gameLobby, { gameId })
+```
+
+The router exposes these properties and methods:
+
+| Member | Description |
+| --- | --- |
+| `depth` | Number of screens on the stack. |
+| `current` | Screen function on top of the stack, or `null` when empty. |
+| `go(screen, props, options)` | Pushes and renders a screen. `props` and `options` default to empty objects. |
+| `replace(screen, props, options)` | Replaces and renders the current screen. |
+| `back()` | Returns to the previous screen, restores focus, and reports whether it navigated. |
+| `dispose()` | Runs current screen cleanup, empties the root and stack, and removes Escape handling. |
+
+Call `dispose()` when the application no longer needs the router. A root element
+is required. Calling `createRouter()` without one throws an error.
+
 ## iOS installation prompt
 
 `renderInstallPwaIos(root, options)` renders instructions for adding the game to the iOS home screen, plus a button that lets the player continue without installing it.
@@ -319,7 +390,37 @@ The renderer binds no listeners outside `root` and returns no cleanup function. 
 
 ## Speech settings
 
-`renderSpeechSettings(root, options)` renders controls for speech output mode, voice, rate, pitch, and voice testing.
+`speechSettingsFields(options)` builds controls for speech output mode, voice,
+rate, pitch, and voice testing as a section that can be included in a larger
+settings screen. It returns an object containing the section as `node` and a
+`dispose()` method.
+
+```js
+import { el, mount, speechSettingsFields, textField } from 'audiogame-utils/ui'
+
+function settingsScreen(root, props) {
+	const speechFields = speechSettingsFields({ speech: props.speech })
+	mount(root, [
+		el('h1', { text: 'Settings' }),
+		textField('Player name', {
+			get: () => props.player.name,
+			set: value => { props.player.name = value },
+			autoFocus: true,
+		}),
+		speechFields.node,
+	])
+	return speechFields.dispose
+}
+```
+
+The section redraws only its own controls when the output mode changes, leaving
+the rest of the containing screen intact. It does not take focus when first
+mounted unless `autoFocus: true` is passed. When enabled, autofocus selects the
+first available speech control.
+
+`renderSpeechSettings(root, options)` renders the same controls as a complete
+screen, with a heading and an optional Back button. It enables autofocus for the
+speech controls.
 
 The `speech` option is required and should be an instance returned by `createSpeech()`. The renderer reads current values from the instance and writes changes back to it, so preferences use the storage configured for that speech instance.
 
@@ -341,17 +442,22 @@ Voice, rate, and pitch controls appear only when the selected mode uses text to 
 
 The mode picker is hidden on iOS by default. Pass `modes` to replace the default list. Pass an empty array to hide the picker on any platform.
 
-The browser may load or change its voice list asynchronously. The renderer listens for `voiceschanged` and refreshes the voice selector. Its cleanup function removes that listener, so call the `dispose()` method returned by `renderScreen()` when leaving the settings screen.
+The browser may load or change its voice list asynchronously. Both forms listen
+for `voiceschanged` and refresh the voice selector. Cleanup removes that
+listener. Call the handle's `dispose()` method when using
+`speechSettingsFields()`, or the `dispose()` method returned by `renderScreen()`
+when using `renderSpeechSettings()`.
 
 ### Speech settings options
 
+Both functions accept the speech control options below. `autoFocus` applies only
+to `speechSettingsFields()` because `renderSpeechSettings()` enables it itself.
+
 | Option | Default | Description |
 | --- | --- | --- |
-| `speech` | none | Required speech instance. The renderer throws if this is missing. |
-| `onBack` | none | Adds a Back button and handles its activation. |
+| `speech` | none | Required speech instance. The function throws if this is missing. |
 | `modes` | `[]` on iOS, `[MODE_ARIA, MODE_TTS]` elsewhere | Modes shown in the output picker. An empty array hides the picker. |
 | `modeLabels` | built in labels | Labels keyed by mode. Custom labels are merged with the defaults. |
-| `title` | `Speech settings` | Screen heading. |
 | `modeLegend` | `Speech output` | Output mode fieldset legend. |
 | `voiceLabel` | `Voice` | Voice selector label. |
 | `defaultVoiceLabel` | `(default voice)` | Option shown when no voice is selected. |
@@ -359,6 +465,14 @@ The browser may load or change its voice list asynchronously. The renderer liste
 | `pitchLabel` | `Speech pitch` | Pitch slider label. |
 | `testLabel` | `Test voice` | Voice test button label. |
 | `testMessage` | `This is a test of the selected voice.` | Text spoken by the voice test button. |
+| `autoFocus` | `false` | Marks the first available control for focus when the section is mounted. Only accepted by `speechSettingsFields()`. |
+
+`renderSpeechSettings()` also accepts these whole screen options:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `title` | `Speech settings` | Screen heading. |
+| `onBack` | none | Adds a Back button and handles its activation. |
 | `backLabel` | `Back` | Back button label. |
 
 To offer all output modes, import and pass the mode constants:
