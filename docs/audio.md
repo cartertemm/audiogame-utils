@@ -26,6 +26,26 @@ Declaring a sound does not fetch it. The first call to `play()`, `load()`, or `s
 
 If the environment has no `AudioContext` or `webkitAudioContext`, sound handles remain inert and their methods do not throw. This allows server rendering and test environments to import and construct audio objects.
 
+## Grouping sounds
+
+Sounds can be placed into named volume groups such as `music`, `effects`, or `voices`. This lets a settings screen give the player a separate volume control for each kind of sound while keeping the volume chosen for individual playback.
+
+Pass the group name as the playback destination, then change its volume through `audio.mixer`:
+
+```js
+const music = audio.sfx('/sounds/music.ogg')
+const step = audio.sfx('/sounds/step.ogg')
+
+audio.mixer.channel('music').volume = settings.musicVolume
+audio.mixer.channel('effects').volume = settings.effectsVolume
+audio.mixer.channel('master').volume = settings.masterVolume
+
+await music.play({ loop: true, destination: 'music' })
+await step.play({ destination: 'effects' })
+```
+
+Group names are created when they are first used. Every group feeds the `master` channel, so changing `master` affects every sound assigned to a group. Assign every sound to a group if the master setting should control the entire game. Volumes can be set before any sound loads and are applied when the audio engine starts.
+
 ## Audio instance methods
 
 ### `sfx(source)`
@@ -48,7 +68,7 @@ Stops every registered sound and removes the handles from the audio instance.
 
 ### `play(options)`
 
-Loads and plays the sound. Supported options are `loop`, `volume`, `pan`, and `position`.
+Loads and plays the sound. Supported options include `loop`, `volume`, `pan`, `position`, and `destination`. A string destination routes the sound through the mixer channel with that name.
 
 ```js
 await sounds.hit.play({ volume: 0.8, pan: -0.4 })
@@ -101,9 +121,53 @@ A position can also be supplied when playback starts:
 await sounds.hit.play({ position: [1, 0, -2] })
 ```
 
+## Mixer API
+
+Each audio instance exposes its mixer as `audio.mixer`. The default audio engine uses one shared mixer, so separate `createAudio()` instances control the same channels.
+
+### `channel(name)`
+
+Returns the channel with the given name, creating it at full volume when needed. Repeated calls with the same name return the same channel object.
+
+A channel has these properties:
+
+| Property | Meaning |
+| --- | --- |
+| `name` | Read only channel name. |
+| `volume` | Linear volume, normally from `0` through `1`. Values above `1` amplify the channel. |
+| `db` | Volume in decibels, where `0` is full volume and `-100` is silence. |
+| `node` | The channel's gain node, or `null` before the audio engine starts. |
+
+Changing `volume` updates `db`, and changing `db` updates `volume`.
+
+### `names()`
+
+Returns the names of every channel created so far. The result always includes `master`.
+
+### `node(name)`
+
+Returns the gain node for a channel, creating the channel if needed. It returns `null` before the audio engine starts. Most applications should pass a channel name as `destination` instead of working with its node directly.
+
+### Sound pools
+
+Set a sound pool's `mixer` property to route every sound it creates through a group:
+
+```js
+import { create_sound_pool } from 'audiogame-utils/audio'
+
+const pool = create_sound_pool()
+pool.mixer = 'effects'
+```
+
+The `mix` argument on the extended pool playback methods can override that group for one sound.
+
 ## Low level exports
 
-`createCacophonyEngine()` creates the adapter used by the default audio instance. Its interface consists of `load`, `play`, `stop`, and `setPosition`.
+`createMixer()` creates an independent mixer. Pass it to `createCacophonyEngine({ mixer })`, then pass that engine to `createAudio({ engine })`. `get_shared_mixer()` returns the mixer used by default audio engines. `MASTER_CHANNEL` contains the name `master`.
+
+`mixer.attach(context, destination)` builds the gain nodes and connects them to an audio graph. The Cacophony engine calls it when its audio context becomes available, so applications normally do not need to call it.
+
+`createCacophonyEngine({ mixer })` creates the adapter used by the default audio instance. When no mixer is supplied, it uses the shared mixer.
 
 `createSfx(getEngine, source, { panType })` creates an individual sound handle. `panType` defaults to `'stereo'`. Pass `'HRTF'` for a handle you intend to position in 3D, because `setPosition()` and the `position` play option have no effect on a stereo handle. `getEngine` must be an asynchronous function that resolves to a compatible engine or `null`. Applications that do not provide a custom engine should use `createAudio().sfx(source)` instead.
 
