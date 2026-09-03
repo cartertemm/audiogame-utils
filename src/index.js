@@ -3,7 +3,7 @@ export { createStorage } from './storage.js';
 export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
 export { createFocusTrap } from './focus.js';
-export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields, createMenu, MenuItem } from './ui/index.js';
+export { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields, createRouter, createMenu, MenuItem } from './ui/index.js';
 export {
 	createFields,
 	textField, passwordField, textAreaField, numberField,

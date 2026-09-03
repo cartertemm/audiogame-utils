@@ -9,6 +9,7 @@ import { radioGroup, selectField, rangeField } from './fields.js';
 export * from './dom.js';
 export * from './fields.js';
 export * from './menu.js';
+export { createRouter } from './router.js';
 export { MenuItem } from './menuItem.js';
 
 const INSTALL_PWA_IOS_TEXT = {

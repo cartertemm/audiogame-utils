@@ -65,6 +65,8 @@ export interface ScreenHandle {
 /** Function that renders a screen and optionally returns cleanup work. */
 export type ScreenFn<P = any> = (root: HTMLElement, props: P) => (() => void) | void;
 
+export * from './router.js';
+
 /** Renders one screen into a root and returns its lifecycle handle. */
 export function renderScreen<P = any>(root: HTMLElement, screen: ScreenFn<P>, props?: P): ScreenHandle;
 

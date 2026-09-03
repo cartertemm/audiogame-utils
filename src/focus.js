@@ -5,7 +5,7 @@
 
 const TABBABLE = 'a[href], button, input, select, textarea, [tabindex]';
 
-function tabbable(node) {
+export function tabbable(node) {
 	return [...node.querySelectorAll(TABBABLE)].filter(el => (
 		!el.disabled && !el.hidden && el.getAttribute('tabindex') !== '-1'
 	));

@@ -20,4 +20,7 @@ export interface FocusTrap {
 }
 
 /** Keeps keyboard focus inside a gameplay region and applies application semantics. */
+/** Lists the focusable descendants of a node, in tab order. */
+export function tabbable(node: HTMLElement): HTMLElement[];
+
 export function createFocusTrap(node: HTMLElement, options?: FocusTrapOptions): FocusTrap;

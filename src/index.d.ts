@@ -10,7 +10,7 @@ export { isIOS, isIOSStandalone } from './platform.js';
 export { EventEmitter } from './events.js';
 export { createFocusTrap } from './focus.js';
 export {
-	el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields, createMenu, MenuItem,
+	el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields, createRouter, createMenu, MenuItem,
 	createFields, textField, passwordField, textAreaField, numberField,
 	rangeField, percentRangeField, selectField, checkboxField,
 	radioGroup, checkboxGroup, keyField, keyName, confirmButton,
