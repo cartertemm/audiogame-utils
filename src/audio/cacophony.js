@@ -51,8 +51,8 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 		return initPromise;
 	}
 
-	// A destination is either a node the caller built or the name of a mixer
-	// channel, resolved here because the context only exists after init.
+	// A channel name resolves here rather than at the call site, because the
+	// context only exists after init.
 	function resolveDestination(destination) {
 		return typeof destination === 'string' ? mixer.node(destination) : destination;
 	}

@@ -75,8 +75,6 @@ export function createMixer() {
 			return [...entries.keys()];
 		},
 
-		// Called by the engine once the audio context exists. Every channel keeps
-		// the volume it was already given.
 		attach(audioContext, destination) {
 			context = audioContext;
 			output = destination;
