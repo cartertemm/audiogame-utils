@@ -1,6 +1,6 @@
 {
 	"name": "audiogame-utils",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "Building blocks for audiogames in the browser including accessible speech output, multi-finger gesture input, spatial sound, networking, UI management, menus, and more.",
 	"type": "module",
 	"license": "MIT",
