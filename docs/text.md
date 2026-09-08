@@ -44,7 +44,7 @@ When `last` is omitted, `null`, or another falsy value, every item is separated 
 
 ## Formatting counts
 
-### `pluralize(count, singular, plural)`
+### `pluralize(count, singular, plural, includeCount)`
 
 Joins a count and a noun with a space, choosing the singular or plural form of the noun. The `plural` argument defaults to the singular form followed by `s`.
 
@@ -68,6 +68,14 @@ pluralize(-1, 'step')     // "-1 step"
 pluralize(1.5, 'second')  // "1.5 seconds"
 pluralize(1n, 'coin')     // "1 coin"
 pluralize(3n, 'coin')     // "3 coins"
+```
+
+Set `includeCount` to `false` to get only the noun. The count still selects the form.
+
+```js
+pluralize(1, 'grenade', undefined, false) // "grenade"
+pluralize(3, 'grenade', undefined, false) // "grenades"
+pluralize(3, 'life', 'lives', false)      // "lives"
 ```
 
 ## Formatting durations

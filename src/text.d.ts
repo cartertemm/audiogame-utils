@@ -16,7 +16,7 @@ export interface ClosestMatch<T = string> {
 /** Joins an iterable into a readable sequence with a configurable final separator. */
 export function prettySequence(list: Iterable<unknown>, last?: string | null): string;
 /** Chooses a singular or plural label for a numeric count. */
-export function pluralize(count: number | bigint, singular: string, plural?: string): string;
+export function pluralize(count: number | bigint, singular: string, plural?: string, includeCount?: boolean): string;
 /** Formats milliseconds as readable units or a colon separated clock value. */
 export function formatTime(ms: number, pretty?: boolean): string;
 /** Formats a number with grouping and optional decimal precision. */

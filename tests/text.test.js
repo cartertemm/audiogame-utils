@@ -64,6 +64,12 @@ describe('pluralize', () => {
 		expect(pluralize(1.5, 'second')).toBe('1.5 seconds');
 	});
 
+	test('omits the count when includeCount is false', () => {
+		expect(pluralize(1, 'grenade', undefined, false)).toBe('grenade');
+		expect(pluralize(3, 'grenade', undefined, false)).toBe('grenades');
+		expect(pluralize(3, 'life', 'lives', false)).toBe('lives');
+	});
+
 	test('counts a BigInt', () => {
 		expect(pluralize(1n, 'coin')).toBe('1 coin');
 		expect(pluralize(9007199254740993n, 'coin')).toBe('9007199254740993 coins');

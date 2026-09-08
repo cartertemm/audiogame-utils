@@ -15,9 +15,10 @@ export function prettySequence(list, last = null) {
 	return `${parts.join(', ')}${last ? ` ${last} ` : ', '}${end}`;
 }
 
-export function pluralize(count, singular, plural = `${singular}s`) {
+export function pluralize(count, singular, plural = `${singular}s`, includeCount = true) {
 	const single = count === 1 || count === -1 || count === 1n || count === -1n;
-	return `${count} ${single ? singular : plural}`;
+	const word = single ? singular : plural;
+	return includeCount ? `${count} ${word}` : word;
 }
 
 export function formatTime(ms, pretty = true) {
