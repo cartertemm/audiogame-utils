@@ -16,8 +16,10 @@ export const MODE_BOTH = 'both';
 const VALID_MODES = new Set([MODE_ARIA, MODE_TTS, MODE_BOTH]);
 
 // Clear the live region after each announcement so repeating the same message
-// triggers another content change.
-const CLEAR_DELAY_MS = 10;
+// triggers another content change. We wait two animation frames to give browsers time to propogate the event.
+// Frames stop in a hidden tab, hence the fallback time.
+const CLEAR_FRAMES = 2;
+const CLEAR_FALLBACK_MS = 250;
 
 const DEFAULT_PITCH = 1;
 const DEFAULT_RATE = 1;
@@ -46,7 +48,36 @@ export function createSpeech({ storage, defaultMode = null, idPrefix = 'speech' 
 
 	let politeRegion = null;
 	let assertiveRegion = null;
-	const clearTimers = new Map();
+	const pendingClears = new Map();
+
+	function cancelClear(region) {
+		const pending = pendingClears.get(region);
+		if (!pending) return;
+		if (pending.frame !== null) cancelAnimationFrame(pending.frame);
+		clearTimeout(pending.timer);
+		pendingClears.delete(region);
+	}
+
+	function scheduleClear(region) {
+		const pending = { frame: null, timer: null };
+		pendingClears.set(region, pending);
+
+		function clear() {
+			cancelClear(region);
+			region.textContent = '';
+		}
+
+		pending.timer = setTimeout(clear, CLEAR_FALLBACK_MS);
+		if (typeof requestAnimationFrame !== 'function') return;
+
+		let framesLeft = CLEAR_FRAMES;
+		function step() {
+			framesLeft -= 1;
+			pending.frame = framesLeft > 0 ? requestAnimationFrame(step) : null;
+			if (framesLeft === 0) clear();
+		}
+		pending.frame = requestAnimationFrame(step);
+	}
 
 	function fallbackMode() {
 		return defaultMode ?? (isIOS() ? MODE_TTS : MODE_ARIA);
@@ -116,12 +147,9 @@ export function createSpeech({ storage, defaultMode = null, idPrefix = 'speech' 
 			if (useAria) {
 				init();
 				const region = interrupt ? assertiveRegion : politeRegion;
-				clearTimeout(clearTimers.get(region));
+				cancelClear(region);
 				region.textContent = text;
-				clearTimers.set(region, setTimeout(() => {
-					region.textContent = '';
-					clearTimers.delete(region);
-				}, CLEAR_DELAY_MS));
+				scheduleClear(region);
 			}
 
 			if (useTTS && typeof speechSynthesis !== 'undefined') {
@@ -174,8 +202,7 @@ export function createSpeech({ storage, defaultMode = null, idPrefix = 'speech' 
 		},
 
 		dispose() {
-			for (const timer of clearTimers.values()) clearTimeout(timer);
-			clearTimers.clear();
+			for (const region of [...pendingClears.keys()]) cancelClear(region);
 			politeRegion?.remove();
 			assertiveRegion?.remove();
 			politeRegion = null;

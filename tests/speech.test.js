@@ -125,11 +125,36 @@ describe('createSpeech: speak (aria)', () => {
 		expect(polite().textContent).toBe('');
 	});
 
-	test('clears region text after 100ms so the same string can re-announce', async () => {
+	test('clears region text after a frame so the same string can re-announce', async () => {
 		speech.speak('again');
 		expect(polite().textContent).toBe('again');
 		await new Promise(r => setTimeout(r, 200));
 		expect(polite().textContent).toBe('');
+	});
+
+	test('keeps the text past a frame when speak runs outside an input handler', () => {
+		vi.useFakeTimers();
+		try {
+			speech.speak('from a socket');
+			vi.advanceTimersByTime(20);
+			expect(polite().textContent).toBe('from a socket');
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	test('clears with a timer when animation frames never fire', () => {
+		vi.useFakeTimers();
+		const raf = globalThis.requestAnimationFrame;
+		globalThis.requestAnimationFrame = () => 1;
+		try {
+			speech.speak('hidden tab');
+			vi.advanceTimersByTime(300);
+			expect(polite().textContent).toBe('');
+		} finally {
+			globalThis.requestAnimationFrame = raf;
+			vi.useRealTimers();
+		}
 	});
 
 	test('does not call speechSynthesis in aria-only mode', () => {
@@ -148,9 +173,9 @@ describe('createSpeech: speak (aria)', () => {
 		vi.useFakeTimers();
 		try {
 			speech.speak('first');
-			vi.advanceTimersByTime(5);
+			vi.advanceTimersByTime(20);
 			speech.speak('second');
-			vi.advanceTimersByTime(6);
+			vi.advanceTimersByTime(20);
 			expect(polite().textContent).toBe('second');
 		} finally {
 			vi.useRealTimers();
