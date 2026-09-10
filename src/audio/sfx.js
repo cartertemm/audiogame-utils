@@ -75,7 +75,11 @@ export function createSfx(getEngine, source, { panType = 'stereo' } = {}) {
 			looping = false;
 			const inst = currentInst;
 			currentInst = null;
-			if (inst) inst.stop?.();
+			try {
+				inst?.stop?.();
+			} catch {
+				/* A playback that already finished is cleaned up, and throws here. */
+			}
 			if (!loadPromise) return;
 			try {
 				const loaded = await loadPromise;

@@ -140,6 +140,41 @@ describe('cacophony engine', () => {
 		expect(inst.stopCalls).toBe(1);
 	});
 
+	// The real Playback emits `stop` both when it ends on its own and when
+	// somebody stops it.
+	function makeStoppablePlayback() {
+		return {
+			cleanupCalls: 0,
+			listeners: {},
+			play() { return [this]; },
+			on(event, handler) { (this.listeners[event] ||= []).push(handler); },
+			cleanup() { this.cleanupCalls++; },
+			stop() { (this.listeners.stop || []).forEach(handler => handler()); },
+		};
+	}
+
+	test('a finished playback leaves the sound and releases its nodes', () => {
+		const engine = createCacophonyEngine();
+		const playback = makeStoppablePlayback();
+		const handle = makeFakeHandle(playback);
+		handle.playbacks = [playback];
+		engine.play(handle);
+		playback.stop();
+		expect(handle.playbacks).toEqual([]);
+		expect(playback.cleanupCalls).toBe(1);
+	});
+
+	test('stop ignores a playback that was already cleaned up', () => {
+		const engine = createCacophonyEngine();
+		const playback = makeStoppablePlayback();
+		const handle = makeFakeHandle(playback);
+		handle.playbacks = [playback];
+		const inst = engine.play(handle);
+		inst.stop();
+		inst.stop = () => { throw new Error('Cannot stop a sound that has been cleaned up'); };
+		expect(() => engine.stop(inst)).not.toThrow();
+	});
+
 	test('play tolerates a null handle', () => {
 		expect(createCacophonyEngine().play(null)).toBe(null);
 	});

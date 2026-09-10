@@ -48,7 +48,7 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 		return initPromise;
 	}
 
-	// A channel name must resolve here, because the context only exists after init.
+	// A channel name must resolve here as the context only exists after init.
 	function resolveDestination(destination) {
 		return typeof destination === 'string' ? mixer.node(destination) : destination;
 	}
@@ -84,15 +84,30 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 		return sounds.get(key);
 	}
 
+	function release(handle, inst) {
+		const playbacks = handle?.playbacks;
+		if (Array.isArray(playbacks)) {
+			const index = playbacks.indexOf(inst);
+			if (index !== -1) playbacks.splice(index, 1);
+		}
+		inst.cleanup?.();
+	}
+
+	function stopQuietly(target) {
+		try {
+			target?.stop?.();
+		} catch {
+			/* A playback that already finished no longer owns a source node. */
+		}
+	}
+
 	function spawn(handle, options = {}) {
 		const inst = handle?.preplay?.()[0];
 		if (!inst) return null;
+		inst.on?.('stop', () => release(handle, inst));
 		return configure(inst, options);
 	}
 
-	// Playback.play() discards the source node that preplay() built and starts a
-	// fresh one, which drops the loop flag. Re-apply it once the real source is
-	// running, otherwise every looping sound plays through exactly once.
 	function start(inst, options = {}) {
 		if (!inst) return null;
 		inst.play?.();
@@ -115,9 +130,9 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 		play,
 
 		stop(inst) {
-			inst?.inst?.stop?.();
-			inst?.handle?.stop?.();
-			inst?.stop?.();
+			stopQuietly(inst?.inst);
+			stopQuietly(inst?.handle);
+			stopQuietly(inst);
 		},
 
 		setPosition(handle, position) {

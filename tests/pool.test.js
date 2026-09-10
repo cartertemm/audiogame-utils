@@ -35,6 +35,11 @@ function makeFakePlayback(panType) {
 		stop() {
 			this.stopCalls++;
 			this.isPlaying = false;
+			(this.listeners.stop || []).forEach(handler => handler());
+		},
+		listeners: {},
+		on(event, handler) {
+			(this.listeners[event] ||= []).push(handler);
 		},
 		seek() {},
 	};
@@ -147,6 +152,27 @@ describe('sound_pool: slots', () => {
 		await flush();
 		engine.playbacks[0].isPlaying = false;
 		expect(pool.play_1d('b.ogg', 0, 1, false)).toBe(first);
+	});
+
+	test('a sound that ends on its own drops its handle and frees its slot', async () => {
+		const { pool, engine } = makePool();
+		const first = pool.play_1d('a.ogg', 0, 1, false);
+		await flush();
+		engine.playbacks[0].stop();
+		expect(pool.items[first].handle).toBe(null);
+		expect(pool.play_1d('b.ogg', 0, 1, false)).toBe(first);
+	});
+
+	test('a listener update after a sound ends does not touch the playback', async () => {
+		const { pool, engine } = makePool();
+		pool.play_1d('a.ogg', 0, 1, false);
+		await flush();
+		const playback = engine.playbacks[0];
+		playback.stop();
+		Object.defineProperty(playback, 'volume', {
+			set() { throw new Error('Cannot set volume of a sound that has been cleaned up'); },
+		});
+		expect(() => pool.update_listener_1d(50)).not.toThrow();
 	});
 
 	test('a full pool returns -1', async () => {

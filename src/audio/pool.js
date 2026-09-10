@@ -109,6 +109,11 @@ export class sound_pool_item {
 				});
 				if (!inst) return;
 				this.handle = inst;
+				// The engine releases the audio nodes when a playback stops, and a
+				// released playback throws on every write.
+				inst.on?.('stop', () => {
+					if (gen === this.generation) this.handle = null;
+				});
 				this.applied_rate = null;
 				this.applied_volume = null;
 				this.pool.apply_listener();
@@ -603,7 +608,10 @@ export class sound_pool {
 		for (let i = 0; i <= limit && i < this.items.length; i++) {
 			const item = this.items[i];
 			if (item.persistent || item.looping || item.paused) continue;
-			if (!item.handle || item.handle.isPlaying) continue;
+			// A slot loses its handle when its sound ends, so a slot waiting on a
+			// load, or holding no filename, has not finished.
+			if (item.loading || item.filename === "") continue;
+			if (item.handle && item.handle.isPlaying) continue;
 			if (i === this.highest_slot) killed_highest_slot = true;
 			item.reset();
 		}
