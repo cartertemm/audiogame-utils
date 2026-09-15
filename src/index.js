@@ -21,4 +21,6 @@ export { wrapSocket, createReconnectingClient, createIdentity } from './net/inde
 export { createMap } from './map/index.js';
 export { createClock, createTimer } from './clock.js';
 export { Stat, StatSet, createStatSet, STAT_SORT_MODE } from './stats.js';
+export { Buffer, BufferManager, createBufferManager } from './buffers.js';
+export { renderBufferList, renderBufferManager } from './ui/buffers.js';
 export { closestMatch, formatTime, pluralize, prettyNumber, prettySequence, stringDistance } from './text.js';

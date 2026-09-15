@@ -12,6 +12,7 @@ import type { RTree, Vector3 } from '../src/physics/index.js';
 import type { ReconnectingClient, WrappedSocket } from '../src/net/index.js';
 import type { NetServer, NetClient, Group } from '../src/net/server.js';
 import type { FakeSocket } from '../src/net/testing.js';
+import type { Buffer, BufferManager, BufferItem } from '../src/buffers.js';
 
 import * as root from '../src/index.js';
 import * as text from '../src/text.js';
@@ -161,3 +162,11 @@ _server.accept(_pair[0]);
 _server.on('message', (client: NetClient, msg: any) => {
 	client.send(msg);
 });
+
+const _createBufferManager: typeof root.createBufferManager = root.createBufferManager;
+declare const bufferManager: BufferManager;
+const chatBuffer: Buffer = bufferManager.createBuffer('Chat', { maxItems: 100 });
+const chatItem: BufferItem = bufferManager.addItem(chatBuffer, 'hello', { silent: true });
+const chatCurrent: BufferItem | null = chatBuffer.current;
+bufferManager.on('add', event => { const _b: Buffer | null = event.buffer; });
+bufferManager.nextBuffer({ wrap: true, silent: true });

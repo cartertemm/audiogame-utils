@@ -11,6 +11,7 @@ export { EventEmitter } from './events.js';
 export { createFocusTrap } from './focus.js';
 export {
 	el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields, createRouter, createMenu, MenuItem,
+	renderBufferList, renderBufferManager,
 	createFields, textField, passwordField, textAreaField, numberField,
 	rangeField, percentRangeField, selectField, checkboxField,
 	radioGroup, checkboxGroup, keyField, keyName, confirmButton,
@@ -29,4 +30,6 @@ export { wrapSocket, createReconnectingClient, createIdentity } from './net/inde
 export { createMap } from './map/index.js';
 export { createClock, createTimer } from './clock.js';
 export { Stat, StatSet, createStatSet, STAT_SORT_MODE } from './stats.js';
+export { Buffer, BufferManager, createBufferManager } from './buffers.js';
+export type { BufferItem, BufferOptions, BufferManagerOptions, BufferEvent } from './buffers.js';
 export { closestMatch, formatTime, pluralize, prettyNumber, prettySequence, stringDistance } from './text.js';

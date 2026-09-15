@@ -56,6 +56,7 @@
 		"./clock": "./src/clock.js",
 		"./stats": "./src/stats.js",
 		"./text": "./src/text.js",
+		"./buffers": "./src/buffers.js",
 		"./runtime": "./src/runtime.js",
 		"./tauri": "./src/tauri/index.js",
 		"./window": "./src/window.js",

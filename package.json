@@ -124,6 +124,10 @@
 			"types": "./src/text.d.ts",
 			"default": "./src/text.js"
 		},
+		"./buffers": {
+			"types": "./src/buffers.d.ts",
+			"default": "./src/buffers.js"
+		},
 		"./runtime": {
 			"types": "./src/runtime.d.ts",
 			"default": "./src/runtime.js"

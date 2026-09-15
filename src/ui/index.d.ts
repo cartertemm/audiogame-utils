@@ -8,6 +8,7 @@
 import type { SpeechInstance, SpeechMode } from '../speech/index.js';
 import type { AudioInstance } from '../audio/index.js';
 import type { StorageInstance } from '../storage.js';
+import type { Buffer, BufferManager } from '../buffers.js';
 
 /** Attributes, properties, and listeners accepted by {@link el}. */
 export interface ElementAttributes {
@@ -529,3 +530,19 @@ export interface BoundFields {
 
 /** Creates field builders whose values persist through a storage instance. */
 export function createFields(options: CreateFieldsOptions): BoundFields;
+
+/** A list element that also unsubscribes from manager events. */
+export interface BufferListElement extends HTMLUListElement {
+	dispose(): void;
+}
+
+/** A tab control element that also unsubscribes from manager events. */
+export interface BufferManagerElement extends HTMLDivElement {
+	dispose(): void;
+}
+
+/** Renders a buffer as a plain list. With a manager, the list updates on add, clear, and move events. */
+export function renderBufferList(buffer: Buffer, options?: { manager?: BufferManager | null }): BufferListElement;
+
+/** Renders an ARIA tab control with one tab and panel per buffer. Tabs follow and drive the manager focus. */
+export function renderBufferManager(manager: BufferManager): BufferManagerElement;
