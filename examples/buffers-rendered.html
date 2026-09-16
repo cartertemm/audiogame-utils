@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Rendered buffers example</title>
+	<style>
+		body {
+			margin: 2rem auto;
+			padding: 0 1rem;
+			max-width: 42rem;
+			font-family: system-ui, sans-serif;
+			line-height: 1.5;
+		}
+
+		.controls, [role="tablist"] {
+			display: flex;
+			gap: 0.75rem;
+			flex-wrap: wrap;
+		}
+
+		.buffer-manager {
+			margin-top: 1.5rem;
+		}
+
+		[role="tab"] {
+			padding: 0.5rem 0.8rem;
+		}
+
+		[role="tab"][aria-selected="true"] {
+			font-weight: bold;
+			border-bottom: 3px solid currentcolor;
+		}
+
+		[role="tabpanel"] {
+			margin-top: 0.75rem;
+			padding: 1rem;
+			min-height: 8rem;
+			border: 2px solid #555;
+			border-radius: 0.4rem;
+		}
+
+		[role="tabpanel"] li {
+			padding: 0.25rem 0;
+		}
+
+		[role="tabpanel"] li.current {
+			font-weight: bold;
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<h1>Rendered buffers</h1>
+		<p>The same All, Chats, and Combat buffers are shown as tabs. Click a tab, or focus one and use the left and right arrow keys. The lists update when new events arrive.</p>
+		<div class="controls">
+			<button id="add-chat" type="button">Add chat event</button>
+			<button id="add-combat" type="button">Add combat event</button>
+		</div>
+		<div id="events"></div>
+	</main>
+	<script type="module" src="./buffers-rendered.js"></script>
+</body>
+</html>

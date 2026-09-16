@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Focus trap buffers example</title>
+	<style>
+		body {
+			margin: 2rem auto;
+			padding: 0 1rem;
+			max-width: 42rem;
+			font-family: system-ui, sans-serif;
+			line-height: 1.5;
+		}
+
+		#game {
+			padding: 1rem;
+			border: 2px solid #555;
+			border-radius: 0.4rem;
+		}
+
+		.controls {
+			display: flex;
+			gap: 0.75rem;
+			flex-wrap: wrap;
+		}
+	</style>
+</head>
+<body>
+	<main id="game">
+		<h1>Focus trap buffers</h1>
+		<p>This game area keeps keyboard focus. Use left and right bracket to change between All, Chats, and Combat. Use comma and period to review events in the current buffer.</p>
+		<p>Hold Shift with those keys to move to the first or last buffer or event. Tab between the buttons to generate more sample events.</p>
+		<div class="controls">
+			<button id="add-chat" type="button">Add chat event</button>
+			<button id="add-combat" type="button">Add combat event</button>
+		</div>
+	</main>
+	<script type="module" src="./buffers-focus-trap.js"></script>
+</body>
+</html>
