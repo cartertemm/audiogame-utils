@@ -1,6 +1,7 @@
 import { describe, test, expect, vi } from 'vitest';
 import { el, mount, renderScreen, renderInstallPwaIos, renderSpeechSettings, speechSettingsFields } from '../src/ui/index.js';
-import { MODE_ARIA, MODE_TTS, MODE_BOTH } from '../src/speech/index.js';
+import { MODE_ARIA, MODE_TTS, MODE_BOTH, MODE_NATIVE } from '../src/speech/index.js';
+import { register, resetCapabilities } from '../src/platform.js';
 
 function root() {
 	const node = document.createElement('div');
@@ -112,23 +113,32 @@ describe('ui: renderInstallPwaIos', () => {
 });
 
 function fakeSpeech(overrides = {}) {
-	const state = { mode: MODE_TTS, voice: null, rate: 1, pitch: 1, ...overrides };
+	const state = { mode: MODE_TTS, voice: null, rate: 0.5, pitch: 0.5, volume: 1, ...overrides };
 	const voices = state.voices ?? [
-		{ voiceURI: 'uri-a', name: 'Alex' },
-		{ voiceURI: 'uri-b', name: 'Bruce' },
+		{ id: 'uri-a', name: 'Alex', language: null },
+		{ id: 'uri-b', name: 'Bruce', language: null },
 	];
+	const features = state.features ?? (() => (state.mode === MODE_ARIA
+		? { voice: false, rate: false, pitch: false, volume: false }
+		: { voice: true, rate: true, pitch: true, volume: true }));
+	const handlers = new Set();
 	return {
 		state,
 		speak: vi.fn(),
 		getMode: () => state.mode,
 		setMode: vi.fn((mode) => { state.mode = mode; }),
+		features: typeof features === 'function' ? features : () => features,
 		getVoices: () => voices,
-		getVoice: () => voices.find(v => v.voiceURI === state.voice) ?? null,
-		setVoice: vi.fn((uri) => { state.voice = uri; }),
+		getVoice: () => voices.find(v => v.id === state.voice) ?? null,
+		setVoice: vi.fn((id) => { state.voice = id; }),
+		onVoicesChanged: (handler) => { handlers.add(handler); return () => handlers.delete(handler); },
+		emitVoices: () => { for (const h of handlers) h(); },
 		getRate: () => state.rate,
 		setRate: vi.fn((value) => { state.rate = value; }),
 		getPitch: () => state.pitch,
 		setPitch: vi.fn((value) => { state.pitch = value; }),
+		getVolume: () => state.volume,
+		setVolume: vi.fn((value) => { state.volume = value; }),
 	};
 }
 
@@ -139,9 +149,9 @@ describe('ui: renderSpeechSettings', () => {
 
 	test('renders the voice controls and the current values', () => {
 		const node = root();
-		const speech = fakeSpeech({ voice: 'uri-b', rate: 1.5, pitch: 0.8 });
+		const speech = fakeSpeech({ voice: 'uri-b', rate: 0.75, pitch: 0.8 });
 		renderSpeechSettings(node, { speech });
-		expect(node.querySelector('#speech-rate').value).toBe('1.5');
+		expect(node.querySelector('#speech-rate').value).toBe('0.75');
 		expect(node.querySelector('#speech-pitch').value).toBe('0.8');
 		const options = [...node.querySelectorAll('#speech-voice option')];
 		expect(options.map(o => o.textContent)).toEqual(['Alex', 'Bruce']);
@@ -165,9 +175,14 @@ describe('ui: renderSpeechSettings', () => {
 		expect(speech.setVoice).toHaveBeenCalledWith('uri-a');
 
 		const rate = node.querySelector('#speech-rate');
-		rate.value = '1.7';
+		rate.value = '0.7';
 		rate.dispatchEvent(new Event('change'));
-		expect(speech.setRate).toHaveBeenCalledWith(1.7);
+		expect(speech.setRate).toHaveBeenCalledWith(0.7);
+
+		const volume = node.querySelector('#speech-volume');
+		volume.value = '0.3';
+		volume.dispatchEvent(new Event('change'));
+		expect(speech.setVolume).toHaveBeenCalledWith(0.3);
 
 		node.querySelector('button').click();
 		expect(speech.speak).toHaveBeenCalledWith('This is a test of the selected voice.', true);
@@ -210,21 +225,43 @@ describe('ui: renderSpeechSettings', () => {
 		expect(onBack).toHaveBeenCalledTimes(1);
 	});
 
-	test('repopulates the voice list on voiceschanged without moving focus', () => {
+	test('repopulates the voice list on a voice change without moving focus', () => {
 		const node = root();
-		const voices = [{ voiceURI: 'uri-a', name: 'Alex' }];
+		const voices = [{ id: 'uri-a', name: 'Alex', language: null }];
 		const speech = fakeSpeech({ voices });
 		const rendered = renderScreen(node, renderSpeechSettings, { speech });
 		const select = node.querySelector('#speech-voice');
 		select.focus();
-		voices.push({ voiceURI: 'uri-c', name: 'Cara' });
-		speechSynthesis.dispatchEvent(new Event('voiceschanged'));
+		voices.push({ id: 'uri-c', name: 'Cara', language: null });
+		speech.emitVoices();
 		expect(node.querySelectorAll('#speech-voice option').length).toBe(3);
 		expect(document.activeElement).toBe(select);
 
 		rendered.dispose();
-		speechSynthesis.dispatchEvent(new Event('voiceschanged'));
+		speech.emitVoices();
 		expect(node.innerHTML).toBe('');
+	});
+
+	test('shows only the controls the backend supports', () => {
+		const node = root();
+		const speech = fakeSpeech({ mode: MODE_NATIVE, features: { voice: false, rate: true, pitch: false, volume: false } });
+		renderSpeechSettings(node, { speech, modes: [MODE_NATIVE, MODE_ARIA] });
+		expect(node.querySelector('#speech-voice')).toBe(null);
+		expect(node.querySelector('#speech-rate')).not.toBe(null);
+		expect(node.querySelector('#speech-pitch')).toBe(null);
+		expect(node.querySelector('#speech-volume')).toBe(null);
+		expect(node.querySelector('button')).not.toBe(null);
+	});
+
+	test('offers native in the default mode list when the capability exists', () => {
+		register('speech', { backendName: 'NVDA' });
+		try {
+			const node = root();
+			renderSpeechSettings(node, { speech: fakeSpeech() });
+			expect(node.querySelector('#speech-mode-native')).not.toBe(null);
+		} finally {
+			resetCapabilities();
+		}
 	});
 });
 
@@ -265,14 +302,15 @@ describe('ui: speechSettingsFields', () => {
 	});
 
 	test('stops listening for voice changes after dispose', () => {
-		const voices = [{ voiceURI: 'uri-a', name: 'Alex' }];
-		const fields = speechSettingsFields({ speech: fakeSpeech({ voices }) });
+		const voices = [{ id: 'uri-a', name: 'Alex', language: null }];
+		const speech = fakeSpeech({ voices });
+		const fields = speechSettingsFields({ speech });
 		mount(root(), [fields.node]);
 		expect(fields.node.querySelectorAll('#speech-voice option').length).toBe(2);
 
-		voices.push({ voiceURI: 'uri-c', name: 'Cara' });
+		voices.push({ id: 'uri-c', name: 'Cara', language: null });
 		fields.dispose();
-		speechSynthesis.dispatchEvent(new Event('voiceschanged'));
+		speech.emitVoices();
 		expect(fields.node.querySelectorAll('#speech-voice option').length).toBe(2);
 	});
 });

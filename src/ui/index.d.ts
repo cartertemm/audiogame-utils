@@ -261,13 +261,15 @@ export interface SpeechSettingsFieldsOptions {
 	rateLabel?: string;
 	/** Speech pitch field label. */
 	pitchLabel?: string;
+	/** Speech volume field label. */
+	volumeLabel?: string;
 	/** Test speech button label. */
 	testLabel?: string;
 	/** Text spoken by the test button. */
 	testMessage?: string;
 	/** Display label overrides for speech modes. */
 	modeLabels?: Partial<Record<SpeechMode, string>>;
-	/** Modes shown in the settings form. */
+	/** Modes shown in the settings form. Defaults to native, screen reader, and text to speech when native speech is available, otherwise screen reader and text to speech, and nothing on iOS. */
 	modes?: SpeechMode[];
 	/** Focuses the first control once the section is mounted. Defaults to false. */
 	autoFocus?: boolean;

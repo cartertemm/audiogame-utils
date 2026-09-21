@@ -1,8 +1,8 @@
 // @ts-self-types="./index.d.ts"
 // Pre-game screens built from the DOM helpers and field builders.
 
-import { isIOS } from '../platform.js';
-import { MODE_ARIA, MODE_TTS, MODE_BOTH } from '../speech/index.js';
+import { isIOS, capability } from '../platform.js';
+import { MODE_ARIA, MODE_TTS, MODE_BOTH, MODE_NATIVE } from '../speech/index.js';
 import { el, mount } from './dom.js';
 import { radioGroup, selectField, rangeField } from './fields.js';
 
@@ -40,22 +40,24 @@ const SPEECH_SETTINGS_TEXT = {
 	defaultVoiceLabel: '(default voice)',
 	rateLabel: 'Speech rate',
 	pitchLabel: 'Speech pitch',
+	volumeLabel: 'Speech volume',
 	testLabel: 'Test voice',
 	testMessage: 'This is a test of the selected voice.',
 	backLabel: 'Back',
 };
 
 const MODE_LABELS = {
+	[MODE_NATIVE]: 'Native',
 	[MODE_ARIA]: 'Screen reader',
 	[MODE_TTS]: 'Text to speech',
 	[MODE_BOTH]: 'Both',
 };
 
-const RATE = { min: '0.5', max: '2', step: '0.1' };
-const PITCH = { min: '0.1', max: '2', step: '0.1' };
+const LEVEL = { min: '0', max: '1', step: '0.05' };
 
-function usesTts(mode) {
-	return mode === MODE_TTS || mode === MODE_BOTH;
+function defaultModes() {
+	if (isIOS()) return [];
+	return capability('speech') ? [MODE_NATIVE, MODE_ARIA, MODE_TTS] : [MODE_ARIA, MODE_TTS];
 }
 
 // Builds the speech controls as one section you can drop into a larger settings page.
@@ -68,7 +70,7 @@ export function speechSettingsFields(options = {}) {
 	if (!speech) throw new Error('speechSettingsFields requires a speech instance');
 	const text = { ...SPEECH_SETTINGS_TEXT, ...options };
 	const modeLabels = { ...MODE_LABELS, ...options.modeLabels };
-	const modes = options.modes ?? (isIOS() ? [] : [MODE_ARIA, MODE_TTS]);
+	const modes = options.modes ?? defaultModes();
 	const node = el('div', { class: 'speech-settings' });
 	// selectField reads this array again on every change, so the voice list is
 	// rewritten in place rather than replaced.
@@ -78,13 +80,13 @@ export function speechSettingsFields(options = {}) {
 	let initialFocus = options.autoFocus === true;
 
 	function currentVoice() {
-		return speech.getVoice()?.voiceURI ?? '';
+		return speech.getVoice()?.id ?? '';
 	}
 
 	function refreshVoiceChoices() {
 		voiceChoices.length = 0;
 		if (!currentVoice()) voiceChoices.push({ value: '', label: text.defaultVoiceLabel });
-		for (const voice of speech.getVoices()) voiceChoices.push({ value: voice.voiceURI, label: voice.name });
+		for (const voice of speech.getVoices()) voiceChoices.push({ value: voice.id, label: voice.name });
 	}
 
 	// Rebuilding the option elements keeps the select itself, so focus stays put.
@@ -110,7 +112,7 @@ export function speechSettingsFields(options = {}) {
 
 	function render() {
 		const mode = speech.getMode();
-		const showVoice = usesTts(mode);
+		const features = speech.features();
 		const nodes = [];
 		if (modes.length > 0) {
 			nodes.push(radioGroup(text.modeLegend, {
@@ -120,26 +122,28 @@ export function speechSettingsFields(options = {}) {
 				set: (value) => { speech.setMode(value); redraw(`speech-mode-${value}`); },
 			}));
 		}
-		if (showVoice) {
+		if (features.voice) {
 			refreshVoiceChoices();
-			nodes.push(
-				selectField(text.voiceLabel, {
-					id: 'speech-voice',
-					choices: voiceChoices,
-					get: currentVoice,
-					set: (value) => { if (value) speech.setVoice(value); },
-				}),
-				// No format, because a range input already announces its own value.
-				rangeField(text.rateLabel, { id: 'speech-rate', ...RATE, get: () => speech.getRate(), set: (value) => speech.setRate(value) }),
-				rangeField(text.pitchLabel, { id: 'speech-pitch', ...PITCH, get: () => speech.getPitch(), set: (value) => speech.setPitch(value) }),
-				el('button', { type: 'button', text: text.testLabel, onClick: () => speech.speak(text.testMessage, true) }),
-			);
+			nodes.push(selectField(text.voiceLabel, {
+				id: 'speech-voice',
+				choices: voiceChoices,
+				get: currentVoice,
+				set: (value) => { if (value) speech.setVoice(value); },
+			}));
 		}
+		// No format, because a range input already announces its own value.
+		if (features.rate) nodes.push(rangeField(text.rateLabel, { id: 'speech-rate', ...LEVEL, get: () => speech.getRate(), set: (value) => speech.setRate(value) }));
+		if (features.pitch) nodes.push(rangeField(text.pitchLabel, { id: 'speech-pitch', ...LEVEL, get: () => speech.getPitch(), set: (value) => speech.setPitch(value) }));
+		if (features.volume) nodes.push(rangeField(text.volumeLabel, { id: 'speech-volume', ...LEVEL, get: () => speech.getVolume(), set: (value) => speech.setVolume(value) }));
+		nodes.push(el('button', { type: 'button', text: text.testLabel, onClick: () => speech.speak(text.testMessage, true) }));
 		mount(node, nodes);
-		voiceSelect = showVoice ? node.querySelector('#speech-voice') : null;
+		voiceSelect = features.voice ? node.querySelector('#speech-voice') : null;
 		const ids = [
 			...modes.map(m => `speech-mode-${m}`),
-			...(showVoice ? ['speech-voice', 'speech-rate', 'speech-pitch'] : []),
+			...(features.voice ? ['speech-voice'] : []),
+			...(features.rate ? ['speech-rate'] : []),
+			...(features.pitch ? ['speech-pitch'] : []),
+			...(features.volume ? ['speech-volume'] : []),
 		];
 		const wanted = ids.includes(focusId) ? focusId : (initialFocus ? ids[0] : null);
 		initialFocus = false;
@@ -152,13 +156,10 @@ export function speechSettingsFields(options = {}) {
 	}
 
 	render();
-	// Voices load asynchronously in most browsers, and the list can change again later.
-	const synth = typeof speechSynthesis === 'undefined' ? null : speechSynthesis;
-	const onVoicesChanged = () => repopulateVoices();
-	synth?.addEventListener('voiceschanged', onVoicesChanged);
+	const stopVoices = speech.onVoicesChanged(repopulateVoices);
 	return {
 		node,
-		dispose: () => synth?.removeEventListener('voiceschanged', onVoicesChanged),
+		dispose: stopVoices,
 	};
 }
 
