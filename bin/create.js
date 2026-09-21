@@ -11,6 +11,7 @@ import { join, dirname } from 'node:path';
 import process from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { getProjectCommands } from './create-commands.js';
+import { addDelayLoad } from './create-patches.js';
 
 const CSP = [
 	"default-src 'self'",
@@ -96,6 +97,7 @@ function parseArgs(argv) {
 		dir: positional[0] ?? '.',
 		yes: flags.has('--yes'),
 		ci: flags.has('--ci') ? true : flags.has('--no-ci') ? false : null,
+		prism: flags.has('--prism') ? true : flags.has('--no-prism') ? false : null,
 	};
 }
 
@@ -132,6 +134,21 @@ function patchConfig(configPath) {
 	console.log(`patched ${configPath}`);
 }
 
+function patchBuildScript(path) {
+	const source = readFileSync(path, 'utf8');
+	const patched = addDelayLoad(source);
+	if (patched === null) {
+		console.log(`Could not patch ${path}. Add the delay-load lines from Step 12 of the Tauri guide by hand.`);
+		return;
+	}
+	if (patched === source) {
+		console.log(`kept existing ${path}`);
+		return;
+	}
+	writeFileSync(path, patched);
+	console.log(`patched ${path}`);
+}
+
 async function ask(question, fallback) {
 	const rl = createInterface({ input: process.stdin, output: process.stdout });
 	try {
@@ -143,7 +160,7 @@ async function ask(question, fallback) {
 	}
 }
 
-const { dir, yes, ci } = parseArgs(process.argv.slice(2));
+const { dir, yes, ci, prism } = parseArgs(process.argv.slice(2));
 const configPath = join(dir, 'src-tauri', 'tauri.conf.json');
 if (!existsSync(configPath)) {
 	fail(
@@ -156,6 +173,11 @@ const commands = getProjectCommands(dir);
 run(commands.install, dir);
 run(commands.addPlugin('store'), dir);
 run(commands.addPlugin('opener'), dir);
+const addPrism = prism ?? (yes ? true : await ask('Add native screen reader output? Building it needs a C++23 compiler and CMake.', true));
+if (addPrism) {
+	run(commands.addPlugin('prism'), dir);
+	patchBuildScript(join(dir, 'src-tauri', 'build.rs'));
+}
 patchConfig(configPath);
 writeIfAbsent(join(dir, 'src', 'game.js'), GAME_ENTRY);
 const addCi = ci ?? (yes ? true : await ask('Add a GitHub Actions workflow building Windows, macOS, and Linux?', true));

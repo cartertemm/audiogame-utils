@@ -6,6 +6,7 @@ const DEPENDENCIES = [
 	'@tauri-apps/api',
 	'@tauri-apps/plugin-store',
 	'@tauri-apps/plugin-opener',
+	'tauri-plugin-prism-api',
 ];
 
 const DENO_WORKFLOW_SETUP = `      - uses: denoland/setup-deno@v2

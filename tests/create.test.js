@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 import { getProjectCommands } from '../bin/create-commands.js';
+import { addDelayLoad } from '../bin/create-patches.js';
 
 const temporaryDirectories = [];
 
@@ -31,7 +32,7 @@ describe('create command selection', () => {
 		const commands = getProjectCommands(directory);
 
 		expect(commands.install).toBe(
-			'deno add npm:audiogame-utils npm:@tauri-apps/api npm:@tauri-apps/plugin-store npm:@tauri-apps/plugin-opener'
+			'deno add npm:audiogame-utils npm:@tauri-apps/api npm:@tauri-apps/plugin-store npm:@tauri-apps/plugin-opener npm:tauri-plugin-prism-api'
 		);
 		expect(commands.addPlugin('store')).toBe('deno task tauri add store');
 		expect(commands.dev).toBe('deno task tauri dev');
@@ -48,5 +49,44 @@ describe('create command selection', () => {
 		const source = readFileSync(join(process.cwd(), 'bin', 'create.js'), 'utf8').replace(/\r\n/g, '\n');
 
 		expect(source).toContain('permissions:\n  contents: write');
+	});
+});
+
+describe('build script delay loading', () => {
+	const TEMPLATE = 'fn main() {\n    tauri_build::build()\n}\n';
+	const PATCHED = [
+		'fn main() {',
+		'    if let Ok(dlls) = std::env::var("DEP_TAURI_PLUGIN_PRISM_DELAY_LOAD_DLLS") {',
+		"        for dll in dlls.split(';') {",
+		'            println!("cargo:rustc-link-arg=/DELAYLOAD:{dll}");',
+		'        }',
+		'    }',
+		'    tauri_build::build()',
+		'}',
+		'',
+	].join('\n');
+
+	test('inserts the delay-load lines before the Tauri build call', () => {
+		expect(addDelayLoad(TEMPLATE)).toBe(PATCHED);
+	});
+
+	test('leaves an already patched script unchanged', () => {
+		expect(addDelayLoad(PATCHED)).toBe(PATCHED);
+	});
+
+	test('follows tab indentation and a trailing semicolon', () => {
+		const patched = addDelayLoad('fn main() {\n\ttauri_build::build();\n}\n');
+		expect(patched).toContain('\n\tif let Ok(dlls)');
+		expect(patched).toContain('\n\t\t\tprintln!');
+		expect(patched).toContain('\n\ttauri_build::build();\n');
+	});
+
+	test('keeps CRLF line endings', () => {
+		const patched = addDelayLoad(TEMPLATE.replace(/\n/g, '\r\n'));
+		expect(patched).toBe(PATCHED.replace(/\n/g, '\r\n'));
+	});
+
+	test('returns null when the build call is not found', () => {
+		expect(addDelayLoad('fn main() {\n    custom::build()\n}\n')).toBe(null);
 	});
 });
