@@ -77,7 +77,7 @@ Speech preferences are stored under these keys within the storage namespace:
 | Rate | `getRate()`, `setRate(value)` | A number from 0 through 1. 0.5 is normal. |
 | Volume | `getVolume()`, `setVolume(value)` | A number from 0 through 1 |
 
-Rate, pitch, and volume use the same scale in every mode. In `tts` mode the instance converts them to Web Speech values, so a rate of 0.5 speaks at the engine's normal speed and 1 speaks at twice that. Versions before 0.4.0 exposed the Web Speech scales directly.
+Rate, pitch, and volume use the same scale in every mode. In `tts` mode the instance converts them to Web Speech values, so a rate of 0.5 speaks at the engine's normal speed and 1 speaks at twice that.
 
 Rate and pitch default to 0.5 and volume to 1. `getVoice()` returns `null` when no voice is selected or the selected voice is no longer available.
 

@@ -143,14 +143,15 @@ deno run -A jsr:@cartertemm/audiogame-utils/create
 
 The patcher detects the project's package manager and makes these changes:
 
-1. Installs audiogame utils and the Tauri API, store, and opener packages.
+1. Installs audiogame utils, the Tauri API, the store and opener packages, and the prism speech bindings.
 2. Runs Tauri's plugin setup for the store and opener plugins. This updates the Rust project and grants their default capability permissions.
-3. Adds a content security policy that permits bundled audio and approved asset protocol URLs when the project does not already have a policy.
-4. Enables Tauri's asset protocol with an empty path scope when the project does not already configure it.
-5. Writes a small `src/game.js` example when that file does not already exist.
-6. Optionally adds a GitHub Actions workflow that builds Windows, macOS, and Linux artifacts when a version tag is pushed.
+3. Asks whether to add native screen reader output. When you accept, it runs Tauri's plugin setup for the prism plugin and adds the delay-load lines to `src-tauri/build.rs`. See [Step 12](#step-12-native-screen-reader-output) for the compiler this needs.
+4. Adds a content security policy that permits bundled audio and approved asset protocol URLs when the project does not already have a policy.
+5. Enables Tauri's asset protocol with an empty path scope when the project does not already configure it.
+6. Writes a small `src/game.js` example when that file does not already exist.
+7. Optionally adds a GitHub Actions workflow that builds Windows, macOS, and Linux artifacts when a version tag is pushed.
 
-Existing `src/game.js` and workflow files are kept, along with any preexisting content security policy and asset protocol settings.
+Existing `src/game.js` and workflow files are kept, along with any preexisting content security policy and asset protocol settings. A `build.rs` that already has the delay-load lines is kept too.
 
 The patcher accepts an optional project directory:
 
@@ -166,9 +167,11 @@ These flags control its prompts:
 
 | Flag | Effect |
 | --- | --- |
+| `--prism` | Add native screen reader output without asking. |
+| `--no-prism` | Do not add native screen reader output. |
 | `--ci` | Add the GitHub Actions workflow without asking. |
 | `--no-ci` | Do not add the workflow. |
-| `--yes` | Accept the default answer for every remaining prompt. The current default adds the workflow. |
+| `--yes` | Accept the default answer for every remaining prompt. The current defaults add native screen reader output and the workflow. |
 
 Load `src/game.js` from the project's `index.html`, or copy its initialization into the game's existing entry module.
 
@@ -422,6 +425,8 @@ ARIA live regions work in a webview, but a direct call to the screen reader is m
 
 Building the plugin compiles prism from source, which needs a C++23 toolchain and CMake 3.24 or later. On Windows that means Visual Studio 2022 Build Tools with the C++ workload and the "C++ ATL for latest v143 build tools" component. On macOS, Xcode command line tools. On Linux, GCC 14 or Clang 18 plus the `libspeechd-dev` package.
 
+The patcher from [Step 3](#step-3-add-audiogame-utils) does all of this when you accept its native speech question. To set it up by hand, follow these steps.
+
 1. Add the crate:
 
 ```sh
@@ -463,7 +468,7 @@ Prism links into the executable by default. To ship it as a shared library inste
 
 Rate, pitch, volume, and voice selection work in native mode when the backend supports them. See the [speech guide](speech.md#native-speech-under-tauri).
 
-If you skip this step, Vite still tries to resolve the optional package when it bundles the game. Add `tauri-plugin-prism-api` to `build.rollupOptions.external` in `vite.config.ts` to build without it.
+The patcher installs `tauri-plugin-prism-api` even when you decline native speech, because Vite resolves the optional import when it bundles the game. In a project set up by hand without the package, add `tauri-plugin-prism-api` to `build.rollupOptions.external` in `vite.config.ts`.
 
 ## Future plans
 
