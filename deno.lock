@@ -754,7 +754,8 @@
     "dependencies": [
       "npm:@tauri-apps/api@2",
       "npm:@tauri-apps/plugin-store@2",
-      "npm:cacophony@~0.18.3"
+      "npm:cacophony@~0.18.3",
+      "npm:tauri-plugin-prism-api@0.1"
     ],
     "packageJson": {
       "dependencies": [
