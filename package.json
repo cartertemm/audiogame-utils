@@ -169,7 +169,7 @@
 		"ws": "^8.17.0"
 	},
 	"bin": {
-		"audiogame-utils": "./bin/create.js"
+		"audiogame-utils": "bin/create.js"
 	},
 	"peerDependencies": {
 		"@tauri-apps/api": "^2",
