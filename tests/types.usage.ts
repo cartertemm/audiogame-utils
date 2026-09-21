@@ -1,6 +1,10 @@
 import type { AudioInstance } from '../src/audio/index.js';
 import type { SerializedMap } from '../src/map/index.js';
 import type { StorageInstance } from '../src/storage.js';
+import { createStorage } from '../src/storage.js';
+
+import { createSpeech as createSpeechForTypes, MODE_NATIVE as NATIVE_FOR_TYPES } from '../src/speech/index.js';
+import type { SpeechVoice as SpeechVoiceForTypes } from '../src/speech/index.js';
 
 import {
 	textField, passwordField, textAreaField, numberField, rangeField,
@@ -160,3 +164,13 @@ const inferredMissingValue = storage.get('missing');
 inferredMissingValue.toString();
 const storedValue: string = storage.get('name', 'fallback');
 missingValue; inferredMissingValue; storedValue;
+
+const typedSpeech = createSpeechForTypes({ storage: createStorage('types') });
+typedSpeech.setMode(NATIVE_FOR_TYPES);
+typedSpeech.stop();
+const typedVoice: SpeechVoiceForTypes | null = typedSpeech.getVoice();
+const typedFeatures: boolean = typedSpeech.features().volume;
+const typedBackend: string | null = typedSpeech.getBackendName();
+const typedOff: () => void = typedSpeech.onVoicesChanged(() => {});
+typedSpeech.setVolume(0.5);
+void [typedVoice, typedFeatures, typedBackend, typedOff];

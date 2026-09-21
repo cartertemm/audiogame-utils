@@ -24,7 +24,8 @@ export * as math from './math.js';
 export * as physics from './physics/index.js';
 
 export { createKeyboard, createMouse, createTouch, createGamepad, createInputHandler, formatBinding } from './input/index.js';
-export { createSpeech, MODE_ARIA, MODE_TTS, MODE_BOTH } from './speech/index.js';
+export { createSpeech, MODE_ARIA, MODE_TTS, MODE_BOTH, MODE_NATIVE } from './speech/index.js';
+export type { SpeechMode, SpeechVoice, SpeechFeatures, SpeechInstance, SpeechOptions } from './speech/index.js';
 export { createAudio, createSfx, createCacophonyEngine, createSurfaceManager, createMixer, get_shared_mixer } from './audio/index.js';
 export { wrapSocket, createReconnectingClient, createIdentity } from './net/index.js';
 export { createMap } from './map/index.js';
