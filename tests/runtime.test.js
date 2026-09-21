@@ -36,6 +36,25 @@ describe('initRuntime', () => {
 		expect(platform.capability('file')('/tmp/pack.ogg')).toContain('asset://');
 	});
 
+	test('registers the speech adapter when the plugin reports a backend', async () => {
+		globalThis.__TAURI_INTERNALS__ = {};
+		const { initRuntime, platform } = await fresh();
+		const prism = await import('./stubs/plugin-prism.js');
+		prism.reset();
+		await initRuntime();
+		expect(platform.capability('speech').backendName).toBe('NVDA');
+	});
+
+	test('skips the speech adapter when no backend is available', async () => {
+		globalThis.__TAURI_INTERNALS__ = {};
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { initRuntime, platform } = await fresh();
+		const prism = await import('./stubs/plugin-prism.js');
+		prism.reset({ info: { available: false, backend: null, features: { voice: false, rate: false, pitch: false, volume: false } } });
+		await initRuntime();
+		expect(platform.capability('speech')).toBe(null);
+	});
+
 	test('repeated calls return the promise from the first call', async () => {
 		const { initRuntime } = await fresh();
 		expect(initRuntime()).toBe(initRuntime());

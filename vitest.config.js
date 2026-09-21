@@ -12,6 +12,7 @@ export default defineConfig({
 			'@tauri-apps/plugin-opener': stub('plugin-opener'),
 			'@tauri-apps/api/window': stub('api-window'),
 			'@tauri-apps/api/core': stub('api-core'),
+			'tauri-plugin-prism-api': stub('plugin-prism'),
 		},
 	},
 	test: {

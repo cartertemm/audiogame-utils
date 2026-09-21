@@ -9,7 +9,9 @@ import type { TauriStorageBackend } from './storage.js';
 
 export { createTauriStorageBackend } from './storage.js';
 export { createTauriWindow } from './window.js';
+export { createTauriSpeech } from './speech.js';
 export type { TauriStorageBackend, TauriStorageOptions } from './storage.js';
+export type { TauriSpeech } from './speech.js';
 
 /** Options for {@link setup}. */
 export interface SetupOptions {
