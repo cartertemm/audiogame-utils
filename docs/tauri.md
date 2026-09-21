@@ -400,7 +400,7 @@ Mobile certificates, device setup, application icons, permissions, store records
 
 ## Step 11: Check platform capabilities
 
-Tauri does not replace browser APIs with identical native implementations. Speech uses the same ARIA live regions and Web Speech API used by the browser version. Gamepads, rumble, wake locks, audio formats, and other web features depend on the operating system webview.
+Tauri does not replace browser APIs with identical native implementations. Speech uses native screen reader output when the prism plugin is installed, and the same ARIA live regions and Web Speech API used by the browser version otherwise. See Step 12. Gamepads, rumble, wake locks, audio formats, and other web features depend on the operating system webview.
 
 Check capabilities before giving instructions to a player. For example:
 
@@ -416,11 +416,56 @@ if (!gamepad.supported) {
 
 Webview support can change as operating systems update. It is important to test input, speech, audio, fullscreen, wake locks, and external links on every targeted operating system.
 
+## Step 12: Native screen reader output
+
+ARIA live regions work in a webview, but a direct call to the screen reader is more reliable. The `tauri-plugin-prism` plugin gives the game that call through prism, which talks to NVDA, JAWS, SAPI, VoiceOver, speech-dispatcher, and more. `initRuntime()` detects the plugin and `createSpeech` switches to native mode by default.
+
+Building the plugin compiles prism from source, which needs a C++23 toolchain and CMake 3.24 or later. On Windows that means Visual Studio 2022 Build Tools with the C++ workload and the "C++ ATL for latest v143 build tools" component. On macOS, Xcode command line tools. On Linux, GCC 14 or Clang 18 plus the `libspeechd-dev` package.
+
+1. Add the crate:
+
+```sh
+cd src-tauri
+cargo add tauri-plugin-prism
+```
+
+2. Register it in `src-tauri/src/lib.rs`:
+
+```rust
+tauri::Builder::default()
+	.plugin(tauri_plugin_prism::init())
+```
+
+3. Add `"prism:default"` to `permissions` in `src-tauri/capabilities/default.json`.
+
+4. Delay load the screen reader DLLs in `src-tauri/build.rs`. Prism links against vendor libraries for JAWS, ZoomText, and other readers. Without this step the app refuses to start on a machine that lacks one of them.
+
+```rust
+fn main() {
+	if let Ok(dlls) = std::env::var("DEP_TAURI_PLUGIN_PRISM_DELAY_LOAD_DLLS") {
+		for dll in dlls.split(';') {
+			println!("cargo:rustc-link-arg=/DELAYLOAD:{dll}");
+		}
+	}
+	tauri_build::build()
+}
+```
+
+5. Install the JavaScript bindings:
+
+```sh
+npm install tauri-plugin-prism-api
+```
+
+Run the game. `speech.getBackendName()` returns the backend prism picked, such as `NVDA` or `SAPI`. If it returns `null`, the console warning names the missing step.
+
+Prism links into the executable by default. To ship it as a shared library instead, depend on the crate with `default-features = false, features = ["shared"]` and add the built library to `bundle.resources` in `tauri.conf.json`.
+
+Rate, pitch, volume, and voice selection work in native mode when the backend supports them. See the [speech guide](speech.md#native-speech-under-tauri).
+
+If you skip this step, Vite still tries to resolve the optional package when it bundles the game. Add `tauri-plugin-prism-api` to `build.rollupOptions.external` in `vite.config.ts` to build without it.
+
 ## Future plans
-
-### Reliable screen reader output
-
-ARIA live regions work in Tauri, but they are not as reliable as direct calls to the operating system's screen reader APIs. We plan to build a Tauri plugin backed by the Platform-agnostic Reader Interface for Speech and Messages (PRISM). It will give audiogames screen reader output with the reliability players expect from native applications.
 
 ### iOS accessibility integration
 
@@ -546,3 +591,7 @@ Creates a window controller for the current Tauri window. It implements the same
 | `onCloseRequest(handler)` | Cleanup function | Runs a handler before closing and returns a function that removes it. Returning `false` blocks the close. |
 | `keepAwake(on)` | `Promise<boolean>` | Requests or releases the webview's screen wake lock. Resolves `false` when unavailable or refused. |
 | `openUrl(url)` | `Promise<boolean>` | Opens an external URL through the opener plugin, with a web fallback if the plugin is unavailable. |
+
+### `createTauriSpeech()`
+
+Probes the prism plugin and resolves the `speech` capability, or `null` when the plugin is missing or has no backend. `setup()` calls this for you.

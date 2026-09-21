@@ -438,15 +438,11 @@ const settingsScreen = renderScreen(root, renderSpeechSettings, {
 settingsScreen.dispose()
 ```
 
-Voice, rate, and pitch controls appear only when the selected mode uses text to speech. Changing the mode redraws the controls and restores focus to the selected mode.
+Voice, rate, pitch, and volume controls appear only when the speech instance reports that the active mode supports them through `features()`. Under native speech a screen reader backend hides them all, and a speech engine backend shows the ones it supports. The test button appears in every mode. Changing the mode redraws the controls and restores focus to the selected mode.
 
 The mode picker is hidden on iOS by default. Pass `modes` to replace the default list. Pass an empty array to hide the picker on any platform.
 
-The browser may load or change its voice list asynchronously. Both forms listen
-for `voiceschanged` and refresh the voice selector. Cleanup removes that
-listener. Call the handle's `dispose()` method when using
-`speechSettingsFields()`, or the `dispose()` method returned by `renderScreen()`
-when using `renderSpeechSettings()`.
+Voice lists can change after the first render, in the browser and under native speech. Both forms subscribe through `onVoicesChanged()` and refresh the voice selector. Cleanup removes that subscription. Call the handle's `dispose()` method when using `speechSettingsFields()`, or the `dispose()` method returned by `renderScreen()` when using `renderSpeechSettings()`.
 
 ### Speech settings options
 
@@ -456,13 +452,14 @@ to `speechSettingsFields()` because `renderSpeechSettings()` enables it itself.
 | Option | Default | Description |
 | --- | --- | --- |
 | `speech` | none | Required speech instance. The function throws if this is missing. |
-| `modes` | `[]` on iOS, `[MODE_ARIA, MODE_TTS]` elsewhere | Modes shown in the output picker. An empty array hides the picker. |
+| `modes` | `[]` on iOS, `[MODE_NATIVE, MODE_ARIA, MODE_TTS]` when native speech is available, `[MODE_ARIA, MODE_TTS]` otherwise | Modes shown in the output picker. An empty array hides the picker. |
 | `modeLabels` | built in labels | Labels keyed by mode. Custom labels are merged with the defaults. |
 | `modeLegend` | `Speech output` | Output mode fieldset legend. |
 | `voiceLabel` | `Voice` | Voice selector label. |
 | `defaultVoiceLabel` | `(default voice)` | Option shown when no voice is selected. |
 | `rateLabel` | `Speech rate` | Rate slider label. |
 | `pitchLabel` | `Speech pitch` | Pitch slider label. |
+| `volumeLabel` | `Speech volume` | Volume slider label. |
 | `testLabel` | `Test voice` | Voice test button label. |
 | `testMessage` | `This is a test of the selected voice.` | Text spoken by the voice test button. |
 | `autoFocus` | `false` | Marks the first available control for focus when the section is mounted. Only accepted by `speechSettingsFields()`. |

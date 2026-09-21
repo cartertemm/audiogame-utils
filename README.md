@@ -92,7 +92,7 @@ See [examples/](examples/) for more of what you can do.
 | [Tauri adapters](docs/tauri.md) | `audiogame-utils/tauri` | Direct setup and construction of native Tauri adapters. |
 | [Window](docs/tauri.md) | `audiogame-utils/window` | Title, fullscreen, quit, close guard, keep awake, and external links. |
 | [Rotation](docs/rotation.md) | `audiogame-utils/rotation` | Direction, movement, distance, and relative position helpers. |
-| [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through live regions and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
+| [Speech](docs/speech.md) | `audiogame-utils/speech` | Accessible output through native screen readers, live regions, and text to speech. Sets sensible platform defaults (TTS on iOS, screen reader everywhere else). |
 | [Stats](docs/stats.md) | `audiogame-utils/stats` | Stat tracking, formatted output, list sorting, set operations, and linear/JSON serialization. |
 | [Storage](docs/storage.md) | `audiogame-utils/storage` | Namespaced JSON storage. Saves to the browser session by default. |
 | [Text](docs/text.md) | `audiogame-utils/text` | sequence to string conversion, time formatting, string distance, and closestMatch helpers. |

@@ -53,18 +53,39 @@ button.addEventListener('click', () => {
 
 The priming utterance has zero volume.
 
+## Native speech under Tauri
+
+When the game runs under Tauri and the prism plugin is installed, `initRuntime()` registers a native speech adapter and `native` becomes the default mode. Native mode sends text to the player's screen reader, or to a system speech engine when no screen reader is running, through prism. Braille displays receive the same text.
+
+If the plugin is missing or prism finds no backend, the adapter logs one warning and the web modes stay in use. `setMode(MODE_NATIVE)` throws in that case, so hide the option when `getBackendName()` returns `null`. If a native `speak` call fails at runtime, the instance warns once and repeats the text through the live region.
+
+See the [Tauri guide](tauri.md#step-12-native-screen-reader-output) for the install steps.
+
+## Stopping
+
+`stop()` cancels output in the active mode. Native mode stops the backend, `tts` cancels queued utterances, and `aria` clears both live regions.
+
 ## Preferences
 
 Speech preferences are stored under these keys within the storage namespace:
 
 | Preference | Methods | Valid values |
 | --- | --- | --- |
-| Mode | `getMode()`, `setMode(mode)` | `MODE_ARIA`, `MODE_TTS`, or `MODE_BOTH` |
-| Voice | `getVoices()`, `getVoice()`, `setVoice(voice)` | A `SpeechSynthesisVoice` or voice URI string |
-| Pitch | `getPitch()`, `setPitch(value)` | A number from 0 through 2 |
-| Rate | `getRate()`, `setRate(value)` | A number from 0.1 through 10 |
+| Mode | `getMode()`, `setMode(mode)` | `MODE_NATIVE`, `MODE_ARIA`, `MODE_TTS`, or `MODE_BOTH` |
+| Voice | `getVoices()`, `getVoice()`, `setVoice(voice)`, `onVoicesChanged(handler)` | A `{ id, name, language }` object or its `id` |
+| Pitch | `getPitch()`, `setPitch(value)` | A number from 0 through 1. 0.5 is normal. |
+| Rate | `getRate()`, `setRate(value)` | A number from 0 through 1. 0.5 is normal. |
+| Volume | `getVolume()`, `setVolume(value)` | A number from 0 through 1 |
 
-The stored keys are `speechMode`, `speechVoice`, `speechPitch`, and `speechRate`. Pitch and rate default to 1. `getVoice()` returns `null` when no voice is selected or the selected voice is no longer available.
+Rate, pitch, and volume use the same scale in every mode. In `tts` mode the instance converts them to Web Speech values, so a rate of 0.5 speaks at the engine's normal speed and 1 speaks at twice that. Versions before 0.4.0 exposed the Web Speech scales directly.
+
+Rate and pitch default to 0.5 and volume to 1. `getVoice()` returns `null` when no voice is selected or the selected voice is no longer available.
+
+Voices have one shape in every mode. In `tts` mode the `id` is the Web Speech `voiceURI`. In native mode it is the backend's voice index as a string. Because ids differ between engines, the selected voice is stored under `speechVoice` for `tts` and `nativeVoice` for native. Rate, pitch, and volume are stored once under `speechRate`, `speechPitch`, and `speechVolume` and apply to whichever mode is active.
+
+`getVoices()` in native mode returns the last known list and refreshes it in the background. The first call returns an empty list. Pass a handler to `onVoicesChanged()` to redraw when the list arrives. The same handler fires for the browser's `voiceschanged` event in `tts` mode.
+
+`features()` returns `{ voice, rate, pitch, volume }` flags for the active mode. Screen reader backends such as NVDA report every flag as `false`, so settings screens can hide controls that would have no effect.
 
 ## Cleanup
 
