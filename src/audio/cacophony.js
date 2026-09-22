@@ -2,6 +2,7 @@
 // Initializes the Cacophony engine and sets up the interfaces that we use.
 
 import { get_shared_mixer } from './mixer.js';
+import { createReverb } from './reverb.js';
 
 function createMemoryCache() {
 	const buffers = new Map();
@@ -47,6 +48,9 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 		}
 		return initPromise;
 	}
+
+	const reverb = createReverb(init);
+	reverb.onInput(input => mixer.attachReverb(input));
 
 	// A channel name must resolve here as the context only exists after init.
 	function resolveDestination(destination) {
@@ -124,6 +128,7 @@ export function createCacophonyEngine({ mixer = get_shared_mixer() } = {}) {
 
 	return {
 		mixer,
+		reverb,
 		load,
 		spawn,
 		start,

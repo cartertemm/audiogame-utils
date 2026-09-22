@@ -174,3 +174,11 @@ const typedBackend: string | null = typedSpeech.getBackendName();
 const typedOff: () => void = typedSpeech.onVoicesChanged(() => {});
 typedSpeech.setVolume(0.5);
 void [typedVoice, typedFeatures, typedBackend, typedOff];
+
+audio.reverb!.presets.cave = { decayTime: 3, damping: 0.2 };
+void audio.reverb?.set('cave', { ramp: 1 });
+void audio.reverb?.set({ decayTime: 0.5 });
+void audio.reverb?.set(null);
+audio.mixer.channel('sfx').setReverbSend(0.3, { ramp: 2 });
+const send: number = audio.mixer.channel('sfx').reverbSend;
+void send;

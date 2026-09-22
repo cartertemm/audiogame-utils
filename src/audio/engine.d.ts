@@ -1,4 +1,5 @@
 import type { Mixer } from './mixer.js';
+import type { Reverb } from './reverb.js';
 
 /** Playback properties accepted by an audio engine. */
 export interface SfxOptions {
@@ -66,6 +67,8 @@ export interface ListenerOptions {
 export interface CacophonyEngine {
 	/** Named volume channels this engine routes to. */
 	readonly mixer?: Mixer;
+	/** Shared reverb bus this engine feeds. */
+	readonly reverb?: Reverb;
 	/** Loads and decodes an audio asset. */
 	load(url: string, options?: EngineLoadOptions): Promise<any>;
 	/** Allocates a playback voice without starting it. */

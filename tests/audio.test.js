@@ -470,3 +470,11 @@ describe('createAudio: mixer', () => {
 		expect(createAudio({ engine: { mixer } }).mixer).toBe(mixer);
 	});
 });
+
+describe('createAudio: reverb', () => {
+	test('exposes the engine reverb on the audio instance', () => {
+		const reverb = { presets: {} };
+		const audio = createAudio({ engine: { mixer: null, reverb } });
+		expect(audio.reverb).toBe(reverb);
+	});
+});

@@ -8,6 +8,7 @@
 import type { SfxHandle, SfxSource, SfxCreateOptions } from './sfx.js';
 import type { CacophonyEngine } from './engine.js';
 import type { Mixer } from './mixer.js';
+import type { Reverb } from './reverb.js';
 
 /** Configuration for {@link createAudio}. */
 export interface AudioOptions {
@@ -19,6 +20,8 @@ export interface AudioOptions {
 export interface AudioInstance {
 	/** Named volume channels, usable before any audio loads. */
 	readonly mixer: Mixer;
+	/** The engine's reverb bus, or `null` when the page has no audio engine. */
+	readonly reverb: Reverb | null;
 	/** Creates and registers a lazy sound handle. */
 	sfx(source: SfxSource, options?: SfxCreateOptions): SfxHandle;
 	/** Loads selected handles, or every handle created by this instance when omitted. */
@@ -32,6 +35,7 @@ export function createAudio(options?: AudioOptions): AudioInstance;
 
 export * from './engine.js';
 export * from './mixer.js';
+export * from './reverb.js';
 export * from './cacophony.js';
 export * from './sfx.js';
 export * from './coords.js';

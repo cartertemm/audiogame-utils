@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { createReverb } from '../src/audio/reverb.js';
+import { createCacophonyEngine } from '../src/audio/cacophony.js';
+import { createMixer } from '../src/audio/mixer.js';
 
 function makeFakeParam(value = 1) {
 	return {
@@ -128,5 +130,17 @@ describe('reverb', () => {
 		await reverb.set({ decayTime: 1 });
 		expect(cacophony.log.filter(e => e[0] === 'createBus')).toHaveLength(2);
 		expect(reverb.input).not.toBe(null);
+	});
+});
+
+describe('engine reverb wiring', () => {
+	test('creates a reverb whose input reaches the mixer', () => {
+		const mixer = createMixer();
+		const calls = [];
+		mixer.attachReverb = input => calls.push(input);
+		const engine = createCacophonyEngine({ mixer });
+		expect(engine.reverb.presets).toEqual({});
+		expect(engine.reverb.input).toBe(null);
+		expect(calls).toEqual([]);
 	});
 });
