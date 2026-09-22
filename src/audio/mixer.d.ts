@@ -19,6 +19,10 @@ export interface MixerChannel {
 	volume: number;
 	/** The gain node, or `null` before the audio context exists. */
 	readonly node: any;
+	/** Level sent to the reverb bus, `0` through `1`. */
+	readonly reverbSend: number;
+	/** Sets the reverb send level, ramping over `ramp` seconds. A no-op on master. */
+	setReverbSend(value: number, options?: { ramp?: number }): void;
 }
 
 /** A set of named channels that collectively feed one master channel. */
@@ -31,6 +35,8 @@ export interface Mixer {
 	names(): string[];
 	/** Builds the gain nodes and wires them. Called by the engine. */
 	attach(context: any, destination: any): void;
+	/** Connects a send gain from every non-master channel to the reverb bus input. Called by the engine. */
+	attachReverb(input: any): void;
 }
 
 /** Creates an independent mixer. */

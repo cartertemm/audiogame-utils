@@ -2,9 +2,19 @@ import { describe, test, expect } from 'vitest';
 import { createMixer, get_shared_mixer } from '../src/audio/mixer.js';
 import { db_to_volume } from '../src/audio/units.js';
 
+function makeFakeParam(value = 1) {
+	return {
+		value,
+		calls: [],
+		cancelScheduledValues(t) { this.calls.push(['cancel', t]); },
+		setValueAtTime(v, t) { this.calls.push(['set', v, t]); this.value = v; },
+		linearRampToValueAtTime(v, t) { this.calls.push(['ramp', v, t]); this.value = v; },
+	};
+}
+
 function makeFakeGain() {
 	return {
-		gain: { value: 1 },
+		gain: makeFakeParam(1),
 		connectedTo: [],
 		connect(target) { this.connectedTo.push(target); },
 		disconnect() { this.connectedTo.length = 0; },
@@ -13,6 +23,7 @@ function makeFakeGain() {
 
 function makeFakeContext() {
 	return {
+		currentTime: 5,
 		created: [],
 		createGain() {
 			const node = makeFakeGain();
@@ -93,5 +104,57 @@ describe('audio mixer', () => {
 
 	test('shares one mixer across the page', () => {
 		expect(get_shared_mixer()).toBe(get_shared_mixer());
+	});
+
+	test('defaults every channel to no reverb send', () => {
+		const mixer = createMixer();
+		expect(mixer.channel('sfx').reverbSend).toBe(0);
+	});
+
+	test('stores a send set before the reverb bus exists and applies it on attach', () => {
+		const mixer = createMixer();
+		mixer.channel('sfx').setReverbSend(0.3, { ramp: 0 });
+		expect(mixer.channel('sfx').reverbSend).toBe(0.3);
+
+		const context = makeFakeContext();
+		mixer.attach(context, makeFakeGain());
+		const input = makeFakeGain();
+		mixer.attachReverb(input);
+
+		const sfx = mixer.channel('sfx').node;
+		const send = sfx.connectedTo[1];
+		expect(send.gain.value).toBe(0.3);
+		expect(send.connectedTo).toEqual([input]);
+	});
+
+	test('ramps a live send gain', () => {
+		const mixer = createMixer();
+		const context = makeFakeContext();
+		mixer.attach(context, makeFakeGain());
+		mixer.attachReverb(makeFakeGain());
+		const sfx = mixer.channel('sfx');
+		const send = sfx.node.connectedTo[1];
+		sfx.setReverbSend(0.5, { ramp: 2 });
+		expect(send.gain.calls).toEqual([['cancel', 5], ['set', 0, 5], ['ramp', 0.5, 7]]);
+		expect(sfx.reverbSend).toBe(0.5);
+	});
+
+	test('gives a channel named after attachReverb its own send', () => {
+		const mixer = createMixer();
+		mixer.attach(makeFakeContext(), makeFakeGain());
+		const input = makeFakeGain();
+		mixer.attachReverb(input);
+		const voices = mixer.channel('voices');
+		expect(voices.node.connectedTo[1].connectedTo).toEqual([input]);
+	});
+
+	test('gives master no send', () => {
+		const mixer = createMixer();
+		mixer.attach(makeFakeContext(), makeFakeGain());
+		mixer.attachReverb(makeFakeGain());
+		const master = mixer.channel('master');
+		master.setReverbSend(1);
+		expect(master.reverbSend).toBe(0);
+		expect(master.node.connectedTo).toHaveLength(1);
 	});
 });
