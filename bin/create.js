@@ -15,6 +15,7 @@ import { addDelayLoad } from './create-patches.js';
 
 const CSP = [
 	"default-src 'self'",
+	"script-src 'self' data:",
 	"media-src 'self' asset: http://asset.localhost blob: data:",
 	"img-src 'self' asset: http://asset.localhost data:",
 	"style-src 'self' 'unsafe-inline'",
