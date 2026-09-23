@@ -41,6 +41,10 @@ export function createReverb(getCacophony) {
 					built.destroy();
 					throw err;
 				}
+				const keepalive = cacophony.context.createConstantSource();
+				keepalive.offset.value = 0;
+				keepalive.connect(built.input);
+				keepalive.start();
 				bus = built;
 				for (const listener of listeners) listener(bus.input);
 			})().catch(err => {

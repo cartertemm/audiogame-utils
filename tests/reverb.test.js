@@ -16,7 +16,20 @@ function makeFakeParam(value = 1) {
 function makeFakeCacophony({ failBuild = false } = {}) {
 	const log = [];
 	const cacophony = {
-		context: { currentTime: 5 },
+		context: {
+			currentTime: 5,
+			createConstantSource() {
+				const source = {
+					offset: { value: 1 },
+					connectedTo: [],
+					started: false,
+					connect(target) { this.connectedTo.push(target); },
+					start() { this.started = true; },
+				};
+				log.push(['createConstantSource', source]);
+				return source;
+			},
+		},
 		log,
 		createFdnReverb(options) {
 			log.push(['createFdnReverb', options]);
@@ -67,6 +80,16 @@ describe('reverb', () => {
 		expect(effectOptions(cacophony)).toEqual({ decayTime: 3, damping: 0.2, mix: 1 });
 		expect(inputs).toEqual([lastBus(cacophony).input]);
 		expect(reverb.input).toBe(lastBus(cacophony).input);
+	});
+
+	test('keeps a silent source on the bus input so the worklet rings out', async () => {
+		const cacophony = makeFakeCacophony();
+		const reverb = createReverb(async () => cacophony);
+		await reverb.set({ decayTime: 1 });
+		const source = cacophony.log.find(e => e[0] === 'createConstantSource')[1];
+		expect(source.offset.value).toBe(0);
+		expect(source.connectedTo).toEqual([lastBus(cacophony).input]);
+		expect(source.started).toBe(true);
 	});
 
 	test('ramps only the given fields on later calls', async () => {
