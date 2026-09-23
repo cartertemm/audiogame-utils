@@ -1,6 +1,5 @@
-// The truck yard walk again. But this time, the truck is parked in a parking lot, and there is a stage just north of it.
-// The data is loaded from a map file (examples/maps/venue.json).
-// The map provides the tiles, zones, and every looping sound.
+// The truck yard walk, with a parking lot and a stage to the north.
+// Tiles, zones, and looping sounds come from examples/maps/venue.json.
 
 import { createStorage } from '../src/storage.js';
 import { createSpeech } from '../src/speech/index.js';
@@ -17,11 +16,17 @@ const TURN_MS = 260;
 const STEP_VOLUME = -1;
 const SRC_VOLUME = 0;
 const STEP_COUNT = 5;
+const WORLD_CHANNEL = 'world';
+const REVERB_SEND = 0.5;
 
-// The truck has to carry across the whole lot, so it keeps the gentle pool
-// default. The music belongs to the hall, so it rolls off much faster: from the
-// far end of the lot the stage is barely there, and it swells as you walk up to
-// it. Higher numbers fade quicker.
+// Reverb preset for each zone. It uses the zone the player is in, for all sounds.
+const ZONE_REVERB = {
+	'parking lot': 'outdoors',
+	'concert hall': 'hall',
+};
+
+// Higher rolloff fades faster with distance. The truck keeps the pool default so
+// you hear it across the lot. The music fades fast so it is quiet outside the hall.
 const SRC_SETTINGS = {
 	'./sounds/truck.ogg': { label: 'the truck' },
 	'./sounds/menu/music.ogg': { label: 'the stage', rolloff: 0.5 },
@@ -33,6 +38,13 @@ const keyboard = createKeyboard();
 const map = createMap();
 const pool = new sound_pool();
 pool.volume_step = 0.2;
+pool.mixer = WORLD_CHANNEL;
+const engine = pool.get_engine();
+if (engine) {
+	engine.reverb.presets.outdoors = { decayTime: 0.6, damping: 0.8, preDelay: 0.02, diffusion: 0.3 };
+	engine.reverb.presets.hall = { decayTime: 2.4, damping: 0.3, preDelay: 0.03, diffusion: 0.8 };
+	engine.mixer.channel(WORLD_CHANNEL).setReverbSend(REVERB_SEND, { ramp: 0 });
+}
 
 const startButton = document.getElementById('start');
 const game = document.getElementById('game');
@@ -64,6 +76,10 @@ function tile_at(x, y) {
 
 function zone_at(x, y) {
 	return map.getOneAt('zone', x, y, 0)?.name ?? 'open ground';
+}
+
+function apply_reverb() {
+	engine?.reverb.set(ZONE_REVERB[zone] ?? null).catch(() => {});
 }
 
 function step_sound() {
@@ -127,6 +143,7 @@ function walk(offset) {
 	const here = zone_at(player_x, player_y);
 	if (here !== zone) {
 		zone = here;
+		apply_reverb();
 		speech.speak(here, true);
 	}
 }
@@ -184,6 +201,7 @@ async function start() {
 	running = true;
 	trap = createFocusTrap(game, { label: map.header().name });
 	pool.update_listener_2d(player_x, player_y, facing);
+	apply_reverb();
 	play_sources();
 	requestAnimationFrame(frame);
 	speech.speak(`You are at the south corner of the ${zone}, facing north. ${source_report()} Use the arrows to walk, q and e to turn, space to check your position, and escape to stop.`, true);
