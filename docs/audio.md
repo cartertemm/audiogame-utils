@@ -137,8 +137,15 @@ A channel has these properties:
 | `volume` | Linear volume, normally from `0` through `1`. Values above `1` amplify the channel. |
 | `db` | Volume in decibels, where `0` is full volume and `-100` is silence. |
 | `node` | The channel's gain node, or `null` before the audio engine starts. |
+| `reverbSend` | Read only level sent to the shared reverb bus. Defaults to `0`. |
 
 Changing `volume` updates `db`, and changing `db` updates `volume`.
+
+### `setReverbSend(value, options)`
+
+Sets how much of the channel is sent to the shared reverb bus. `value` normally ranges from `0` for no reverb to `1` for a full level send. The dry signal still plays through the channel. Changes ramp over `0.5` seconds by default. Pass `{ ramp: 0 }` to apply a change immediately.
+
+The `master` channel cannot send to the reverb bus, so calling this method on it has no effect.
 
 ### `names()`
 
@@ -160,6 +167,39 @@ pool.mixer = 'effects'
 ```
 
 The `mix` argument on the extended playback methods can override that group for one sound. See [Sound pools](#sound-pools) for the complete pool API.
+
+## Reverb
+
+Each audio instance exposes a shared reverb bus as `audio.reverb`. Route sounds through a mixer channel, set that channel's send level, then select a named preset or pass the reverb parameters directly:
+
+```js
+const audio = createAudio()
+const ambience = audio.sfx('/sounds/ambience.ogg')
+
+audio.reverb.presets.cave = {
+	decayTime: 3,
+	damping: 0.2,
+	preDelay: 0.03,
+	diffusion: 0.8,
+}
+
+audio.mixer.channel('world').setReverbSend(0.5, { ramp: 0 })
+await audio.reverb.set('cave')
+await ambience.play({ loop: true, destination: 'world' })
+```
+
+The first nonnull `set()` call builds the reverb bus. Later calls ramp only the parameters they include. Presets are ordinary entries in `audio.reverb.presets`, so applications choose their names and values.
+
+| Parameter | Meaning |
+| --- | --- |
+| `decayTime` | Reverberation time in seconds. |
+| `damping` | High frequency damping from `0` through `1`. |
+| `preDelay` | Delay before the wet signal in seconds. |
+| `diffusion` | Diffusion amount from `0` through `1`. |
+
+`set(target, { ramp })` accepts a preset name, a parameter object, or `null`. The default ramp is `0.5` seconds. Passing `null` fades the reverb out without changing its current parameters. The next nonnull call fades it back in. An unknown preset name rejects the returned promise.
+
+Browser reverb requires HTTPS because its FDN processor uses an `AudioWorklet`, which browsers expose only in a secure context. Localhost is normally treated as secure for development. If the game also uses WebSockets, connect with WSS from the HTTPS page because browsers block plain WS as mixed active content. A production networked game therefore needs both HTTPS and WSS for reverb and networking to work together.
 
 ## Low level exports
 
