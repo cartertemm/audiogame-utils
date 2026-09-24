@@ -205,7 +205,7 @@ Each slot corresponds to a `sound_pool_item`. The item holds the playback, posit
 
 The `items`, `highest_slot`, `clean_frequency`, and `engine` properties expose internal state used to manage the pool. Pass a custom engine through the constructor instead of changing these properties directly.
 
-When `max_distance` is greater than zero, a two or three dimensional loop created outside that distance keeps its slot without starting playback. Listener and sound updates also suspend any loop that moves out of range. The pool starts it again when an update brings it back into range.
+When `max_distance` is greater than zero, a two or three dimensional loop created outside that distance keeps its slot without starting playback. Listener and sound updates also suspend any loop that moves out of range. The pool starts it again when an update brings it back into range. The loop continues at the position it would have reached if it had kept playing, so it does not restart from the beginning.
 
 ### Coordinates and units
 

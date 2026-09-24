@@ -95,6 +95,14 @@ export class sound_pool_item {
 	occlude: boolean;
 	/** Playback starting offset in seconds. */
 	start_offset: number;
+	/** When `close` released a looping playback, in milliseconds, or `null` when no position is held. */
+	closed_at: number | null;
+	/** Loop position in seconds when `close` released it. */
+	closed_position: number;
+	/** Playback rate when `close` released the loop. */
+	closed_rate: number;
+	/** Sound length in seconds when `close` released the loop. */
+	closed_duration: number;
 	/** Whether cleanup retains the item while it is not playing. */
 	persistent: boolean;
 	/** Panning algorithm fixed for this item. */
@@ -111,8 +119,10 @@ export class sound_pool_item {
 
 	/** Stops playback and restores every slot property to its default. */
 	reset(): void;
-	/** Releases playback nodes while retaining the reserved slot. */
+	/** Releases playback nodes while retaining the reserved slot. A looping sound remembers its position. */
 	close(): void;
+	/** Where `spawn` starts: a closed loop's position advanced by the time away, else `start_offset`. */
+	resume_offset(): number;
 	/** Loads and allocates playback, optionally starting it immediately. */
 	spawn(start_playing?: boolean): void;
 	/** Applies an NVGT pitch percentage to current playback. */

@@ -20,6 +20,10 @@ export function set_sound_pool_default_y_elevation(value) {
 	sound_pool_default_y_elevation = value;
 }
 
+function now_ms() {
+	return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
 function clamp(value, min, max) {
 	return Math.min(Math.max(value, min), max);
 }
@@ -69,6 +73,10 @@ export class sound_pool_item {
 		this.stationary = false;
 		this.occlude = true;
 		this.start_offset = 0.0;
+		this.closed_at = null;
+		this.closed_position = 0.0;
+		this.closed_rate = 1.0;
+		this.closed_duration = 0.0;
 		this.persistent = false;
 		this.pan_type = 'HRTF';
 		this.destination = null;
@@ -84,8 +92,16 @@ export class sound_pool_item {
 	}
 
 	// Releases the audio nodes but keeps the slot, so an out of earshot looping
-	// sound can come back when the listener returns.
+	// sound can come back when the listener returns. A loop remembers where it
+	// was, so it comes back where it would be had it kept playing, instead of
+	// restarting every time the listener crosses the earshot line.
 	close() {
+		if (this.handle && this.looping) {
+			this.closed_at = now_ms();
+			this.closed_position = this.handle.currentTime ?? 0;
+			this.closed_rate = this.handle.playbackRate ?? 1;
+			this.closed_duration = this.handle.duration ?? 0;
+		}
 		if (this.handle) this.handle.stop();
 		this.handle = null;
 		this.loading = null;
@@ -94,21 +110,30 @@ export class sound_pool_item {
 		this.applied_volume = null;
 	}
 
+	resume_offset() {
+		if (this.closed_at === null) return this.start_offset;
+		const away = this.paused ? 0 : (now_ms() - this.closed_at) / 1000 * this.closed_rate;
+		const position = this.closed_position + away;
+		return this.closed_duration > 0 ? position % this.closed_duration : position;
+	}
+
 	spawn(start_playing = true) {
 		if (this.handle || this.loading || this.filename === "") return;
 		const engine = this.pool.get_engine();
 		if (!engine) return;
 		const gen = this.generation;
+		const offset = this.resume_offset();
 		this.loading = engine.load(this.filename, { panType: this.pan_type })
 			.then(sound => {
 				if (gen !== this.generation) return;
 				const inst = engine.spawn(sound, {
 					loop: this.looping,
-					offset: this.start_offset,
+					offset,
 					destination: this.destination,
 				});
 				if (!inst) return;
 				this.handle = inst;
+				this.closed_at = null;
 				// The engine releases the audio nodes when a playback stops, and a
 				// released playback throws on every write.
 				inst.on?.('stop', () => {

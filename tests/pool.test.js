@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi, afterEach } from 'vitest';
 import { sound_pool } from '../src/audio/pool.js';
 import { to_audio_position, orientation_from_rotation, listener_relative } from '../src/audio/coords.js';
 import { db_to_volume, pan_to_stereo, pitch_to_rate, inverse_gain } from '../src/audio/units.js';
@@ -20,6 +20,8 @@ function makeFakePlayback(panType) {
 		position: null,
 		threeDOptions: null,
 		sourceLoop: false,
+		currentTime: 0,
+		duration: 10,
 		// Cacophony's play() swaps in a fresh buffer source, which resets the loop
 		// flag set before playback started. Model that here.
 		play() {
@@ -58,6 +60,7 @@ function makeFakeEngine() {
 			const inst = makeFakePlayback(handle.panType);
 			inst.url = handle.url;
 			inst.destination = options.destination ?? null;
+			inst.offset = options.offset ?? 0;
 			if (options.loop) inst.sourceLoop = true;
 			this.playbacks.push(inst);
 			return inst;
@@ -313,6 +316,32 @@ describe('sound_pool: earshot', () => {
 		pool.update_listener_2d(0, 0);
 		await flush();
 		expect(engine.playbacks.length).toBe(2);
+	});
+
+	describe('a loop that comes back', () => {
+		let now = 1000;
+		afterEach(() => vi.restoreAllMocks());
+
+		async function walkAwayAndBack(position, awayMs) {
+			vi.spyOn(performance, 'now').mockImplementation(() => now);
+			const { pool, engine } = makePool(4, { max_distance: 10 });
+			pool.play_2d('a.ogg', 0, 0, 0, 5, true);
+			await flush();
+			engine.playbacks[0].currentTime = position;
+			pool.update_listener_2d(0, 100);
+			now += awayMs;
+			pool.update_listener_2d(0, 0);
+			await flush();
+			return engine.playbacks[1];
+		}
+
+		test('resumes where it would have been had it kept playing', async () => {
+			expect((await walkAwayAndBack(3, 4000)).offset).toBeCloseTo(7);
+		});
+
+		test('wraps past the end of the sound', async () => {
+			expect((await walkAwayAndBack(8, 5000)).offset).toBeCloseTo(3);
+		});
 	});
 });
 
