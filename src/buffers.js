@@ -155,33 +155,33 @@ export class BufferManager extends EventEmitter {
 		this._speak(buffer.current.text);
 	}
 
-	_setItemPosition(index) {
+	_setItemPosition(index, silent = false) {
 		const buffer = this.current;
 		if (index !== buffer.position) {
 			buffer.position = index;
 			this.emit('move', { manager: this, buffer });
 		}
-		this.speakCurrentItem();
+		if (!silent) this.speakCurrentItem();
 	}
 
-	_moveItem(step, wrap) {
+	_moveItem(step, wrap, silent) {
 		const buffer = this.current;
 		if (!buffer || buffer.length === 0) {
-			this.speakCurrentItem();
+			if (!silent) this.speakCurrentItem();
 			return;
 		}
 		const count = buffer.length;
 		let index = buffer.position + step;
 		index = wrap ? (index + count) % count : Math.min(Math.max(index, 0), count - 1);
-		this._setItemPosition(index);
+		this._setItemPosition(index, silent);
 	}
 
-	nextBufferItem({ wrap = false } = {}) {
-		this._moveItem(1, wrap);
+	nextBufferItem({ wrap = false, silent = false } = {}) {
+		this._moveItem(1, wrap, silent);
 	}
 
-	previousBufferItem({ wrap = false } = {}) {
-		this._moveItem(-1, wrap);
+	previousBufferItem({ wrap = false, silent = false } = {}) {
+		this._moveItem(-1, wrap, silent);
 	}
 
 	firstBufferItem() {

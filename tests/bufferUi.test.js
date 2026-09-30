@@ -16,6 +16,14 @@ function ariaCurrentIndex(list) {
 	return [...list.children].findIndex(node => node.getAttribute('aria-current') === 'true');
 }
 
+function selectedIndex(list) {
+	return [...list.children].findIndex(node => node.getAttribute('aria-selected') === 'true');
+}
+
+function press(target, key) {
+	target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+}
+
 describe('renderBufferList', () => {
 	test('renders a plain list with one entry per item', () => {
 		const manager = createBufferManager();
@@ -55,7 +63,105 @@ describe('renderBufferList', () => {
 		manager.addItem(chat, 'two', { silent: true });
 		expect(texts(list)).toEqual(['one', 'two']);
 		expect(currentIndex(list)).toBe(0);
-		expect(ariaCurrentIndex(list)).toBe(0);
+		expect(selectedIndex(list)).toBe(0);
+		expect(list.tabIndex).toBe(-1);
+	});
+
+	test('a static list is a plain list', () => {
+		const manager = createBufferManager();
+		const chat = manager.createBuffer('Chat');
+		chat.add('one');
+		const list = renderBufferList(chat);
+		expect(list.hasAttribute('role')).toBe(false);
+		expect(list.children[0].hasAttribute('role')).toBe(false);
+		expect(list.children[0].hasAttribute('tabindex')).toBe(false);
+	});
+
+	test('a live list is a listbox with one tab stop on the current option', () => {
+		const manager = createBufferManager();
+		const chat = manager.createBuffer('Chat');
+		chat.add('one');
+		chat.add('two');
+		const list = renderBufferList(chat, { manager });
+		expect(list.getAttribute('role')).toBe('listbox');
+		expect([...list.children].map(node => node.getAttribute('role'))).toEqual(['option', 'option']);
+		expect([...list.children].map(node => node.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+		expect([...list.children].map(node => node.tabIndex)).toEqual([0, -1]);
+		expect(ariaCurrentIndex(list)).toBe(-1);
+	});
+
+	test('a live list is a tab stop only while empty', () => {
+		const manager = createBufferManager();
+		const chat = manager.createBuffer('Chat');
+		const list = renderBufferList(chat, { manager });
+		expect(list.tabIndex).toBe(0);
+		manager.addItem(chat, 'one', { silent: true });
+		expect(list.tabIndex).toBe(-1);
+		manager.clearBuffer(chat);
+		expect(list.tabIndex).toBe(0);
+	});
+
+	test('up and down arrows move silently and focus follows', () => {
+		const speech = { speak: vi.fn() };
+		const manager = createBufferManager({ speech });
+		const chat = manager.createBuffer('Chat');
+		chat.add('one');
+		chat.add('two');
+		const list = renderBufferList(chat, { manager });
+		document.body.appendChild(list);
+		list.children[0].focus();
+		press(list.children[0], 'ArrowDown');
+		expect(chat.position).toBe(1);
+		expect(selectedIndex(list)).toBe(1);
+		expect(document.activeElement).toBe(list.children[1]);
+		press(list.children[1], 'ArrowDown');
+		expect(chat.position).toBe(1);
+		press(list.children[1], 'ArrowUp');
+		expect(chat.position).toBe(0);
+		expect(document.activeElement).toBe(list.children[0]);
+		expect(speech.speak).not.toHaveBeenCalled();
+		list.remove();
+	});
+
+	test('arrows in a list for another buffer focus that buffer silently', () => {
+		const speech = { speak: vi.fn() };
+		const manager = createBufferManager({ speech });
+		manager.createBuffer('Chat');
+		const log = manager.createBuffer('Log');
+		log.add('one');
+		log.add('two');
+		const list = renderBufferList(log, { manager });
+		press(list, 'ArrowDown');
+		expect(manager.current).toBe(log);
+		expect(log.position).toBe(1);
+		expect(speech.speak).not.toHaveBeenCalled();
+	});
+
+	test('focus stays in the list through clear and the next add', () => {
+		const manager = createBufferManager();
+		const chat = manager.createBuffer('Chat');
+		chat.add('one');
+		const list = renderBufferList(chat, { manager });
+		document.body.appendChild(list);
+		list.children[0].focus();
+		manager.clearBuffer(chat);
+		expect(document.activeElement).toBe(list);
+		manager.addItem(chat, 'two', { silent: true });
+		expect(document.activeElement).toBe(list.children[0]);
+		list.remove();
+	});
+
+	test('focus moves to the new current item when maxItems drops the focused one', () => {
+		const manager = createBufferManager();
+		const chat = manager.createBuffer('Chat', { maxItems: 2 });
+		chat.add('one');
+		chat.add('two');
+		const list = renderBufferList(chat, { manager });
+		document.body.appendChild(list);
+		list.children[0].focus();
+		manager.addItem(chat, 'three', { silent: true });
+		expect(document.activeElement).toBe(list.children[chat.position]);
+		list.remove();
 	});
 
 	test('a maxItems 0 buffer does not throw on addItem and stays empty', () => {
@@ -118,6 +224,17 @@ describe('renderBufferList', () => {
 		expect(list.children.length).toBe(0);
 		expect(manager.listenerCount('add')).toBe(0);
 	});
+
+	test('dispose stops arrow keys', () => {
+		const manager = createBufferManager();
+		const chat = manager.createBuffer('Chat');
+		chat.add('one');
+		chat.add('two');
+		const list = renderBufferList(chat, { manager });
+		list.dispose();
+		press(list, 'ArrowDown');
+		expect(chat.position).toBe(0);
+	});
 });
 
 function tabs(root) {
@@ -149,7 +266,7 @@ describe('renderBufferManager', () => {
 		expect(panels(root).length).toBe(2);
 		expect(panels(root)[0].querySelector('ul').getAttribute('aria-label')).toBe('Chat');
 		expect(panels(root)[0].querySelector('li').textContent).toBe('hello');
-		expect(panels(root).every(panel => panel.tabIndex === 0)).toBe(true);
+		expect(panels(root).every(panel => !panel.hasAttribute('tabindex'))).toBe(true);
 	});
 
 	test('connects tabs and panels with ids', () => {

@@ -344,6 +344,17 @@ describe('BufferManager items', () => {
 		expect(chat.position).toBe(0);
 	});
 
+	test('silent item moves do not speak', () => {
+		const { speech, manager, chat } = setup();
+		manager.nextBufferItem({ silent: true });
+		manager.previousBufferItem({ silent: true });
+		manager.previousBufferItem({ silent: true });
+		expect(chat.position).toBe(0);
+		manager.clearBuffer(chat);
+		manager.nextBufferItem({ silent: true });
+		expect(speech.speak).not.toHaveBeenCalled();
+	});
+
 	test('firstBufferItem and lastBufferItem jump and speak', () => {
 		const { speech, manager, chat } = setup();
 		manager.lastBufferItem();

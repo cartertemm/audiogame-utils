@@ -70,8 +70,8 @@ export class BufferManager extends EventEmitter {
 	previousBuffer(options?: { wrap?: boolean; silent?: boolean }): void;
 	firstBuffer(options?: { silent?: boolean }): void;
 	lastBuffer(options?: { silent?: boolean }): void;
-	nextBufferItem(options?: { wrap?: boolean }): void;
-	previousBufferItem(options?: { wrap?: boolean }): void;
+	nextBufferItem(options?: { wrap?: boolean; silent?: boolean }): void;
+	previousBufferItem(options?: { wrap?: boolean; silent?: boolean }): void;
 	firstBufferItem(): void;
 	lastBufferItem(): void;
 	speakCurrentItem(): void;

@@ -199,7 +199,7 @@ Moves to the first or last buffer. Pass `options.silent: true` to suppress speec
 
 #### `manager.nextBufferItem(options)` and `manager.previousBufferItem(options)`
 
-Moves through items in the current buffer and speaks the resulting item. Movement stops at an edge unless `options.wrap` is `true`. An empty buffer announces that it has no items.
+Moves through items in the current buffer and speaks the resulting item. Movement stops at an edge unless `options.wrap` is `true`. An empty buffer announces that it has no items. Pass `options.silent: true` to suppress speech.
 
 #### `manager.firstBufferItem()` and `manager.lastBufferItem()`
 
@@ -230,12 +230,14 @@ Every event receives `{ manager, buffer }`. An `add` event also includes `item`.
 
 ### `renderBufferList(buffer, options)`
 
-Returns a `ul` containing the buffer's current items. The list has the buffer name as its accessible label, and the current item receives the `current` class and `aria-current="true"`.
+Returns a `ul` containing the buffer's current items. The list has the buffer name as its accessible label, and the current item receives the `current` class.
 
-Pass `{ manager }` to keep the list synchronized with additions, clearing, and item movement. Without a manager, it is a static snapshot. Call `list.dispose()` to remove its subscriptions.
+Pass `{ manager }` to keep the list synchronized with additions, clearing, and item movement. The list is then a listbox. The current item is the selected option and the only one in the tab order. An empty list is a tab stop itself. Up and down arrow keys move through items silently and move focus with them, so the screen reader reads each item. If the buffer is not focused, the first arrow key focuses it silently. Call `list.dispose()` to remove its subscriptions and key handling.
+
+Without a manager, the list is a static snapshot, and the current item receives `aria-current="true"`.
 
 ### `renderBufferManager(manager)`
 
 Returns a live tab interface with one tab and panel per buffer. It tracks buffer creation, deletion, focus, item additions, clearing, and item movement.
 
-Tabs select buffers silently. Left and right arrow keys move between tabs and wrap at the ends. Each panel is keyboard focusable and contains a live buffer list. Call `view.dispose()` to remove every manager subscription and stop tab interaction.
+Tabs select buffers silently. Left and right arrow keys move between tabs and wrap at the ends. Each panel contains a live buffer list, which gives the panel one tab stop. Call `view.dispose()` to remove every manager subscription and stop tab interaction.
