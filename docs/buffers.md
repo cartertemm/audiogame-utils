@@ -201,9 +201,9 @@ Moves to the first or last buffer. Pass `options.silent: true` to suppress speec
 
 Moves through items in the current buffer and speaks the resulting item. Movement stops at an edge unless `options.wrap` is `true`. An empty buffer announces that it has no items. Pass `options.silent: true` to suppress speech.
 
-#### `manager.firstBufferItem()` and `manager.lastBufferItem()`
+#### `manager.firstBufferItem(options)` and `manager.lastBufferItem(options)`
 
-Moves to and speaks the first or last item in the current buffer. An empty buffer announces that it has no items.
+Moves to and speaks the first or last item in the current buffer. An empty buffer announces that it has no items. Pass `options.silent: true` to suppress speech.
 
 #### `manager.speakCurrentItem()`
 
@@ -232,7 +232,7 @@ Every event receives `{ manager, buffer }`. An `add` event also includes `item`.
 
 Returns a `ul` containing the buffer's current items. The list has the buffer name as its accessible label, and the current item receives the `current` class.
 
-Pass `{ manager }` to keep the list synchronized with additions, clearing, and item movement. The list is then a listbox. The current item is the selected option and the only one in the tab order. An empty list is a tab stop itself. Up and down arrow keys move through items silently and move focus with them, so the screen reader reads each item. If the buffer is not focused, the first arrow key focuses it silently. Call `list.dispose()` to remove its subscriptions and key handling.
+Pass `{ manager }` to keep the list synchronized with additions, clearing, and item movement. The list is then a listbox. The current item is the selected option and the only one in the tab order. An empty list is a tab stop itself. Up and down arrow keys move through items, and Home and End jump to the first and last item. Movement is silent and focus moves with it, so the screen reader reads each item. If the buffer is not focused, the first of these keys focuses it silently. Call `list.dispose()` to remove its subscriptions and key handling.
 
 Without a manager, the list is a static snapshot, and the current item receives `aria-current="true"`.
 

@@ -72,8 +72,8 @@ export class BufferManager extends EventEmitter {
 	lastBuffer(options?: { silent?: boolean }): void;
 	nextBufferItem(options?: { wrap?: boolean; silent?: boolean }): void;
 	previousBufferItem(options?: { wrap?: boolean; silent?: boolean }): void;
-	firstBufferItem(): void;
-	lastBufferItem(): void;
+	firstBufferItem(options?: { silent?: boolean }): void;
+	lastBufferItem(options?: { silent?: boolean }): void;
 	speakCurrentItem(): void;
 	/** Adds an item and speaks it without interrupting unless silent. Throws for an unknown buffer. */
 	addItem(target: string | Buffer, textOrItem: string | Partial<BufferItem> & { text: string }, options?: { silent?: boolean }): BufferItem;

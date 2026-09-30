@@ -543,7 +543,7 @@ export interface BufferManagerElement extends HTMLDivElement {
 	dispose(): void;
 }
 
-/** Renders a buffer as a plain list. With a manager, the list is a listbox that updates on add, clear, and move events, and up and down arrows move through items. */
+/** Renders a buffer as a plain list. With a manager, the list is a listbox that updates on add, clear, and move events, up and down arrows move through items, and Home and End jump to the ends. */
 export function renderBufferList(buffer: Buffer, options?: { manager?: BufferManager | null }): BufferListElement;
 
 /** Renders an ARIA tab control with one tab and panel per buffer. Tabs follow and drive the manager focus. */

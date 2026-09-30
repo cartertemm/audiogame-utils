@@ -184,22 +184,22 @@ export class BufferManager extends EventEmitter {
 		this._moveItem(-1, wrap, silent);
 	}
 
-	firstBufferItem() {
+	firstBufferItem({ silent = false } = {}) {
 		const buffer = this.current;
 		if (!buffer || buffer.length === 0) {
-			this.speakCurrentItem();
+			if (!silent) this.speakCurrentItem();
 			return;
 		}
-		this._setItemPosition(0);
+		this._setItemPosition(0, silent);
 	}
 
-	lastBufferItem() {
+	lastBufferItem({ silent = false } = {}) {
 		const buffer = this.current;
 		if (!buffer || buffer.length === 0) {
-			this.speakCurrentItem();
+			if (!silent) this.speakCurrentItem();
 			return;
 		}
-		this._setItemPosition(buffer.length - 1);
+		this._setItemPosition(buffer.length - 1, silent);
 	}
 
 	addItem(target, textOrItem, { silent = false } = {}) {

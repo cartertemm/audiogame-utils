@@ -350,8 +350,14 @@ describe('BufferManager items', () => {
 		manager.previousBufferItem({ silent: true });
 		manager.previousBufferItem({ silent: true });
 		expect(chat.position).toBe(0);
+		manager.lastBufferItem({ silent: true });
+		expect(chat.position).toBe(2);
+		manager.firstBufferItem({ silent: true });
+		expect(chat.position).toBe(0);
 		manager.clearBuffer(chat);
 		manager.nextBufferItem({ silent: true });
+		manager.firstBufferItem({ silent: true });
+		manager.lastBufferItem({ silent: true });
 		expect(speech.speak).not.toHaveBeenCalled();
 	});
 

@@ -4,7 +4,12 @@ import { el } from './dom.js';
 
 const LIST_STYLE = 'list-style: none; margin: 0; padding: 0';
 const TAB_KEYS = { ArrowLeft: -1, ArrowRight: 1 };
-const LIST_KEYS = { ArrowUp: -1, ArrowDown: 1 };
+const LIST_KEYS = {
+	ArrowUp: manager => manager.previousBufferItem({ silent: true }),
+	ArrowDown: manager => manager.nextBufferItem({ silent: true }),
+	Home: manager => manager.firstBufferItem({ silent: true }),
+	End: manager => manager.lastBufferItem({ silent: true }),
+};
 let nextControlId = 0;
 
 function isInteractive(list) {
@@ -44,12 +49,11 @@ export function renderBufferList(buffer, { manager = null } = {}) {
 			if (event.buffer === buffer) handler();
 		};
 		const onKeyDown = event => {
-			const step = LIST_KEYS[event.key];
-			if (!step) return;
+			const move = LIST_KEYS[event.key];
+			if (!move) return;
 			event.preventDefault();
 			if (manager.current !== buffer) manager.focusBuffer(buffer, { silent: true });
-			if (step > 0) manager.nextBufferItem({ silent: true });
-			else manager.previousBufferItem({ silent: true });
+			move(manager);
 		};
 		list.addEventListener('keydown', onKeyDown);
 		unsubscribe.push(

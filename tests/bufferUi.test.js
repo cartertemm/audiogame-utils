@@ -123,6 +123,26 @@ describe('renderBufferList', () => {
 		list.remove();
 	});
 
+	test('home and end jump to the ends silently and focus follows', () => {
+		const speech = { speak: vi.fn() };
+		const manager = createBufferManager({ speech });
+		const chat = manager.createBuffer('Chat');
+		chat.add('one');
+		chat.add('two');
+		chat.add('three');
+		const list = renderBufferList(chat, { manager });
+		document.body.appendChild(list);
+		list.children[0].focus();
+		press(list.children[0], 'End');
+		expect(chat.position).toBe(2);
+		expect(document.activeElement).toBe(list.children[2]);
+		press(list.children[2], 'Home');
+		expect(chat.position).toBe(0);
+		expect(document.activeElement).toBe(list.children[0]);
+		expect(speech.speak).not.toHaveBeenCalled();
+		list.remove();
+	});
+
 	test('arrows in a list for another buffer focus that buffer silently', () => {
 		const speech = { speak: vi.fn() };
 		const manager = createBufferManager({ speech });
