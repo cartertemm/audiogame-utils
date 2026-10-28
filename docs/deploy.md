@@ -33,14 +33,24 @@ Apache handles the encryption for both. Your server program never talks to the i
 Make sure that you have the following:
 
 1. A server that runs Ubuntu 22.04 or later.
-2. A domain name that points to the server's IP address.
-3. Apache 2.4. To install it, run this command on the server:
+2. An account named `deploy` on the server that can sign in with SSH and run `sudo`. Many hosts give you only the `root` account on a new server. In that case, sign in as `root` and run these commands to create the account and copy your SSH key to it:
+
+   ```console
+   adduser deploy
+   usermod -aG sudo deploy
+   rsync --archive --chown=deploy:deploy ~/.ssh /home/deploy
+   ```
+
+   Then sign out and sign in again as `deploy`. Use this account for the rest of the guide.
+
+3. A domain name that points to the server's IP address.
+4. Apache 2.4. To install it, run this command on the server:
 
    ```console
    sudo apt install apache2
    ```
 
-4. An HTTPS certificate for your domain. A free certificate from Let's Encrypt works. To get one and add it to Apache, run these commands on the server:
+5. An HTTPS certificate for your domain. A free certificate from Let's Encrypt works. To get one and add it to Apache, run these commands on the server:
 
    ```console
    sudo apt install certbot python3-certbot-apache
@@ -49,7 +59,7 @@ Make sure that you have the following:
 
    Certbot creates a file in `/etc/apache2/sites-available/` whose name ends in `-le-ssl.conf`. This guide calls it your HTTPS site file.
 
-5. For a multiplayer game only: Node.js on the server. Use the current LTS release, and use the same major version that you use on your computer.
+6. For a multiplayer game only: Node.js on the server. Use the current LTS release, and use the same major version that you use on your computer.
 
 ## Part 1: Publish the browser files
 
