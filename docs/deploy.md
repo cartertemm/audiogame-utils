@@ -43,7 +43,7 @@ Make sure that you have the following:
 
    Then sign out and sign in again as `deploy`. Use this account for the rest of the guide.
 
-3. A domain name that points to the server's IP address.
+3. A domain name that points to the server's IP address. If players might type `www.example.com`, make that name point to the server too.
 4. Apache 2.4. To install it, run this command on the server:
 
    ```console
@@ -54,8 +54,10 @@ Make sure that you have the following:
 
    ```console
    sudo apt install certbot python3-certbot-apache
-   sudo certbot --apache -d example.com
+   sudo certbot --apache -d example.com -d www.example.com
    ```
+
+   The certificate covers each name that you give with `-d`. A browser shows a security warning for a name that the certificate does not cover. If you do not use `www.example.com`, leave out `-d www.example.com`.
 
    Certbot creates a file in `/etc/apache2/sites-available/` whose name ends in `-le-ssl.conf`. This guide calls it your HTTPS site file.
 
